@@ -13,8 +13,12 @@ Most users can directly build the minDisj program from the generated C file.
 Users interested the minDisj file will need to install the ATS language, which
 has a style similar to StandardML.
 
-Once minDisj is built, please add the following to your startup.m file
-(in UNIX, this should be in ~/Documents/MATLAB/), or run it 
+Once minDisj is built, consider adding the following to your startup.m
+file (in UNIX, this should be in ~/Documents/MATLAB/), or run it
 before each use of FALCON:
 
 addpath(genpath('MY_FALCON_DIRECTORY'));
+
+This will be especially useful if you plan on running analyses 
+similar to those found in the publication; otherwise, the top-level
+directory should suffice.
