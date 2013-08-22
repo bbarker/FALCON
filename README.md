@@ -1,4 +1,5 @@
-VALE
+FALCON
 ====
 
-Velocity Approximation with LAD (Least Absolute Deviations) from Expression
+Flux Assignment (with) LAD Convex Objectives (and) Normalization.
+LAD, or Least Absolute Deviations, is the 1-norm version of least squares.
