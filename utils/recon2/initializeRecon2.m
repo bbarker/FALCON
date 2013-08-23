@@ -17,4 +17,11 @@ if ~isfield(rec2,'description')
   rec2.description = 'human_recon_2'
 end
 
-%Unconstrain reactions (namely boundary reactions)
+% Unconstrain reactions (namely boundary reactions) % This may be
+% undesirable in some cases, but in such cases, more refined constraints
+% should probably be used in any case.
+%rec2.lb(modelIn.lb<0 & modelIn.lb>-1000) = -1000;
+% Apparently not necessary in recon 2, but just in case:
+%rec2.ub(modelIn.ub>0 & modelIn.ub<1000) = 1000;
+
+%Need to set glucose uptake to ~ 3 mmol/gDWh

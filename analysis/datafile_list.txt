@@ -1,0 +1,23 @@
+We include here:
+1) list of data files and description.
+2) their locations on the web,
+3) referenced publications, 
+4) and possibly which scripts they are employed in.
+
+
+
+
+Expanded list of protein accessions and their intensities for all matching proteins (not just the best match).
+Based on Supplemental Table S3 - Protein group table, from:
+Gholami, A. M., Hahne, H., Wu, Z., Auer, F. J., Meng, C., Wilhelm, M., & Kuster, B. (2013, August 15). Global Proteome Analysis of the NCI-60 Cell Line Panel. Cell Reports. Retrieved from http://linkinghub.elsevier.com/retrieve/pii/S221112471300380X
+
+**** Entrez_and_IPI_unique.csv ****
+
+Entrez Gene to IPI ID mapping; created from the list of IPI IDs in the
+NCI60 proteomic dataset from Gholami et al, as well as genes from
+Human Recon 2.02. The conversion was handled by DAVID
+(http://david.abcc.ncifcrf.gov/) on 08/22/2013.
+
+http://openwetware.org/wiki/Image:Entrez_and_IPI_unique.csv
+
+**** (end of summary) ****
