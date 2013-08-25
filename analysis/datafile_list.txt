@@ -5,11 +5,26 @@ We include here:
 4) and possibly which scripts they are employed in.
 
 
+**** rec2.XX *****
+ !!!! Need to include model version used for final analysis !!!!
+**** (end of summary) ****
 
 
-Expanded list of protein accessions and their intensities for all matching proteins (not just the best match).
-Based on Supplemental Table S3 - Protein group table, from:
-Gholami, A. M., Hahne, H., Wu, Z., Auer, F. J., Meng, C., Wilhelm, M., & Kuster, B. (2013, August 15). Global Proteome Analysis of the NCI-60 Cell Line Panel. Cell Reports. Retrieved from http://linkinghub.elsevier.com/retrieve/pii/S221112471300380X
+**** Expanded_IPI_Listing.csv ****
+
+Expanded list of protein accessions and their intensities for all
+matching proteins (not just the best match). 
+
+http://openwetware.org/wiki/Image:Expanded_IPI_Listing.csv
+
+Based on Supplemental Table S3 - Protein group table, from: Gholami,
+A. M., Hahne, H., Wu, Z., Auer, F. J., Meng, C., Wilhelm, M., &
+Kuster, B. (2013, August 15). Global Proteome Analysis of the NCI-60
+Cell Line Panel. Cell Reports. Retrieved from
+http://linkinghub.elsevier.com/retrieve/pii/S221112471300380X
+
+**** (end of summary) ****
+
 
 **** Entrez_and_IPI_unique.csv ****
 
@@ -19,5 +34,25 @@ Human Recon 2.02. The conversion was handled by DAVID
 (http://david.abcc.ncifcrf.gov/) on 08/22/2013.
 
 http://openwetware.org/wiki/Image:Entrez_and_IPI_unique.csv
+
+**** (end of summary) ****
+
+
+**** Gholami_Table_S8_mRNA.csv ****
+Just a CSV version of Table S8 found in Gholami et al.,
+which contains mRNA expression data for the NCI-60 panel.
+An LZMA compressed version can be found here:
+
+http://openwetware.org/wiki/Image:Gholami_Table_S8_mRNA.csv.lzma
+
+
+**** (end of summary) ****
+
+
+**** NCI60_labels.csv ****
+
+!!!!!! Need to confirm and upload
+
+
 
 **** (end of summary) ****
