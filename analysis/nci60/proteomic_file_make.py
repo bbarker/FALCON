@@ -24,6 +24,10 @@
 
 
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy
+import scipy.stats
 
 if len(sys.argv) != 6:
     sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
@@ -43,6 +47,7 @@ while True:
     modgenes[line] = lineno
 modgenesFI.close()
 numgene = len(modgenesList)
+
 
 n60_COREtoPROT = {}
 n60_PROTtoCORE = {}
@@ -116,7 +121,6 @@ IPIdataFI.close()
 MRNAD = {}
 MRNADcols = {}
 mrnaFI = open(sys.argv[5],'r')
-    
 #column 9 (index 8) should be the first cell line
 #column 2 (index 1) has the IPI id, but sometimes it may not exist
 #Notes: take the average of expression for probes from different 
@@ -145,23 +149,58 @@ while True:
             cv = colvals[i].strip()
             if cv == "NA":
                 cv = "nan"
-                cvf = pow(2,float(cv))
-                if MRNAD[MRNADcols[i]].has_key(IPI):
-                    MRNAD[MRNADcols[i]][IPI].append(cvf)
-                else:
-                    MRNAD[MRNADcols[i]][IPI] = [cvf]    
+            cvf = pow(2,float(cv))
+            if MRNAD[MRNADcols[i]].has_key(IPI):
+                MRNAD[MRNADcols[i]][IPI].append(cvf)
+            else:
+                MRNAD[MRNADcols[i]][IPI] = [cvf]    
 mrnaFI.close()    
 for cl in MRNAD.keys():
     for g in MRNAD[cl].keys():
         MRNAD[cl][g] = sum(MRNAD[cl][g])/len(MRNAD[cl][g])
-
-
         
-#Construct correlation and mRNA+Prot matrix    
+#Construct correlation and mRNA+Prot matrix 
+# y: prot such that: prot AND model AND mRNA
+# x: mRNA such that: prot AND model AND mRNA
+y = []
+x = []
+MPmissed = 0    
+for cl in PROTD.keys():
+    if MRNAD.has_key(cl):
+        for g in PROTD[cl].keys():
+            if IPIToEntrez.has_key(g):
+                ENTREZ = IPIToEntrez[g]
+                if modgenes.has_key(ENTREZ):
+                    if MRNAD[cl].has_key(g):
+                        if ((MRNAD[cl][g] == MRNAD[cl][g])
+                            and (PROTD[cl][g] == PROTD[cl][g])):
+                            x.append(MRNAD[cl][g])
+                            y.append(PROTD[cl][g])
+                    else:
+                        MPmissed += 1
+    else:
+        raise Exception("mRNA <-> protein cell line " 
+                        + cl + " label mismatch!")
+print("Found " + str(len(x)) + 
+      " (mRNA, Prot) data points for model genes.")
+print("m-P mismatches: " + str(MPmissed))
+x = np.array(x)
+y = np.array(y)
+A = np.vstack([x, np.ones(len(x))]).T
+m, b = np.linalg.lstsq(A, y)[0]
+R = np.corrcoef(x,y)
+print("y = " + str(m) + "x + " + str(b) + 
+      "with Pearson's r = " + str(R[0][1]))
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x, y)[0]))
+
+# 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
 
 
 #Need to redo this for the new data:
+exit(0)
+
 
 rnaseqFI = open('nci60-chiron-expression-data_genes.tsv','r')
 colnumheader = rnaseqFI.readline().strip()
