@@ -123,9 +123,11 @@ MRNADcols = {}
 mrnaFI = open(sys.argv[5],'r')
 #column 9 (index 8) should be the first cell line
 #column 2 (index 1) has the IPI id, but sometimes it may not exist
+#column 8 (index 7) whether the probe maps to proteomics
 #Notes: take the average of expression for probes from different 
 #arrays (after exponentiation)?
 header = mrnaFI.readline()
+header2 = mrnaFI.readline()
 #first get column indices for different cell lines
 col_names = header.split("\t")
 for i in range(8,len(col_names)):
@@ -144,7 +146,9 @@ while True:
         break
     colvals = line.split("\t")
     IPI = colvals[1].strip()
-    if IPIToEntrez.has_key(IPI):
+    uniqSel = colvals[6].strip()
+    map2prot = colvals[7].strip()
+    if IPIToEntrez.has_key(IPI) and (uniqSel == "TRUE" or map2prot == "TRUE"):
         for i in range(8, len(colvals)):
             cv = colvals[i].strip()
             if cv == "NA":
@@ -162,18 +166,25 @@ for cl in MRNAD.keys():
 #Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
 # x: mRNA such that: prot AND model AND mRNA
+# y_all: prot such that: prot AND mRNA
+# x_all: mRNA such that: prot AND mRNA
 y = []
 x = []
+y_all = []
+x_all = []    
+    
 MPmissed = 0    
 for cl in PROTD.keys():
     if MRNAD.has_key(cl):
         for g in PROTD[cl].keys():
-            if IPIToEntrez.has_key(g):
-                ENTREZ = IPIToEntrez[g]
-                if modgenes.has_key(ENTREZ):
-                    if MRNAD[cl].has_key(g):
-                        if ((MRNAD[cl][g] == MRNAD[cl][g])
-                            and (PROTD[cl][g] == PROTD[cl][g])):
+            if MRNAD[cl].has_key(g):
+                if ((MRNAD[cl][g] == MRNAD[cl][g])
+                    and (PROTD[cl][g] == PROTD[cl][g])):
+                    x_all.append(MRNAD[cl][g])
+                    y_all.append(PROTD[cl][g])
+                    if IPIToEntrez.has_key(g):
+                        ENTREZ = IPIToEntrez[g]
+                        if modgenes.has_key(ENTREZ):
                             x.append(MRNAD[cl][g])
                             y.append(PROTD[cl][g])
                     else:
@@ -193,6 +204,17 @@ print("y = " + str(m) + "x + " + str(b) +
       "with Pearson's r = " + str(R[0][1]))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x, y)[0]))
+# Now for all (including non-model) genes
+x_all = np.array(x_all)
+y_all = np.array(y_all)
+A = np.vstack([x_all, np.ones(len(x_all))]).T
+m, b = np.linalg.lstsq(A, y_all)[0]
+R = np.corrcoef(x_all,y_all)
+print("y_all = " + str(m) + "x_all + " + str(b) + 
+      "with Pearson's r = " + str(R[0][1]))
+#print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
+#print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_all, y_all)[0]))
+
 
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 

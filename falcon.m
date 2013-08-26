@@ -189,8 +189,10 @@ while sum(~m.rev) > nR_old
 	if k == r_group(k)
 	  cons1 = s1+1;
 	  r_group_cons(k) = cons1;
+	  disp([0 k r_group(k) cons1]);
 	else
 	  cons1 = r_group_cons(r_group(k));
+	  disp([1 k r_group(k) cons1]);
 	end
         if ~isnan(d) %&& s>0 %(assumed)
 	    %First abs constaint:
@@ -209,11 +211,13 @@ while sum(~m.rev) > nR_old
 	    csense(cons1)   = 'L';
 	    csense(cons1+1) = 'L';
 	    f(s2+1) = - 1/s;
-	    if m.rev(k)
-	      N(cons1,k+1) = 1;
-	      N(cons1+1,k+1) = -1;
-	      k = k+1;
-	    end
+	    %This if statement may be redundant with the above, but
+	    % in an erroneous fashion (e.g. incompatible with current version).
+	    %if m.rev(k)
+	    %  N(cons1,k+1) = 1;
+	    %  N(cons1+1,k+1) = -1;
+	    %  k = k+1;
+	    %end
 	    if k == r_group(k)
 	      s1=s1+2;
 	    end

@@ -25,4 +25,4 @@ end
 %rec2.ub(modelIn.ub>0 & modelIn.ub<1000) = 1000;
 
 %Need to set glucose uptake to ~ 3 mmol/gDWh
-rec2.lb(find(strcmp(rec202.rxnNames,'D-Glucose exchange'))) = -3;
+rec2.lb(find(strcmp(rec2.rxnNames,'D-Glucose exchange'))) = -3;
