@@ -6,21 +6,39 @@
 # output protein only and protein + scaled mRNA data
 # as input to FALCON.
 
-# INPUT:
-# Recon 2 gene list (argv[1])
-# CORE to Proteomic NCI-60 cell line name map (argv[2]; NCI60_labels.csv)
-# Entrez ID to IPI ID map file (argv[3]; Entrez_and_IPI_unique.csv)
-# Proteomic expression file (argv[4]; Expanded_IPI_Listing.csv)
-# mRNA expression file (argv[5]; Gholami_Table_S8_mRNA.csv)
+# INPUT: (Please edit if necessary)
+# Recon 2 gene list 
+rec2genes = '/home/brandon/FBA/models/rec2.genes'
+# CORE to Proteomic NCI-60 cell line name map (NCI60_labels.csv)
+nci60labels = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/NCI60_labels.csv'
+# Entrez ID to IPI ID map file (Entrez_and_IPI_unique.csv)
+geneIDdb = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Entrez_and_IPI_unique.csv'
+# Proteomic expression file (protLFQ.csv or Expanded_IPI_Listing.csv)
+protEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/protLFQ.csv'
+# protEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/prot_iBAQ.csv'
+# Deep Proteomic expression file ( )
+deepProtEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/DeepProtLFQ.csv'
+# mRNA expression file (Gholami_Table_S8_mRNA.csv)
+mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Table_S8_mRNA.csv'
 
 # Output:
+#
+# scatter between proteomic and deep proteomic data:
+# RUNDIR/prot_DeepProt_correlation.png
+#
+# scatter between merged proteomic and mRNA data:
+# RUNDIR/mRNA_protein_correlation.png
+#
+# merged proteomic files for input to FALCON:
 # RUNDIR/nci60prot/<individual_exp_files.csv>
+#
+# merged proteomic and mRNA files for input to FALCON:
 # RUNDIR/nci60prot_mRNA/<individual_exp_files.csv>
 
 # 
 # Example run in directory
 # cd ~/FBA/models/Analysis/CancerExpression/NCI60/
-# ~/FBA/FALCON/analysis/nci60/proteomic_file_make.py ~/FBA/models/rec2.genes NCI60_labels.csv Entrez_and_IPI_unique.csv Expanded_IPI_Listing.csv Gholami_Table_S8_mRNA.csv
+# ~/FBA/FALCON/analysis/nci60/proteomic_file_make.py
 
 
 import sys
@@ -31,13 +49,13 @@ import matplotlib.pyplot as plt
 import scipy
 import scipy.stats
 
-if len(sys.argv) != 6:
-    sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
+#if len(sys.argv) != 6:
+#    sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
 
 
 modgenesList = []
 modgenes = {}
-modgenesFI = open(sys.argv[1],'r')
+modgenesFI = open(rec2genes,'r')
 lineno = -1
 while True:
     line = modgenesFI.readline()
@@ -53,7 +71,7 @@ numgene = len(modgenesList)
 
 n60_COREtoPROT = {}
 n60_PROTtoCORE = {}
-nci60labelFI = open(sys.argv[2],'r')
+nci60labelFI = open(nci60labels,'r')
 header = nci60labelFI.readline()
 while True:
     line = nci60labelFI.readline()
@@ -69,7 +87,7 @@ nci60labelFI.close()
 
 EntrezToIPI = {}
 IPIToEntrez = {}
-entrezIPIFI = open(sys.argv[3],'r')    
+entrezIPIFI = open(geneIDdb,'r')    
 # no header
 while True:
     line = entrezIPIFI.readline()
@@ -99,7 +117,7 @@ cell_line_start = 1
 
 PROTD = {}
 PROTDcols = {}
-IPIdataFI = open(sys.argv[4],'r')    
+IPIdataFI = open(protEXP,'r')    
 header = IPIdataFI.readline()
 #first get column indices for different cell lines
 col_names = header.split(",")
@@ -108,12 +126,14 @@ for i in range(cell_line_start,num_cols):
     col = col_names[i]
     col = col.strip()
     col = col.replace(" ","_")
-    col = col.replace("CPC_","",1)
+    #col = col.replace("CPC_","",1)
+    #col = col.replace("iBAQ_","",1)
+    col = col.replace("LFQ_","",1)    
     if n60_PROTtoCORE.has_key(col):
         PROTDcols[i] = col
         PROTD[col] = {}
     else:
-        raise Exception("cell line label unmatched in Protein data.")
+        raise Exception("cell line label " + col + " unmatched in Protein data.")
 #read in the data
 while True:
     line = IPIdataFI.readline()
@@ -130,10 +150,46 @@ while True:
         PROTD[PROTDcols[i]][IPI] = cvf    
 IPIdataFI.close()
 
+
+DPROTD = {}
+DPROTDcols = {}
+IPIdataFI = open(deepProtEXP,'r')    
+header = IPIdataFI.readline()
+#first get column indices for different cell lines
+col_names = header.split(",")
+num_cols = len(col_names)
+for i in range(cell_line_start,num_cols):
+    col = col_names[i]
+    col = col.strip()
+    col = col.replace(" ","_")
+    #col = col.replace("CPC_","",1)
+    #col = col.replace("iBAQ_","",1)
+    col = col.replace("LFQ_","",1)    
+    if n60_PROTtoCORE.has_key(col):
+        DPROTDcols[i] = col
+        DPROTD[col] = {}
+    else:
+        raise Exception("cell line label " + col + " unmatched in Protein data.")
+#read in the data
+while True:
+    line = IPIdataFI.readline()
+    line = line.strip()
+    if len(line) == 0:
+        break
+    colvals = line.split(",")
+    IPI = colvals[0].strip()
+    for i in range(cell_line_start, num_cols):
+        cv = colvals[i].strip()
+        if cv == "NA" or cv == "":
+            cv = "nan"
+        cvf = float(cv)
+        DPROTD[DPROTDcols[i]][IPI] = cvf    
+IPIdataFI.close()
+
 #Now handle the mRNA data similarly
 MRNAD = {}
 MRNADcols = {}
-mrnaFI = open(sys.argv[5],'r')
+mrnaFI = open(mrnaEXP,'r')
 #column 9 (index 8) should be the first cell line
 #column 2 (index 1) has the IPI id, but sometimes it may not exist
 #column 8 (index 7) whether the probe maps to proteomics
@@ -183,8 +239,41 @@ mrnaFI.close()
 for cl in MRNAD.keys():
     for g in MRNAD[cl].keys():
         MRNAD[cl][g] = sum(MRNAD[cl][g])/len(MRNAD[cl][g])
-        
-#Construct correlation and mRNA+Prot matrix 
+
+
+
+
+# Construct correlation between proteomic and deep Proteomic data.
+x_notDeep = []
+y_Deep = []
+
+for cl in DPROTD.keys():
+    if PROTD.has_key(cl):
+        for g in DPROTD[cl].keys():
+            if PROTD[cl].has_key(g):
+                if ((DPROTD[cl][g] == DPROTD[cl][g])
+                    and (PROTD[cl][g] == PROTD[cl][g])
+                    and PROTD[cl][g] > 0.0
+                    and DPROTD[cl][g] > 0.0):
+                    x_notDeep.append(PROTD[cl][g])
+                    y_Deep.append(DPROTD[cl][g])
+
+print("Found " + str(len(x_Deep)) + 
+      " (Prot, Deep-Prot) data points.")
+x_notDeep = np.array(x_notDeep)
+y_Deep = np.array(y_Deep)
+A = np.vstack([x_notDeep, np.ones(len(x_notDeep))]).T
+m, b = np.linalg.lstsq(A, y_Deep)[0]
+R = np.corrcoef(x_notDeep,y_Deep)
+print("y_Deep = " + str(m) + "x_notDeep + " + str(b) + 
+      " with Pearson's r = " + str(R[0][1]))
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_notDeep, y_Deep)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_notDeep, y_Deep)[0]))
+
+                    
+
+                    
+# Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
 # x: mRNA such that: prot AND model AND mRNA
 # y_all: prot such that: prot AND mRNA
@@ -200,7 +289,8 @@ for cl in PROTD.keys():
         for g in PROTD[cl].keys():
             if MRNAD[cl].has_key(g):
                 if ((MRNAD[cl][g] == MRNAD[cl][g])
-                    and (PROTD[cl][g] == PROTD[cl][g])):
+                    and (PROTD[cl][g] == PROTD[cl][g])
+                    and PROTD[cl][g] > 0.0):
                     x_all.append(MRNAD[cl][g])
                     y_all.append(PROTD[cl][g])
                     if IPIToEntrez.has_key(g):
@@ -222,7 +312,7 @@ A = np.vstack([x, np.ones(len(x))]).T
 m, b = np.linalg.lstsq(A, y)[0]
 R = np.corrcoef(x,y)
 print("y = " + str(m) + "x + " + str(b) + 
-      "with Pearson's r = " + str(R[0][1]))
+      " with Pearson's r = " + str(R[0][1]))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x, y)[0]))
 fig = plt.figure()
@@ -233,6 +323,7 @@ ax1.scatter(x,y,color='blue',s=5,edgecolor='none')
 ax1.set_aspect(1./ax1.get_data_ratio()) # make axes square
 ax1.set_xlabel('mRNA intensity')
 ax1.set_ylabel('protein copy number')
+
 # Now for all (including non-model) genes
 x_all = np.array(x_all)
 y_all = np.array(y_all)
@@ -240,7 +331,7 @@ A = np.vstack([x_all, np.ones(len(x_all))]).T
 m, b = np.linalg.lstsq(A, y_all)[0]
 R = np.corrcoef(x_all,y_all)
 print("y_all = " + str(m) + "x_all + " + str(b) + 
-      "with Pearson's r = " + str(R[0][1]))
+      " with Pearson's r = " + str(R[0][1]))
 #print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
 #print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_all, y_all)[0]))
 ## right panel
