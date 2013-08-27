@@ -25,6 +25,8 @@
 
 import sys
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 import scipy.stats
@@ -82,6 +84,15 @@ while True:
 entrezIPIFI.close()
 
 
+#In CPC file with best matching proteins, we have
+#column 28 (index 27) should be the first cell line
+#column 1 (index 0) has the IPI id of the best match
+#
+#In the extended ipi listing, 
+#column 2 (index 1) should be the first cell line
+#
+cell_line_start = 1
+
 #Read in Proteomic data
 #Use a dict of dict of values:
 #      [cell line][gene]->expression
@@ -92,10 +103,12 @@ IPIdataFI = open(sys.argv[4],'r')
 header = IPIdataFI.readline()
 #first get column indices for different cell lines
 col_names = header.split(",")
-for i in range(1,len(col_names)):
+num_cols = len(col_names)
+for i in range(cell_line_start,num_cols):
     col = col_names[i]
     col = col.strip()
     col = col.replace(" ","_")
+    col = col.replace("CPC_","",1)
     if n60_PROTtoCORE.has_key(col):
         PROTDcols[i] = col
         PROTD[col] = {}
@@ -109,9 +122,9 @@ while True:
         break
     colvals = line.split(",")
     IPI = colvals[0].strip()
-    for i in range(1, len(colvals)):
+    for i in range(cell_line_start, num_cols):
         cv = colvals[i].strip()
-        if cv == "NA":
+        if cv == "NA" or cv == "":
             cv = "nan"
         cvf = float(cv)
         PROTD[PROTDcols[i]][IPI] = cvf    
@@ -148,16 +161,24 @@ while True:
     IPI = colvals[1].strip()
     uniqSel = colvals[6].strip()
     map2prot = colvals[7].strip()
-    if IPIToEntrez.has_key(IPI) and (uniqSel == "TRUE" or map2prot == "TRUE"):
-        for i in range(8, len(colvals)):
-            cv = colvals[i].strip()
-            if cv == "NA":
-                cv = "nan"
-            cvf = pow(2,float(cv))
-            if MRNAD[MRNADcols[i]].has_key(IPI):
-                MRNAD[MRNADcols[i]][IPI].append(cvf)
-            else:
-                MRNAD[MRNADcols[i]][IPI] = [cvf]    
+    if (
+            IPIToEntrez.has_key(IPI) 
+            and 
+            (
+                uniqSel == "TRUE" 
+                or 
+                map2prot == "TRUE"
+                )
+            ):
+            for i in range(8, len(colvals)):
+                    cv = colvals[i].strip()
+                    if cv == "NA":
+                            cv = "nan"
+                    cvf = pow(2,float(cv))
+                    if MRNAD[MRNADcols[i]].has_key(IPI):
+                            MRNAD[MRNADcols[i]][IPI].append(cvf)
+                    else:
+                            MRNAD[MRNADcols[i]][IPI] = [cvf]    
 mrnaFI.close()    
 for cl in MRNAD.keys():
     for g in MRNAD[cl].keys():
@@ -204,6 +225,14 @@ print("y = " + str(m) + "x + " + str(b) +
       "with Pearson's r = " + str(R[0][1]))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x, y)[0]))
+fig = plt.figure()
+## left panel
+ax1 = fig.add_subplot(121)
+ax1.set_title('Metabolic Genes')
+ax1.scatter(x,y,color='blue',s=5,edgecolor='none')
+ax1.set_aspect(1./ax1.get_data_ratio()) # make axes square
+ax1.set_xlabel('mRNA intensity')
+ax1.set_ylabel('protein copy number')
 # Now for all (including non-model) genes
 x_all = np.array(x_all)
 y_all = np.array(y_all)
@@ -214,8 +243,14 @@ print("y_all = " + str(m) + "x_all + " + str(b) +
       "with Pearson's r = " + str(R[0][1]))
 #print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
 #print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_all, y_all)[0]))
-
-
+## right panel
+ax2 = fig.add_subplot(122)
+ax2.set_title('All Genes')
+ax2.scatter(x_all,y_all,color='blue',s=5,edgecolor='none')
+ax2.set_aspect(1./ax2.get_data_ratio()) # make axes square
+ax2.set_xlabel('mRNA intensity')
+#ax2.set_ylabel('protein copy number')
+fig.savefig('mRNA_protein_correlation.png')
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
 
