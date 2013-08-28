@@ -48,9 +48,37 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 import scipy.stats
+#import Bio.Cluster
+#import rpy2
 
 #if len(sys.argv) != 6:
 #    sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
+
+
+def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
+    A = np.vstack([x, np.ones(len(x))]).T
+    m, b = np.linalg.lstsq(A, y)[0]
+    R = np.corrcoef(x,y)
+    xmin = min(x)
+    xmax = max(x)
+    ymin = min(y)
+    ymax = max(y)
+    eps_x = (xmax-xmin)/100
+    eps_y = (ymax-ymin)/100
+    ax.set_title(fig_title)    
+    ax.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
+    ax.scatter(x,y,color='blue',s=2,edgecolor='none')
+    ax.set_aspect(1./ax.get_data_ratio()) # make axes square
+    if len(x_title) > 0:
+        ax.set_xlabel(x_title)
+    if len(y_title) > 0:    
+        ax.set_ylabel(y_title)
+    y_lin = m*x+b
+    ax.plot(x,y_lin,color='red')
+    ax.text(txtpos[0], txtpos[1], "y = " + str(m)[0:4] + 
+            "x + " + str(b)[0:4], fontsize=9)
+    ax.text(txtpos[2], txtpos[3], "r = " + str(R[0][1])[0:4], fontsize=9)
+    return (m, b, R[0][1])
 
 
 modgenesList = []
@@ -220,11 +248,12 @@ while True:
     if (
             IPIToEntrez.has_key(IPI) 
             and 
+            # These options appear to be equivalent here:
             (
-                uniqSel == "TRUE" 
-                or 
-                map2prot == "TRUE"
-                )
+                    uniqSel == "TRUE" 
+                    or 
+                    map2prot == "TRUE"
+                    )
             ):
             for i in range(8, len(colvals)):
                     cv = colvals[i].strip()
@@ -275,59 +304,25 @@ fig = plt.figure()
 
 y_notDeep0 = np.array(y_notDeep0)
 x_Deep0 = np.array(x_Deep0)
-A = np.vstack([x_Deep0, np.ones(len(x_Deep0))]).T
-m, b = np.linalg.lstsq(A, y_notDeep0)[0]
-R = np.corrcoef(x_Deep0,y_notDeep0)
+ax1 = fig.add_subplot(121)
+(m, b, r) = plotScatterCorr(ax1, x_Deep0, y_notDeep0, 'With Zeros', 'deep proteomic intensity',
+                            'proteomic intensity', [5, 1.9, 5, 1.4])
 print("y_notDeep0 = " + str(m) + "x_Deep0 + " + str(b) + 
-      " with Pearson's r = " + str(R[0][1]))
+      " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_Deep0, y_notDeep0)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_Deep0, y_notDeep0)[0]))
-ax1 = fig.add_subplot(121)
-ax1.set_title('With Zeros')
-xmin = min(x_Deep0)
-xmax = max(x_Deep0)
-ymin = min(y_notDeep0)
-ymax = max(y_notDeep0)
-eps_x = (xmax-xmin)/100
-eps_y = (ymax-ymin)/100
-ax1.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
-ax1.scatter(x_Deep0, y_notDeep0, color='blue',s=5,edgecolor='none')
-ax1.set_aspect(1./ax1.get_data_ratio()) # make axes square
-ax1.set_xlabel('deep proteomic intensity')
-ax1.set_ylabel('proteomic intensity')
-y_lin = m*x_Deep0+b
-ax1.plot(x_Deep0,y_lin,color='red')
-ax1.text(5, 1.9, "y = " + str(m)[0:4] + "x + " + str(b)[0:4], fontsize=9)
-ax1.text(5, 1.4, "r = " + str(R[0][1])[0:4], fontsize=9)
 
 y_notDeep = np.array(y_notDeep)
 x_Deep = np.array(x_Deep)
-A = np.vstack([x_Deep, np.ones(len(x_Deep))]).T
-m, b = np.linalg.lstsq(A, y_notDeep)[0]
-R = np.corrcoef(x_Deep,y_notDeep)
+ax2 = fig.add_subplot(122)
+(m, b, r) = plotScatterCorr(ax2, x_Deep, y_notDeep, 'No Zeros', 'deep proteomic intensity',
+                            '', [4, 8.5, 4, 8.2])
 print("y_notDeep = " + str(m) + "x_Deep + " + str(b) + 
-      " with Pearson's r = " + str(R[0][1]))
+      " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_Deep, y_notDeep)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_Deep, y_notDeep)[0]))
-ax2 = fig.add_subplot(122)
-ax2.set_title('No Zeros')
-xmin = min(x_Deep)
-xmax = max(x_Deep)
-ymin = min(y_notDeep)
-ymax = max(y_notDeep)
-eps_x = (xmax-xmin)/100
-eps_y = (ymax-ymin)/100
-ax2.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
-ax2.scatter(x_Deep, y_notDeep, color='blue',s=5,edgecolor='none')
-ax2.set_aspect(1./ax2.get_data_ratio()) # make axes square
-ax2.set_xlabel('deep proteomic intensity')
-#ax2.set_ylabel('proteomic intensity')
-y_lin = m*x_Deep+b
-ax2.plot(x_Deep,y_lin,color='red')
-ax2.text(4, 8.5, "y = " + str(m)[0:4] + "x + " + str(b)[0:4], fontsize=9)
-ax2.text(4, 8.2, "r = " + str(R[0][1])[0:4], fontsize=9)
 
-fig.savefig('prot_DeepProt_correlation.png')
+fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight')
                     
 # Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
@@ -362,64 +357,34 @@ for cl in PROTD.keys():
 print("Found " + str(len(x)) + 
       " (mRNA, Prot) data points for model genes.")
 print("m-P mismatches: " + str(MPmissed))
+
+fig = plt.figure()
+
+# Analayze metabolic gene correlation
 x = np.array(x)
 y = np.array(y)
-A = np.vstack([x, np.ones(len(x))]).T
-m, b = np.linalg.lstsq(A, y)[0]
-R = np.corrcoef(x,y)
+ax1 = fig.add_subplot(121)
+(m, b, r) = plotScatterCorr(ax1, x, y, 'Metabolic Genes', 'mRNA intensity',
+                            'protein intensity', [10, 3.9, 10, 3.65])
 print("y = " + str(m) + "x + " + str(b) + 
-      " with Pearson's r = " + str(R[0][1]))
+      " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x, y)[0]))
-fig = plt.figure()
-## left panel
-ax1 = fig.add_subplot(121)
-ax1.set_title('Metabolic Genes')
-xmin = min(x)
-xmax = max(x)
-ymin = min(y)
-ymax = max(y)
-eps_x = (xmax-xmin)/100
-eps_y = (ymax-ymin)/100
-ax1.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
-ax1.scatter(x,y,color='blue',s=5,edgecolor='none')
-ax1.set_aspect(1./ax1.get_data_ratio()) # make axes square
-ax1.set_xlabel('mRNA intensity')
-ax1.set_ylabel('protein intensity')
-y_lin = m*x+b
-ax1.plot(x,y_lin,color='red')
-ax1.text(10, 3.9, "y = " + str(m)[0:4] + "x + " + str(b)[0:4], fontsize=9)
-ax1.text(10, 3.65, "r = " + str(R[0][1])[0:4], fontsize=9)
+#print("Kendall's tau: " + str(rpy.r.cor(x, y, method="kendall")))
+#print("Kendall's tau: " + str(1 - Bio.Cluster.distancematrix((x,y), dist="k")[1][0]))
 
-# Now for all (including non-model) genes
+# Analyze all (including non-model) gene correlation
 x_all = np.array(x_all)
 y_all = np.array(y_all)
-A = np.vstack([x_all, np.ones(len(x_all))]).T
-m, b = np.linalg.lstsq(A, y_all)[0]
-R = np.corrcoef(x_all,y_all)
-print("y_all = " + str(m) + "x_all + " + str(b) + 
-      " with Pearson's r = " + str(R[0][1]))
-#print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
-#print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_all, y_all)[0]))
-## right panel
 ax2 = fig.add_subplot(122)
-ax2.set_title('All Genes')
-ax2.scatter(x_all,y_all,color='blue',s=5,edgecolor='none')
-xmin = min(x_all)
-xmax = max(x_all)
-ymin = min(y_all)
-ymax = max(y_all)
-eps_x = (xmax-xmin)/100
-eps_y = (ymax-ymin)/100
-ax2.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
-ax2.set_aspect(1./ax2.get_data_ratio()) # make axes square
-ax2.set_xlabel('mRNA intensity')
-#ax2.set_ylabel('protein copy number')
-y_lin = m*x_all+b
-ax2.plot(x_all,y_lin,color='red')
-ax2.text(10, 3.7, "y = " + str(m)[0:4] + "x + " + str(b)[0:4], fontsize=9)
-ax2.text(10, 3.4, "r = " + str(R[0][1])[0:4], fontsize=9)
-fig.savefig('mRNA_protein_correlation.png')
+(m, b, r) = plotScatterCorr(ax2, x_all, y_all, 'All Genes', 'mRNA intensity',
+                            '', [10, 3.7, 10, 3.4])
+print("y_all = " + str(m) + "x_all + " + str(b) + 
+      " with Pearson's r = " + str(r))
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
+#print("Kendall's tau: " + str(1 - Bio.Cluster.distancematrix((x_all,y_all), dist="k")[1][0]))
+
+fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight')
 
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
