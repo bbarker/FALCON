@@ -42,6 +42,7 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 
 
 import sys
+import copy
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
@@ -65,7 +66,7 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
     ymax = max(y)
     eps_x = (xmax-xmin)/100
     eps_y = (ymax-ymin)/100
-    ax.set_title(fig_title)    
+    ax.set_title(fig_title, fontsize=10)    
     ax.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
     ax.scatter(x,y,color='blue',s=2,edgecolor='none')
     ax.set_aspect(1./ax.get_data_ratio()) # make axes square
@@ -76,8 +77,8 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
     y_lin = m*x+b
     ax.plot(x,y_lin,color='red')
     ax.text(txtpos[0], txtpos[1], "y = " + str(m)[0:4] + 
-            "x + " + str(b)[0:4], fontsize=9)
-    ax.text(txtpos[2], txtpos[3], "r = " + str(R[0][1])[0:4], fontsize=9)
+            "x + " + str(b)[0:4], fontsize=8)
+    ax.text(txtpos[2], txtpos[3], "r = " + str(R[0][1])[0:4], fontsize=8)
     return (m, b, R[0][1])
 
 
@@ -275,6 +276,8 @@ for cl in MRNAD.keys():
 # Construct correlation between proteomic and deep Proteomic data.
 y_notDeep = []
 x_Deep = []
+y_ModnotDeep = []
+x_ModDeep = []
 y_notDeep0 = []
 x_Deep0 = []
 
@@ -288,8 +291,14 @@ for cl in DPROTD.keys():
                     and PROTD[cl][g] > 0.0
                     and DPROTD[cl][g] > 0.0
                     ):
-                    y_notDeep.append(PROTD[cl][g])
                     x_Deep.append(DPROTD[cl][g])
+                    y_notDeep.append(PROTD[cl][g])
+                    if IPIToEntrez.has_key(g):
+                        ENTREZ = IPIToEntrez[g]
+                        if modgenes.has_key(ENTREZ):
+                            x_ModDeep.append(DPROTD[cl][g])
+                            y_ModnotDeep.append(PROTD[cl][g])
+
                 if ((DPROTD[cl][g] == DPROTD[cl][g])
                     and (PROTD[cl][g] == PROTD[cl][g])
                     ):
@@ -304,9 +313,9 @@ fig = plt.figure()
 
 y_notDeep0 = np.array(y_notDeep0)
 x_Deep0 = np.array(x_Deep0)
-ax1 = fig.add_subplot(121)
+ax1 = fig.add_subplot(131)
 (m, b, r) = plotScatterCorr(ax1, x_Deep0, y_notDeep0, 'With Zeros', 'deep proteomic intensity',
-                            'proteomic intensity', [5, 1.9, 5, 1.4])
+                            'proteomic intensity', [4.5, 1.7, 4.5, 1.2])
 print("y_notDeep0 = " + str(m) + "x_Deep0 + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_Deep0, y_notDeep0)[0]))
@@ -314,7 +323,7 @@ print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_Deep0, y_notDeep0)[
 
 y_notDeep = np.array(y_notDeep)
 x_Deep = np.array(x_Deep)
-ax2 = fig.add_subplot(122)
+ax2 = fig.add_subplot(132)
 (m, b, r) = plotScatterCorr(ax2, x_Deep, y_notDeep, 'No Zeros', 'deep proteomic intensity',
                             '', [4, 8.5, 4, 8.2])
 print("y_notDeep = " + str(m) + "x_Deep + " + str(b) + 
@@ -322,7 +331,19 @@ print("y_notDeep = " + str(m) + "x_Deep + " + str(b) +
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_Deep, y_notDeep)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_Deep, y_notDeep)[0]))
 
-fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight')
+y_ModnotDeep = np.array(y_ModnotDeep)
+x_ModDeep = np.array(x_ModDeep)
+ax3 = fig.add_subplot(133)
+(m, b, r) = plotScatterCorr(ax3, x_ModDeep, y_ModnotDeep, 'Model Genes; No Zeros', 'deep proteomic intensity',
+                            '', [4.3, 8.4, 4.3, 8.1])
+print("y_ModnotDeep = " + str(m) + "x_ModDeep + " + str(b) + 
+      " with Pearson's r = " + str(r))
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_ModDeep, y_ModnotDeep)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_ModDeep, y_ModnotDeep)[0]))
+(mp, bp) = (m, b)
+
+fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight',
+            dpi=300)
                     
 # Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
@@ -384,7 +405,15 @@ print("y_all = " + str(m) + "x_all + " + str(b) +
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
 #print("Kendall's tau: " + str(1 - Bio.Cluster.distancematrix((x_all,y_all), dist="k")[1][0]))
 
-fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight')
+fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight',
+            dpi=300)
+
+
+PROTBoth = copy.deepcopy(PROTD)
+for cl in DPROTD.keys():
+    for g in DPROTD[cl].keys():
+        if DPROTD[cl][g] > 0:
+            PROTBoth[cl][g] = mp*DPROTD[cl][g] + bp
 
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
