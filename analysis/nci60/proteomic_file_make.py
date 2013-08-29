@@ -68,7 +68,7 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
     eps_y = (ymax-ymin)/100
     ax.set_title(fig_title, fontsize=10)    
     ax.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
-    ax.scatter(x,y,color='blue',s=2,edgecolor='none')
+    ax.scatter(x,y,color='blue',s=0.5,edgecolor='none')
     ax.set_aspect(1./ax.get_data_ratio()) # make axes square
     if len(x_title) > 0:
         ax.set_xlabel(x_title)
@@ -81,6 +81,37 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
     ax.text(txtpos[2], txtpos[3], "r = " + str(R[0][1])[0:4], fontsize=8)
     return (m, b, R[0][1])
 
+def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez):
+    y = []
+    x = []
+    y_all = []
+    x_all = []    
+    MPmissed = 0    
+    for cl in PROTD.keys():
+        if MRNAD.has_key(cl):
+            for g in PROTD[cl].keys():
+                if MRNAD[cl].has_key(g):
+                    if ((MRNAD[cl][g] == MRNAD[cl][g])
+                        and (PROTD[cl][g] == PROTD[cl][g])
+                        and PROTD[cl][g] > 0.0):
+                        x_all.append(MRNAD[cl][g])
+                        y_all.append(PROTD[cl][g])
+                        if IPIToEntrez.has_key(g):
+                            ENTREZ = IPIToEntrez[g]
+                            if modgenes.has_key(ENTREZ):
+                                x.append(MRNAD[cl][g])
+                                y.append(PROTD[cl][g])
+                        else:
+                            MPmissed += 1
+        else:
+            raise Exception("mRNA <-> protein cell line " 
+                            + cl + " label mismatch!")
+    print("Found " + str(len(x)) + 
+          " (mRNA, Prot) data points for model genes.")
+    print("m-P mismatches: " + str(MPmissed))
+    return(x, y, x_all, y_all)
+    
+    
 
 modgenesList = []
 modgenes = {}
@@ -320,6 +351,7 @@ print("y_notDeep0 = " + str(m) + "x_Deep0 + " + str(b) +
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_Deep0, y_notDeep0)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_Deep0, y_notDeep0)[0]))
+print("")
 
 y_notDeep = np.array(y_notDeep)
 x_Deep = np.array(x_Deep)
@@ -330,6 +362,7 @@ print("y_notDeep = " + str(m) + "x_Deep + " + str(b) +
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_Deep, y_notDeep)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_Deep, y_notDeep)[0]))
+print("")
 
 y_ModnotDeep = np.array(y_ModnotDeep)
 x_ModDeep = np.array(x_ModDeep)
@@ -340,51 +373,38 @@ print("y_ModnotDeep = " + str(m) + "x_ModDeep + " + str(b) +
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_ModDeep, y_ModnotDeep)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_ModDeep, y_ModnotDeep)[0]))
+print("")
 (mp, bp) = (m, b)
 
+fig.tight_layout()
 fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight',
             dpi=300)
-                    
+
+# Combine proteomic data
+PROTBoth = copy.deepcopy(PROTD)
+for cl in DPROTD.keys():
+    for g in DPROTD[cl].keys():
+        if DPROTD[cl][g] > 0:
+            PROTBoth[cl][g] = mp*DPROTD[cl][g] + bp
+
 # Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
 # x: mRNA such that: prot AND model AND mRNA
 # y_all: prot such that: prot AND mRNA
 # x_all: mRNA such that: prot AND mRNA
-y = []
-x = []
-y_all = []
-x_all = []    
-    
-MPmissed = 0    
-for cl in PROTD.keys():
-    if MRNAD.has_key(cl):
-        for g in PROTD[cl].keys():
-            if MRNAD[cl].has_key(g):
-                if ((MRNAD[cl][g] == MRNAD[cl][g])
-                    and (PROTD[cl][g] == PROTD[cl][g])
-                    and PROTD[cl][g] > 0.0):
-                    x_all.append(MRNAD[cl][g])
-                    y_all.append(PROTD[cl][g])
-                    if IPIToEntrez.has_key(g):
-                        ENTREZ = IPIToEntrez[g]
-                        if modgenes.has_key(ENTREZ):
-                            x.append(MRNAD[cl][g])
-                            y.append(PROTD[cl][g])
-                    else:
-                        MPmissed += 1
-    else:
-        raise Exception("mRNA <-> protein cell line " 
-                        + cl + " label mismatch!")
-print("Found " + str(len(x)) + 
-      " (mRNA, Prot) data points for model genes.")
-print("m-P mismatches: " + str(MPmissed))
+# b versions include deep proteomic data as well
+# d versions are deep only
+
+(x, y, x_all, y_all) = getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez)
+(x_b, y_b, x_ball, y_ball) = getProt_mRNA_pairs(MRNAD, PROTBoth, IPIToEntrez)
+(x_d, y_d, x_dall, y_dall) = getProt_mRNA_pairs(MRNAD, DPROTD, IPIToEntrez)
 
 fig = plt.figure()
 
 # Analayze metabolic gene correlation
 x = np.array(x)
 y = np.array(y)
-ax1 = fig.add_subplot(121)
+ax1 = fig.add_subplot(221)
 (m, b, r) = plotScatterCorr(ax1, x, y, 'Metabolic Genes', 'mRNA intensity',
                             'protein intensity', [10, 3.9, 10, 3.65])
 print("y = " + str(m) + "x + " + str(b) + 
@@ -393,27 +413,49 @@ print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
 print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x, y)[0]))
 #print("Kendall's tau: " + str(rpy.r.cor(x, y, method="kendall")))
 #print("Kendall's tau: " + str(1 - Bio.Cluster.distancematrix((x,y), dist="k")[1][0]))
+print("")
 
 # Analyze all (including non-model) gene correlation
 x_all = np.array(x_all)
 y_all = np.array(y_all)
-ax2 = fig.add_subplot(122)
+ax2 = fig.add_subplot(222)
 (m, b, r) = plotScatterCorr(ax2, x_all, y_all, 'All Genes', 'mRNA intensity',
-                            '', [10, 3.7, 10, 3.4])
+                            'protein intensity', [10, 3.7, 10, 3.4])
 print("y_all = " + str(m) + "x_all + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
+print("")
 #print("Kendall's tau: " + str(1 - Bio.Cluster.distancematrix((x_all,y_all), dist="k")[1][0]))
 
+
+
+# Analayze metabolic gene correlation
+x_d = np.array(x_d)
+y_d = np.array(y_d)
+ax3 = fig.add_subplot(223)
+(m, b, r) = plotScatterCorr(ax3, x_d, y_d, 'Metabolic Genes', 'mRNA intensity',
+                            'deep protein intensity', [10, 4.2, 10, 3.9])
+print("y_d = " + str(m) + "x_d + " + str(b) + 
+      " with Pearson's r = " + str(r))
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_d, y_d)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_d, y_d)[0]))
+print("")
+
+# Analyze all (including non-model) gene correlation
+x_b = np.array(x_b)
+y_b = np.array(y_b)
+ax4 = fig.add_subplot(224)
+(m, b, r) = plotScatterCorr(ax4, x_b, y_b, 'Metabolic Genes', 'mRNA intensity',
+                            'protein intensity (both)', [10, 4, 10, 3.7])
+print("y_b = " + str(m) + "x_b + " + str(b) + 
+      " with Pearson's r = " + str(r))
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_b, y_b)[0]))
+print("")
+
+fig.tight_layout()
 fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight',
             dpi=300)
 
-
-PROTBoth = copy.deepcopy(PROTD)
-for cl in DPROTD.keys():
-    for g in DPROTD[cl].keys():
-        if DPROTD[cl][g] > 0:
-            PROTBoth[cl][g] = mp*DPROTD[cl][g] + bp
 
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
