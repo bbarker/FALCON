@@ -483,7 +483,6 @@ for cl in MRNAD.keys():
                     PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
         else:
             PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
-
                 
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
@@ -533,7 +532,7 @@ for clPROT in n60_PROTtoCORE.keys():
                 pEXP = PROTBoth[clPROT][g]
                 modPcount = modPcount + 1                
             if MRNAD[clPROT].has_key(g):    
-                mEXP = MRNAD[clPROT][g]
+                mEXP = m_MtoP*MRNAD[clPROT][g] + b_MtoP
                 modMcount = modMcount + 1
             mpEXP = str(mpEXP)
             mEXP = str(mEXP)
