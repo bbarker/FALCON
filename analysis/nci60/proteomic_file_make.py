@@ -29,18 +29,25 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 # scatter between merged proteomic and mRNA data:
 # RUNDIR/mRNA_protein_correlation.png
 #
+# mRNA files for input to FALCON:
+# RUNDIR/nci60mRNA/<individual_exp_files.csv>
+#
 # merged proteomic files for input to FALCON:
 # RUNDIR/nci60prot/<individual_exp_files.csv>
 #
 # merged proteomic and mRNA files for input to FALCON:
 # RUNDIR/nci60prot_mRNA/<individual_exp_files.csv>
+#
+# table of all 3 data types from all cell lines in the model:
+modDatSave = 'model_expression.csv'
+
 
 # 
 # Example run in directory
 # cd ~/FBA/models/Analysis/CancerExpression/NCI60/
 # ~/FBA/FALCON/analysis/nci60/proteomic_file_make.py
 
-
+import os
 import sys
 import copy
 import numpy as np
@@ -55,6 +62,7 @@ import scipy.stats
 #if len(sys.argv) != 6:
 #    sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
 
+NaN = float("nan")
 
 def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
     A = np.vstack([x, np.ones(len(x))]).T
@@ -428,7 +436,6 @@ print("")
 #print("Kendall's tau: " + str(1 - Bio.Cluster.distancematrix((x_all,y_all), dist="k")[1][0]))
 
 
-
 # Analayze metabolic gene correlation
 x_d = np.array(x_d)
 y_d = np.array(y_d)
@@ -451,51 +458,102 @@ print("y_b = " + str(m) + "x_b + " + str(b) +
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_b, y_b)[0]))
 print("")
+(m_MtoP, b_MtoP) = (m, b)
 
 fig.tight_layout()
 fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight',
             dpi=300)
 
 
+# Combine proteomic and mRNA data
+# Also, convert 0s in proteomic data to NaNs
+# based on the observation observed above that
+# these 0s are most certainly "missing data"
+PROTMRNA = copy.deepcopy(PROTBoth)
+for cl in PROTBoth.keys():
+    for g in PROTBoth[cl].keys():
+        if PROTBoth[cl][g] == 0:
+            PROTBoth[cl][g] = NaN
+            PROTMRNA[cl][g] = NaN
+for cl in MRNAD.keys():
+    for g in MRNAD[cl].keys():
+        if PROTMRNA[cl].has_key(g):
+            if PROTMRNA[cl][g] != PROTMRNA[cl][g]:
+                if MRNAD[cl][g] == MRNAD[cl][g]:
+                    PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
+        else:
+            PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
+
+                
 # 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
 
-
-
-#Need to redo this for the new data:
-exit(0)
-
-
-rnaseqFI = open('nci60-chiron-expression-data_genes.tsv','r')
-colnumheader = rnaseqFI.readline().strip()
-header = rnaseqFI.readline().strip()
-col_names = header.split("\t")
-rnaseqFI.close()
-
-for col in range(5,63):
-    tissue = col_names[col].strip()
+modMcount = 0
+modPcount = 0
+modMPcount = 0
+modelDataFI = open(modDatSave,'w')
+header = "Entrez Gene\tIPI\tCell Line (Proteomics Label)\t" + \
+  "Cell Line (CoRe Label)\tmRNA Data\tProtein Data\tProtein + mRNA\n"
+modelDataFI.write(header)
+if not os.path.isdir('nci60mRNA'):
+    if os.path.exists('nci60mRNA'):
+        raise Exception("Specified output directory is a file!")
+    os.mkdir('nci60mRNA')
+if not os.path.isdir('nci60prot'):
+    if os.path.exists('nci60prot'):
+        raise Exception("Specified output directory is a file!")
+    os.mkdir('nci60prot')
+if not os.path.isdir('nci60prot_mRNA'):
+    if os.path.exists('nci60prot_mRNA'):
+        raise Exception("Specified output directory is a file!")
+    os.mkdir('nci60prot_mRNA')
+for clPROT in n60_PROTtoCORE.keys():
+    clCORE = n60_PROTtoCORE[clPROT]
+    tissue = clCORE
     tissue = tissue.replace("(","_")
     tissue = tissue.replace(")","_")
     tissue = tissue.replace(" ","_")    
     tissue = tissue.replace("/","_")
-    tissue = tissue.replace("-","_")
-    
-    print(tissue)
-    print(col)
-    # Stupidly open file repeatedly
-    rnaseqFI = open('nci60-chiron-expression-data_genes.tsv','r')
-    outFI = open('NCI60exp/' + tissue + '.csv','w')
-    outFI.write("gene\tmean\tvar\n")
-    colnumheader = rnaseqFI.readline().strip()
-    header = rnaseqFI.readline().strip()
-    while True:
-        line = rnaseqFI.readline()
-        if len(line) < 2:
-            break
-        ll = line.split('\t')
-        exp = ll[col].strip()
-        entrez = ll[2].strip()
-        if modgenes.has_key(entrez):
-            outlist = [entrez, exp, "1"] 
-            outFI.write("\t".join(outlist)+"\n")
-    outFI.close()
-    rnaseqFI.close()
+    tissue = tissue.replace("-","_")    
+    MoutFI = open('nci60mRNA/' + tissue + '.csv','w')
+    PoutFI = open('nci60prot/' + tissue + '.csv','w')
+    MPoutFI = open('nci60prot_mRNA/' + tissue + '.csv','w')
+    MoutFI.write("gene\tmean\tvar\n")
+    PoutFI.write("gene\tmean\tvar\n")
+    MPoutFI.write("gene\tmean\tvar\n")    
+    for g in PROTMRNA[clPROT]:
+        ENTREZ = "UNKNOWN ENTREZ ID"
+        if IPIToEntrez.has_key(g):
+            ENTREZ = IPIToEntrez[g]            
+        if modgenes.has_key(ENTREZ): 
+            mpEXP = PROTMRNA[clPROT][g]
+            pEXP = NaN
+            mEXP = NaN
+            modMPcount = modMPcount + 1
+            if PROTBoth[clPROT].has_key(g):
+                pEXP = PROTBoth[clPROT][g]
+                modPcount = modPcount + 1                
+            if MRNAD[clPROT].has_key(g):    
+                mEXP = MRNAD[clPROT][g]
+                modMcount = modMcount + 1
+            mpEXP = str(mpEXP)
+            mEXP = str(mEXP)
+            pEXP = str(pEXP)                
+            outlist = [ENTREZ, g, clPROT, clCORE,
+                       mEXP, pEXP, mpEXP]
+            modelDataFI.write("\t".join(outlist)+"\n")
+            outlist = [ENTREZ, mEXP, "1"]
+            MoutFI.write("\t".join(outlist)+"\n")
+            outlist = [ENTREZ, pEXP, "1"]
+            PoutFI.write("\t".join(outlist)+"\n")
+            outlist = [ENTREZ, mpEXP, "1"]
+            MPoutFI.write("\t".join(outlist)+"\n")
+    MoutFI.close()
+    PoutFI.close()
+    MPoutFI.close()   
+modelDataFI.close()
+
+modMcount = modMcount/59.0
+modPcount = modPcount/59.0
+modMPcount = modMPcount/59.0
+print("Average # of model genes with data (mRNA, Protein, Both): (" + \
+      str(modMcount) + ", " + str(modPcount) + ", " + str(modMPcount) + ").") 
