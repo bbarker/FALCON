@@ -41,6 +41,8 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 # table of all 3 data types from all cell lines in the model:
 modDatSave = 'model_expression.csv'
 
+import multiprocessing
+pool = multiprocessing.Pool(30)
 
 # 
 # Example run in directory
@@ -51,6 +53,8 @@ import os
 import sys
 import copy
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -119,7 +123,39 @@ def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez):
     print("m-P mismatches: " + str(MPmissed))
     return(x, y, x_all, y_all)
     
-    
+def centerMeshCorrPlot(x, y, m, n, ival):
+    # Need to normalize x and y
+    xmean = np.mean(x)
+    ymean = np.mean(y)
+    xymid = np.mean([xmean, ymean])
+    x = xymid/xmean * x
+    y = xymid/ymean * y
+    irange = range(0, m+1, ival)
+    jrange = range(0, n+1, ival)
+    ilen = len(irange)
+    jlen = len(jrange)
+    z = np.zeros([ilen, jlen])
+    # Need to sort (x, y) by min(x,y)
+    (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
+    end = len(x)-1
+    print([x[0], y[0], x[end], y[end]]) 
+    for i in irange:
+        sys.stdout.write(str(i) + "  ")
+        for j in jrange:
+            xc = x[i:end+1-j]
+            yc = y[i:end+1-j]
+            R = np.corrcoef(xc,yc)
+            #print(np.shape(z))
+            #print([int(i/ival), int(j/ival)])
+            #print("")
+            z[int(i/ival)][int(j/ival)] = R[0][1]
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    #ax = fig.gca(projection='3d')
+    ax.plot_surface(irange, jrange, z, cmap=cm.jet, linewidth=0.2)
+    ax.set_xlabel('removed from bottom')
+    ax.set_ylabel('removed from top')
+    return fig    
 
 modgenesList = []
 modgenes = {}
@@ -387,6 +423,10 @@ print("")
 fig.tight_layout()
 fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight',
             dpi=300)
+
+fig = centerMeshCorrPlot(x_Deep, y_notDeep, 10000, 10000, 20)
+fig.savefig('Intensity_corr_mesh.png', bbox_inches='tight', dpi=300)
+
 
 # Combine proteomic data
 PROTBoth = copy.deepcopy(PROTD)
