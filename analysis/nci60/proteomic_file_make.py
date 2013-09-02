@@ -42,7 +42,6 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 modDatSave = 'model_expression.csv'
 
 import multiprocessing
-pool = multiprocessing.Pool(30)
 
 # 
 # Example run in directory
@@ -60,6 +59,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 import scipy.stats
+import pickle
 #import Bio.Cluster
 #import rpy2
 
@@ -67,6 +67,16 @@ import scipy.stats
 #    sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
 
 NaN = float("nan")
+
+def product(*args):
+    if not args:
+        return iter(((),)) # yield tuple()
+    return (items + (item,)
+            for items in product(*args[:-1]) for item in args[-1])
+
+def veccorr(x, y):
+    R = np.corrcoef(x,y)
+    return R[0,1]
 
 def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
     A = np.vstack([x, np.ones(len(x))]).T
@@ -122,6 +132,26 @@ def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez):
           " (mRNA, Prot) data points for model genes.")
     print("m-P mismatches: " + str(MPmissed))
     return(x, y, x_all, y_all)
+
+# Apparently a closure won't work with multiprocessing.Pool
+# def makesublistcorr(x, y):        
+#     def sublistcorr(tup):
+#         xc = x[tup[0]:end+1-tup[1]]     
+#         yc = y[tup[0]:end+1-tup[1]]
+#         return veccorr(xc, yc)
+#     return sublistcorr
+
+# Use a class instead
+class sublistcorr:
+    def __init__(self, x, y, end):
+        self.x = x
+        self.y = y
+        self.end = end
+    def __call__(self, ij):
+        end = self.end
+        xc = self.x[ij[0]:end+1-ij[1]]     
+        yc = self.y[ij[0]:end+1-ij[1]]
+        return veccorr(xc, yc)
     
 def centerMeshCorrPlot(x, y, m, n, ival):
     # Need to normalize x and y
@@ -135,27 +165,36 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     ilen = len(irange)
     jlen = len(jrange)
     z = np.zeros([ilen, jlen])
+    xfull = np.zeros([ilen, jlen])
+    yfull = np.zeros([ilen, jlen])
     # Need to sort (x, y) by min(x,y)
     (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
     end = len(x)-1
     print([x[0], y[0], x[end], y[end]]) 
-    for i in irange:
-        sys.stdout.write(str(i) + "  ")
-        for j in jrange:
-            xc = x[i:end+1-j]
-            yc = y[i:end+1-j]
-            R = np.corrcoef(xc,yc)
-            #print(np.shape(z))
-            #print([int(i/ival), int(j/ival)])
-            #print("")
-            z[int(i/ival)][int(j/ival)] = R[0][1]
+    i_by_j = product(irange, jrange)
+    len_i_by_j = ilen * jlen
+    # corr_i_to_j = makesublistcorr(x, y)
+    pool = multiprocessing.Pool(30)
+    Rvals = pool.map(sublistcorr(x, y, end), i_by_j)
+    print(type(Rvals))
+    pool.close()
+    i_by_j = product(irange, jrange)
+    for ij_idx in range(0,len_i_by_j):
+        ij = i_by_j.next()
+        z[int(ij[0]/ival)][int(ij[1]/ival)] = Rvals[ij_idx]
+        xfull[int(ij[0]/ival)][int(ij[1]/ival)] = ij[0]
+        yfull[int(ij[0]/ival)][int(ij[1]/ival)] = ij[1]        
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     #ax = fig.gca(projection='3d')
-    ax.plot_surface(irange, jrange, z, cmap=cm.jet, linewidth=0.2)
+    ax.plot_surface(xfull, yfull, z, cmap=cm.coolwarm, linewidth=0.2)
+    #cset = ax.contourf(irange, jrange, z, zdir='z', offset=-100, cmap=cm.coolwarm)
+    #cset = ax.contourf(irange, jrange, z, zdir='x', offset=-40, cmap=cm.coolwarm)
+    #cset = ax.contourf(irange, jrange, z, offset=40, cmap=cm.coolwarm)
     ax.set_xlabel('removed from bottom')
     ax.set_ylabel('removed from top')
-    return fig    
+    ax.set_zlabel("Pearson's r")    
+    return (fig, ax)    
 
 modgenesList = []
 modgenes = {}
@@ -424,9 +463,17 @@ fig.tight_layout()
 fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight',
             dpi=300)
 
-fig = centerMeshCorrPlot(x_Deep, y_notDeep, 10000, 10000, 20)
+(fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 15000, 300, 1)
 fig.savefig('Intensity_corr_mesh.png', bbox_inches='tight', dpi=300)
-
+if not os.path.isdir('test_corr_fig'):
+    os.mkdir('test_corr_fig')
+for i in range(0,360, 2):
+    ax.view_init(azim=i)
+    fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png', 
+                bbox_inches='tight', dpi=100)
+#output = open('Intensity_corr_mesh.pickle', 'wb')
+#pickle.dump(fig,output)
+#output.close()
 
 # Combine proteomic data
 PROTBoth = copy.deepcopy(PROTD)
