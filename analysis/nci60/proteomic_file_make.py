@@ -153,6 +153,38 @@ class sublistcorr:
         yc = self.y[ij[0]:end+1-ij[1]]
         return veccorr(xc, yc)
     
+def lineCorrPlot(x, y, m, ival, fig, axpos):
+    # Need to normalize x and y
+    xmean = np.mean(x)
+    ymean = np.mean(y)
+    xymid = np.mean([xmean, ymean])
+    x = xymid/xmean * x
+    y = xymid/ymean * y
+    irange = range(0, m+1, ival)
+    ilen = len(irange)
+    z = np.zeros([ilen, 1])
+    xfull = np.zeros([ilen,1])
+    # Need to sort (x, y) by min(x,y)
+    (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
+    end = len(x)-1
+    print([x[0], y[0], x[end], y[end]]) 
+    i_by_j = product(irange, [0])
+    len_i_by_j = ilen 
+    pool = multiprocessing.Pool(30)
+    Rvals = pool.map(sublistcorr(x, y, end), i_by_j)
+    pool.close()
+    i_by_j = product(irange, [0])
+    for ij_idx in range(0,len_i_by_j):
+        ij = i_by_j.next()
+        z[int(ij[0]/ival)] = Rvals[int(ij[0]/ival)]
+        xfull[int(ij[0]/ival)] = ij[0]
+    ax = fig.add_subplot(axpos)
+    #ax = fig.gca(projection='3d')
+    ax.plot(xfull, z, lw=2)
+    ax.set_xlabel('removed from bottom')
+    ax.set_ylabel("Pearson's r")    
+    return ax    
+
 def centerMeshCorrPlot(x, y, m, n, ival):
     # Need to normalize x and y
     xmean = np.mean(x)
@@ -173,7 +205,6 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, jrange)
     len_i_by_j = ilen * jlen
-    # corr_i_to_j = makesublistcorr(x, y)
     pool = multiprocessing.Pool(30)
     Rvals = pool.map(sublistcorr(x, y, end), i_by_j)
     print(type(Rvals))
@@ -188,9 +219,6 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     ax = fig.add_subplot(111, projection='3d')
     #ax = fig.gca(projection='3d')
     ax.plot_surface(xfull, yfull, z, cmap=cm.coolwarm, linewidth=0.2)
-    #cset = ax.contourf(irange, jrange, z, zdir='z', offset=-100, cmap=cm.coolwarm)
-    #cset = ax.contourf(irange, jrange, z, zdir='x', offset=-40, cmap=cm.coolwarm)
-    #cset = ax.contourf(irange, jrange, z, offset=40, cmap=cm.coolwarm)
     ax.set_xlabel('removed from bottom')
     ax.set_ylabel('removed from top')
     ax.set_zlabel("Pearson's r")    
@@ -463,24 +491,79 @@ fig.tight_layout()
 fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight',
             dpi=300)
 
-(fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 15000, 300, 1)
-fig.savefig('Intensity_corr_mesh.png', bbox_inches='tight', dpi=300)
-if not os.path.isdir('test_corr_fig'):
-    os.mkdir('test_corr_fig')
-for i in range(0,360, 2):
-    ax.view_init(azim=i)
-    fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png', 
-                bbox_inches='tight', dpi=100)
+print("Total number of Deep vs notDeep pairs, excluding zeros: " +
+      str(len(x_Deep)))
+
+fig = plt.figure()
+xfmt = mpl.ticker.ScalarFormatter()
+xfmt.set_powerlimits((-3, 2))
+xfmt.set_scientific(True)
+ax1 = lineCorrPlot(x_Deep, y_notDeep, len(x_Deep)-3, 1, fig, 121)
+ax1.xaxis.set_major_formatter(xfmt)
+ax2 = lineCorrPlot(x_Deep, y_notDeep, 7000, 1, fig, 122)
+ax2.xaxis.set_major_formatter(xfmt)
+ax1.set_title("all pairs")
+ax2.set_title("zoomed to bottom 7000 pairs")
+fig.tight_layout()
+fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
+
+# This is compute intensive, so it should be commented out usually
+#
+# (fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 20000, 300, 1)
+# ax.view_init(azim=72)
+# fig.tight_layout()
+# fig.savefig('Intensity_corr_mesh_72.png', bbox_inches='tight', dpi=300)
+# ax.view_init(azim=162)
+# fig.tight_layout()
+# fig.savefig('Intensity_corr_mesh_162.png', bbox_inches='tight', dpi=300)
+
+# if not os.path.isdir('test_corr_fig'):                                   
+#     os.mkdir('test_corr_fig')                                            
+# for i in range(0,360, 2):                                                
+#     ax.view_init(azim=i)                                                 
+#     fig.tight_layout()                                                   
+#     fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png',  
+#                 bbox_inches='tight', dpi=100)                            
+
+
 #output = open('Intensity_corr_mesh.pickle', 'wb')
 #pickle.dump(fig,output)
 #output.close()
 
-# Combine proteomic data
+
+# Now based on the above analysis, we can define a new
+# zero point for the protein intensities:
+(x_Deep,y_notDeep) = zip(*sorted(zip(x_Deep,y_notDeep), key=np.min))
+PIntensZeroVal = 10000
+for i in range(1500, 2000):
+    # scaling shouldn't matter in this low range;
+    # but later, we scale to the non-deep values
+    if  y_notDeep[i] < x_Deep[i]:
+        PIntensZeroVal = y_notDeep[i]
+        print("Found intensity zero value " + str(PIntensZeroVal) + 
+              " at index " + str(i))
+        break
+        
+# Combine proteomic data and set low intensity
+# values to zero.
+for cl in PROTD.keys():
+    for g in PROTD[cl].keys():
+        if not PROTD[cl][g] > PIntensZeroVal:
+            PROTD[cl][g] = 0
+        else:
+            PROTD[cl][g] = PROTD[cl][g] - PIntensZeroVal    
+for cl in DPROTD.keys():
+    for g in DPROTD[cl].keys():
+        DPROTD[cl][g] = mp*DPROTD[cl][g] + bp 
+        if not DPROTD[cl][g] > PIntensZeroVal:
+            DPROTD[cl][g] = 0        
+        else:
+            DPROTD[cl][g] = DPROTD[cl][g] - PIntensZeroVal
 PROTBoth = copy.deepcopy(PROTD)
 for cl in DPROTD.keys():
     for g in DPROTD[cl].keys():
         if DPROTD[cl][g] > 0:
-            PROTBoth[cl][g] = mp*DPROTD[cl][g] + bp
+            PROTBoth[cl][g] = DPROTD[cl][g]
 
 # Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
@@ -501,7 +584,7 @@ x = np.array(x)
 y = np.array(y)
 ax1 = fig.add_subplot(221)
 (m, b, r) = plotScatterCorr(ax1, x, y, 'Metabolic Genes', 'mRNA intensity',
-                            'protein intensity', [10, 3.9, 10, 3.65])
+                            'protein intensity', [0.7, 3.7, 0.7, 3.45])
 print("y = " + str(m) + "x + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
@@ -515,7 +598,7 @@ x_all = np.array(x_all)
 y_all = np.array(y_all)
 ax2 = fig.add_subplot(222)
 (m, b, r) = plotScatterCorr(ax2, x_all, y_all, 'All Genes', 'mRNA intensity',
-                            'protein intensity', [10, 3.7, 10, 3.4])
+                            'protein intensity', [0.7, 3.8, 0.7, 3.5])
 print("y_all = " + str(m) + "x_all + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
@@ -528,7 +611,7 @@ x_d = np.array(x_d)
 y_d = np.array(y_d)
 ax3 = fig.add_subplot(223)
 (m, b, r) = plotScatterCorr(ax3, x_d, y_d, 'Metabolic Genes', 'mRNA intensity',
-                            'deep protein intensity', [10, 4.2, 10, 3.9])
+                            'deep protein intensity', [0.7, 2.75, 0.7, 2.55])
 print("y_d = " + str(m) + "x_d + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_d, y_d)[0]))
@@ -540,7 +623,7 @@ x_b = np.array(x_b)
 y_b = np.array(y_b)
 ax4 = fig.add_subplot(224)
 (m, b, r) = plotScatterCorr(ax4, x_b, y_b, 'Metabolic Genes', 'mRNA intensity',
-                            'protein intensity (both)', [10, 4, 10, 3.7])
+                            'protein intensity (both)', [0.7, 3.7, 0.7, 3.4])
 print("y_b = " + str(m) + "x_b + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_b, y_b)[0]))
