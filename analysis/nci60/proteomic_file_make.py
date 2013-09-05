@@ -52,6 +52,7 @@ import os
 import sys
 import copy
 import numpy as np
+#import pylab as P
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import matplotlib as mpl
@@ -102,7 +103,7 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
             "x + " + str(b)[0:4], fontsize=8)
     ax.text(txtpos[2], txtpos[3], "r = " + str(R[0][1])[0:4], fontsize=8)
     return (m, b, R[0][1])
-
+    
 def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez):
     y = []
     x = []
@@ -648,15 +649,53 @@ fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight',
 # Combine proteomic and mRNA data
 PROTMRNA = copy.deepcopy(PROTBoth)
 for cl in MRNAD.keys():
-    for g in MRNAD[cl].keys():
+    for g in MRNAD[cl].keys():        
         if PROTMRNA[cl].has_key(g):
             if PROTMRNA[cl][g] != PROTMRNA[cl][g]:
                 if MRNAD[cl][g] == MRNAD[cl][g]:
                     PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
+
         else:
             PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
-                
-# 3: prot + scaled(mRNA) such that: prot AND model, else mRNA AND model
+
+# Plot histograms for different datatypes 
+def flattenExpression(DATA):
+    x = []
+    x_mod = []
+    for cl in DATA.keys():
+        for g in DATA[cl].keys():
+            if DATA[cl][g] == DATA[cl][g]:
+                x.append(DATA[cl][g])
+                if IPIToEntrez.has_key(g):
+                    ENTREZ = IPIToEntrez[g]
+                    if modgenes.has_key(ENTREZ):
+                        x_mod.append(DATA[cl][g])
+    return (np.array(x), np.array(x_mod))                        
+                        
+(xM, xM_mod) = flattenExpression(MRNAD)
+xM = m_MtoP*xM + b_MtoP
+xM_mod = m_MtoP*xM_mod + b_MtoP
+(xP, xP_mod) = flattenExpression(PROTBoth)
+(xPM, xPM_mod) = flattenExpression(PROTMRNA)
+fig = plt.figure()
+minx = np.min(np.concatenate((xM,xP,xPM)))
+maxx = np.max(np.concatenate((xM,xP,xPM)))
+minxmod = np.min(np.concatenate((xM_mod,xP_mod,xPM_mod)))
+maxxmod = np.min(np.concatenate((xM_mod,xP_mod,xPM_mod)))
+bins = np.linspace(minx, maxx, 100)
+binsmod = np.linspace(minxmod, maxxmod, 100)
+ax1 = fig.add_subplot(121)
+ax1.hist(xM, bins, alpha=0.5, label='mRNA')
+ax1.hist(xP, bins, alpha=0.5, label='Protein')
+#ax1.hist(xPM, bins, alpha=0.5)
+ax2 = fig.add_subplot(122)
+ax2.hist(xM_mod, bins, alpha=0.5, label='mRNA')
+ax2.hist(xP_mod, bins, alpha=0.5, label='Protein')
+#ax2.hist(xPM_mod, bins, alpha=0.5)
+fig.tight_layout()
+fig.savefig('expression_dists.png', bbox_inches='tight', dpi=300)
+
+#n, bins, patches = plt.hist(x, 50, normed=1, facecolor='g', alpha=0.75)
 
 modMcount = 0
 modPcount = 0
