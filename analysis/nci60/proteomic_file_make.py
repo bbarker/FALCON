@@ -183,7 +183,7 @@ def lineCorrPlot(x, y, m, ival, fig, axpos):
     ax.plot(xfull, z, lw=2)
     ax.set_xlabel('removed from bottom')
     ax.set_ylabel("Pearson's r")    
-    return ax    
+    return (ax, Rvals)    
 
 def centerMeshCorrPlot(x, y, m, n, ival):
     # Need to normalize x and y
@@ -498,12 +498,28 @@ fig = plt.figure()
 xfmt = mpl.ticker.ScalarFormatter()
 xfmt.set_powerlimits((-3, 2))
 xfmt.set_scientific(True)
-ax1 = lineCorrPlot(x_Deep, y_notDeep, len(x_Deep)-3, 1, fig, 121)
+(ax1, R) = lineCorrPlot(x_Deep, y_notDeep, len(x_Deep)-3, 1, fig, 121)
 ax1.xaxis.set_major_formatter(xfmt)
-ax2 = lineCorrPlot(x_Deep, y_notDeep, 7000, 1, fig, 122)
+(ax2, R) = lineCorrPlot(x_Deep, y_notDeep, 7000, 1, fig, 122)
 ax2.xaxis.set_major_formatter(xfmt)
 ax1.set_title("all pairs")
 ax2.set_title("zoomed to bottom 7000 pairs")
+
+# Now based on this analysis, we can define a new
+# zero point for the protein intensities. 
+(x_Deep,y_notDeep) = zip(*sorted(zip(x_Deep,y_notDeep), key=np.min))
+PIntensZeroVal = 10000
+for i in range(1500, 2000):
+    # scaling shouldn't matter in this low range;
+    # but later, we scale to the non-deep values
+    if  y_notDeep[i] < x_Deep[i]:
+        PIntensZeroVal = y_notDeep[i]
+        print("Found intensity zero value " + str(PIntensZeroVal) + 
+              " at index " + str(i))
+        break
+ax2.annotate('LFQ threshold for zeros: ' + str(PIntensZeroVal)[0:4], 
+             xy=(i, R[i]), xytext=(i-400, R[i]+0.02), 
+             arrowprops=dict(facecolor='black', shrink=0.05),)
 fig.tight_layout()
 fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
 
@@ -530,32 +546,26 @@ fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
 #pickle.dump(fig,output)
 #output.close()
 
-
-# Now based on the above analysis, we can define a new
-# zero point for the protein intensities:
-(x_Deep,y_notDeep) = zip(*sorted(zip(x_Deep,y_notDeep), key=np.min))
-PIntensZeroVal = 10000
-for i in range(1500, 2000):
-    # scaling shouldn't matter in this low range;
-    # but later, we scale to the non-deep values
-    if  y_notDeep[i] < x_Deep[i]:
-        PIntensZeroVal = y_notDeep[i]
-        print("Found intensity zero value " + str(PIntensZeroVal) + 
-              " at index " + str(i))
-        break
         
 # Combine proteomic data and set low intensity
 # values to zero.
+# Also, convert 0s in proteomic data to NaNs
+# based on the observation observed above that
+# these 0s are most certainly "missing data"
 for cl in PROTD.keys():
     for g in PROTD[cl].keys():
-        if not PROTD[cl][g] > PIntensZeroVal:
+        if PROTD[cl][g] == 0:
+            PROTD[cl][g] = NaN
+        elif not PROTD[cl][g] > PIntensZeroVal:
             PROTD[cl][g] = 0
         else:
             PROTD[cl][g] = PROTD[cl][g] - PIntensZeroVal    
 for cl in DPROTD.keys():
     for g in DPROTD[cl].keys():
-        DPROTD[cl][g] = mp*DPROTD[cl][g] + bp 
-        if not DPROTD[cl][g] > PIntensZeroVal:
+        DPROTD[cl][g] = mp*DPROTD[cl][g] + bp
+        if DPROTD[cl][g] == 0:
+            DPROTD[cl][g] = NaN         
+        elif not DPROTD[cl][g] > PIntensZeroVal:
             DPROTD[cl][g] = 0        
         else:
             DPROTD[cl][g] = DPROTD[cl][g] - PIntensZeroVal
@@ -636,15 +646,7 @@ fig.savefig('mRNA_protein_correlation.png', bbox_inches='tight',
 
 
 # Combine proteomic and mRNA data
-# Also, convert 0s in proteomic data to NaNs
-# based on the observation observed above that
-# these 0s are most certainly "missing data"
 PROTMRNA = copy.deepcopy(PROTBoth)
-for cl in PROTBoth.keys():
-    for g in PROTBoth[cl].keys():
-        if PROTBoth[cl][g] == 0:
-            PROTBoth[cl][g] = NaN
-            PROTMRNA[cl][g] = NaN
 for cl in MRNAD.keys():
     for g in MRNAD[cl].keys():
         if PROTMRNA[cl].has_key(g):
