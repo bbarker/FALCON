@@ -60,6 +60,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import scipy
 import scipy.stats
+from sklearn import linear_model
 import pickle
 #import Bio.Cluster
 #import rpy2
@@ -79,9 +80,22 @@ def veccorr(x, y):
     R = np.corrcoef(x,y)
     return R[0,1]
 
-def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos):
-    A = np.vstack([x, np.ones(len(x))]).T
-    m, b = np.linalg.lstsq(A, y)[0]
+def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos, intercept=True):
+    (m,b) = (NaN,NaN)
+    if intercept:
+        clf = linear_model.LinearRegression()
+        A = np.vstack([x, np.ones(len(x))]).T
+        # m, b = np.linalg.lstsq(A, y)[0]
+        clf.fit(A,y)
+        m = clf.coef_[0]
+        b = clf.intercept_
+    else:
+        clf = linear_model.LinearRegression(fit_intercept=False)
+        A = np.vstack([x, np.zeros(len(x))]).T
+        # m, b = np.linalg.lstsq(A, y)[0]
+        clf.fit(A,y)
+        m = clf.coef_[0]
+        b = 0                    
     R = np.corrcoef(x,y)
     xmin = min(x)
     xmax = max(x)
@@ -415,7 +429,6 @@ for cl in MRNAD.keys():
 
 
 
-
 # Construct correlation between proteomic and deep Proteomic data.
 y_notDeep = []
 x_Deep = []
@@ -510,7 +523,7 @@ ax2.set_title("zoomed to bottom 7000 pairs")
 # zero point for the protein intensities. 
 (x_Deep,y_notDeep) = zip(*sorted(zip(x_Deep,y_notDeep), key=np.min))
 PIntensZeroVal = 10000
-for i in range(1500, 2000):
+for i in range(1500, 4000):
     # scaling shouldn't matter in this low range;
     # but later, we scale to the non-deep values
     if  y_notDeep[i] < x_Deep[i]:
@@ -553,23 +566,58 @@ fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
 # Also, convert 0s in proteomic data to NaNs
 # based on the observation observed above that
 # these 0s are most certainly "missing data"
+#
+# We also want
+# to get a ballpark zero-value for microarray intensities
+# based on this, but since there may be considerable variation
+# the best we can think of is to assume the median value
+# for those microarray intensities matching protein intensities
+# below the threshold. 
+mrnaZeroCandidates = []
+protZeroCandidates = []    
 for cl in PROTD.keys():
     for g in PROTD[cl].keys():
         if PROTD[cl][g] == 0:
             PROTD[cl][g] = NaN
-        elif not PROTD[cl][g] > PIntensZeroVal:
+        elif PROTD[cl][g] < PIntensZeroVal:
+            protZeroCandidates.append(PROTD[cl][g])
             PROTD[cl][g] = 0
+            if MRNAD[cl].has_key(g):
+                if MRNAD[cl][g] == MRNAD[cl][g]:
+                    mrnaZeroCandidates.append(MRNAD[cl][g])
         else:
             PROTD[cl][g] = PROTD[cl][g] - PIntensZeroVal    
 for cl in DPROTD.keys():
     for g in DPROTD[cl].keys():
         DPROTD[cl][g] = mp*DPROTD[cl][g] + bp
         if DPROTD[cl][g] == 0:
-            DPROTD[cl][g] = NaN         
-        elif not DPROTD[cl][g] > PIntensZeroVal:
-            DPROTD[cl][g] = 0        
+            DPROTD[cl][g] = NaN
+        elif DPROTD[cl][g] < PIntensZeroVal:
+            protZeroCandidates.append(DPROTD[cl][g])
+            DPROTD[cl][g] = 0
+            if MRNAD[cl].has_key(g):
+                if MRNAD[cl][g] == MRNAD[cl][g]:
+                    if PROTD[cl].has_key(g):
+                        if PROTD[cl][g] != PROTD[cl][g]:
+                            mrnaZeroCandidates.append(MRNAD[cl][g])
+                    else:
+                        mrnaZeroCandidates.append(MRNAD[cl][g])                    
         else:
             DPROTD[cl][g] = DPROTD[cl][g] - PIntensZeroVal
+mrnaZeroCandidates = np.array(mrnaZeroCandidates)
+protZeroCandidates = np.array(protZeroCandidates)            
+MIntensZeroVal = np.median(mrnaZeroCandidates)
+print("Min, Median, Max from mRNA zero-cutoff values: " + 
+      str([np.min(mrnaZeroCandidates), MIntensZeroVal, 
+           np.max(mrnaZeroCandidates)]))
+for cl in MRNAD.keys():
+    for g in MRNAD[cl].keys():
+        if MRNAD[cl][g] < MIntensZeroVal:
+            MRNAD[cl][g] = 0
+        else:
+            MRNAD[cl][g] = MRNAD[cl][g] - MIntensZeroVal    
+            
+            
 PROTBoth = copy.deepcopy(PROTD)
 for cl in DPROTD.keys():
     for g in DPROTD[cl].keys():
@@ -595,7 +643,7 @@ x = np.array(x)
 y = np.array(y)
 ax1 = fig.add_subplot(221)
 (m, b, r) = plotScatterCorr(ax1, x, y, 'Metabolic Genes', 'mRNA intensity',
-                            'protein intensity', [0.7, 3.7, 0.7, 3.45])
+                            'protein intensity', [0.7, 3.7, 0.7, 3.45], intercept=False)
 print("y = " + str(m) + "x + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x, y)[0]))
@@ -609,7 +657,7 @@ x_all = np.array(x_all)
 y_all = np.array(y_all)
 ax2 = fig.add_subplot(222)
 (m, b, r) = plotScatterCorr(ax2, x_all, y_all, 'All Genes', 'mRNA intensity',
-                            'protein intensity', [0.7, 3.8, 0.7, 3.5])
+                            'protein intensity', [0.7, 3.8, 0.7, 3.5], intercept=False)
 print("y_all = " + str(m) + "x_all + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_all, y_all)[0]))
@@ -622,7 +670,7 @@ x_d = np.array(x_d)
 y_d = np.array(y_d)
 ax3 = fig.add_subplot(223)
 (m, b, r) = plotScatterCorr(ax3, x_d, y_d, 'Metabolic Genes', 'mRNA intensity',
-                            'deep protein intensity', [0.7, 2.75, 0.7, 2.55])
+                            'deep protein intensity', [0.7, 2.75, 0.7, 2.55], intercept=False)
 print("y_d = " + str(m) + "x_d + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_d, y_d)[0]))
@@ -634,7 +682,7 @@ x_b = np.array(x_b)
 y_b = np.array(y_b)
 ax4 = fig.add_subplot(224)
 (m, b, r) = plotScatterCorr(ax4, x_b, y_b, 'Metabolic Genes', 'mRNA intensity',
-                            'protein intensity (both)', [0.7, 3.7, 0.7, 3.4])
+                            'protein intensity (both)', [0.7, 3.7, 0.7, 3.4], intercept=False)
 print("y_b = " + str(m) + "x_b + " + str(b) + 
       " with Pearson's r = " + str(r))
 print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_b, y_b)[0]))
@@ -653,10 +701,12 @@ for cl in MRNAD.keys():
         if PROTMRNA[cl].has_key(g):
             if PROTMRNA[cl][g] != PROTMRNA[cl][g]:
                 if MRNAD[cl][g] == MRNAD[cl][g]:
-                    PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
+                    PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + \
+                    b_MtoP
 
         else:
-            PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + b_MtoP
+            PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + \
+            b_MtoP
 
 # Plot histograms for different datatypes 
 def flattenExpression(DATA):
@@ -685,15 +735,35 @@ maxxmod = np.min(np.concatenate((xM_mod,xP_mod,xPM_mod)))
 bins = np.linspace(minx, maxx, 100)
 binsmod = np.linspace(minxmod, maxxmod, 100)
 ax1 = fig.add_subplot(121)
-ax1.hist(xM, bins, alpha=0.5, label='mRNA')
-ax1.hist(xP, bins, alpha=0.5, label='Protein')
+ax1.hist(xM, bins, alpha=0.5, normed=1, label='mRNA')
+ax1.hist(xP, bins, alpha=0.5, normed=1, label='Protein')
+ax1.set_xlabel('shifted intensity')
+ax1.set_ylabel('normalized density')
+ax1.set_title('all genes')
+ax1.legend()
 #ax1.hist(xPM, bins, alpha=0.5)
 ax2 = fig.add_subplot(122)
-ax2.hist(xM_mod, bins, alpha=0.5, label='mRNA')
-ax2.hist(xP_mod, bins, alpha=0.5, label='Protein')
-#ax2.hist(xPM_mod, bins, alpha=0.5)
+ax2.hist(xM_mod, bins, alpha=0.5, normed=1, label='mRNA')
+ax2.hist(xP_mod, bins, alpha=0.5, normed=1, label='Protein')
+ax2.set_xlabel('shifted intensity')
+ax2.set_title('model genes')
+ax2.legend()
 fig.tight_layout()
 fig.savefig('expression_dists.png', bbox_inches='tight', dpi=300)
+
+fig = plt.figure()
+mrnaZeroCandidates = m_MtoP*mrnaZeroCandidates + b_MtoP
+minx = np.min(np.concatenate((mrnaZeroCandidates,protZeroCandidates)))
+maxx = np.max(np.concatenate((mrnaZeroCandidates,protZeroCandidates)))
+bins = np.linspace(minx, maxx, 100)
+ax1 = fig.add_subplot(111)
+ax1.hist(mrnaZeroCandidates, bins, alpha=0.5, normed=1, label='mRNA')
+ax1.hist(protZeroCandidates, bins, alpha=0.5, normed=1, label='Protein')
+ax1.set_xlabel('shifted intensity')
+ax1.set_title("All zero-shifted genes' prior intensities")
+ax1.legend()
+fig.tight_layout()
+fig.savefig('expression_zero_dists.png', bbox_inches='tight', dpi=300)
 
 #n, bins, patches = plt.hist(x, 50, normed=1, facecolor='g', alpha=0.75)
 
