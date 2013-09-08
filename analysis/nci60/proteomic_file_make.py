@@ -589,10 +589,10 @@ for cl in PROTD.keys():
             PROTD[cl][g] = PROTD[cl][g] - PIntensZeroVal    
 for cl in DPROTD.keys():
     for g in DPROTD[cl].keys():
-        DPROTD[cl][g] = mp*DPROTD[cl][g] + bp
         if DPROTD[cl][g] == 0:
-            DPROTD[cl][g] = NaN
-        elif DPROTD[cl][g] < PIntensZeroVal:
+            DPROTD[cl][g] = NaN        
+        DPROTD[cl][g] = mp*DPROTD[cl][g] + bp
+        if DPROTD[cl][g] < PIntensZeroVal:
             protZeroCandidates.append(DPROTD[cl][g])
             DPROTD[cl][g] = 0
             if MRNAD[cl].has_key(g):
@@ -605,11 +605,19 @@ for cl in DPROTD.keys():
         else:
             DPROTD[cl][g] = DPROTD[cl][g] - PIntensZeroVal
 mrnaZeroCandidates = np.array(mrnaZeroCandidates)
-protZeroCandidates = np.array(protZeroCandidates)            
-MIntensZeroVal = np.median(mrnaZeroCandidates)
-print("Min, Median, Max from mRNA zero-cutoff values: " + 
-      str([np.min(mrnaZeroCandidates), MIntensZeroVal, 
-           np.max(mrnaZeroCandidates)]))
+protZeroCandidates = np.array(protZeroCandidates)
+MIntensMed = np.median(mrnaZeroCandidates)
+MIntensMin = np.min(mrnaZeroCandidates)
+MIntensMax = np.max(mrnaZeroCandidates)
+MIntens1q = np.percentile(mrnaZeroCandidates,25)
+MIntens3q = np.percentile(mrnaZeroCandidates,75)
+# Since the r^2 value is approximately 0.25, 
+# probably the most we can assume is that the first
+# quartile is zero or very small.
+MIntensZeroVal = MIntens1q
+print("Min, Quartiles, Max from mRNA zero-cutoff values: " + 
+      str([MIntensMin, MIntens1q, MIntensMed, MIntens3q, 
+           MIntensMax]))
 for cl in MRNAD.keys():
     for g in MRNAD[cl].keys():
         if MRNAD[cl][g] < MIntensZeroVal:
@@ -732,8 +740,8 @@ minx = np.min(np.concatenate((xM,xP,xPM)))
 maxx = np.max(np.concatenate((xM,xP,xPM)))
 minxmod = np.min(np.concatenate((xM_mod,xP_mod,xPM_mod)))
 maxxmod = np.min(np.concatenate((xM_mod,xP_mod,xPM_mod)))
-bins = np.linspace(minx, maxx, 100)
-binsmod = np.linspace(minxmod, maxxmod, 100)
+bins = np.linspace(minx, maxx, 50)
+binsmod = np.linspace(minxmod, maxxmod, 50)
 ax1 = fig.add_subplot(121)
 ax1.hist(xM, bins, alpha=0.5, normed=1, label='mRNA')
 ax1.hist(xP, bins, alpha=0.5, normed=1, label='Protein')
@@ -755,12 +763,13 @@ fig = plt.figure()
 mrnaZeroCandidates = m_MtoP*mrnaZeroCandidates + b_MtoP
 minx = np.min(np.concatenate((mrnaZeroCandidates,protZeroCandidates)))
 maxx = np.max(np.concatenate((mrnaZeroCandidates,protZeroCandidates)))
-bins = np.linspace(minx, maxx, 100)
+bins = np.linspace(minx, maxx, 50)
 ax1 = fig.add_subplot(111)
 ax1.hist(mrnaZeroCandidates, bins, alpha=0.5, normed=1, label='mRNA')
 ax1.hist(protZeroCandidates, bins, alpha=0.5, normed=1, label='Protein')
 ax1.set_xlabel('shifted intensity')
-ax1.set_title("All zero-shifted genes' prior intensities")
+ax1.set_title("All zero-shifted proteins' intensities and corresponding" + 
+              " mRNA intensities")
 ax1.legend()
 fig.tight_layout()
 fig.savefig('expression_zero_dists.png', bbox_inches='tight', dpi=300)
@@ -786,6 +795,78 @@ if not os.path.isdir('nci60prot_mRNA'):
     if os.path.exists('nci60prot_mRNA'):
         raise Exception("Specified output directory is a file!")
     os.mkdir('nci60prot_mRNA')
+
+DBGgenes = open('DBGgenes.txt','w')
+IPIEntvals = {}
+testCL = PROTMRNA.keys()[0]
+nCL = len(PROTMRNA.keys())
+ModMRNAD = {}
+ModPROTBoth = {}
+ModPROTMRNA = {}
+print("Number of cell lines: " + str(nCL))
+for clPROT in n60_PROTtoCORE.keys():
+    ModMRNAD[clPROT] = {}
+    ModPROTBoth[clPROT] = {}
+    ModPROTMRNA[clPROT] = {}
+    clCORE = n60_PROTtoCORE[clPROT]
+    tissue = clCORE
+    tissue = tissue.replace("(","_")
+    tissue = tissue.replace(")","_")
+    tissue = tissue.replace(" ","_")    
+    tissue = tissue.replace("/","_")
+    tissue = tissue.replace("-","_")    
+    for g in PROTMRNA[clPROT]:
+        ENTREZ = "UNKNOWN ENTREZ ID"
+        if IPIToEntrez.has_key(g):
+            ENTREZ = IPIToEntrez[g]  
+            if modgenes.has_key(ENTREZ): 
+                mpEXP = PROTMRNA[clPROT][g]
+                pEXP = NaN
+                mEXP = NaN
+                if mpEXP == mpEXP:
+                    if ModPROTMRNA[clPROT].has_key(ENTREZ):
+                        ModPROTMRNA[clPROT][ENTREZ].append(mpEXP)
+                    else:
+                        ModPROTMRNA[clPROT][ENTREZ] = [mpEXP]                    
+                    DBGgenes.write(ENTREZ + "\n")
+                    if clPROT == testCL:
+                        if IPIEntvals.has_key(ENTREZ):
+                            IPIEntvals[ENTREZ].append([g,mpEXP])
+                        else:
+                            IPIEntvals[ENTREZ] = [[g,mpEXP]]    
+                if PROTBoth[clPROT].has_key(g):
+                    pEXP = PROTBoth[clPROT][g]
+                    if PROTBoth[clPROT][g] == PROTBoth[clPROT][g]:
+                        if ModPROTBoth[clPROT].has_key(ENTREZ):
+                            ModPROTBoth[clPROT][ENTREZ].append(pEXP)
+                        else:
+                            ModPROTBoth[clPROT][ENTREZ] = [pEXP]
+                if MRNAD[clPROT].has_key(g):    
+                    mEXP = m_MtoP*MRNAD[clPROT][g] + b_MtoP
+                    if MRNAD[clPROT][g] == MRNAD[clPROT][g]:
+                        if ModMRNAD[clPROT].has_key(ENTREZ):
+                            ModMRNAD[clPROT][ENTREZ].append(mEXP)
+                        else:
+                            ModMRNAD[clPROT][ENTREZ] = [mEXP]
+DBGgenes.close()
+
+
+###################################################
+# It would appear that the IPI to Entrez mapping may be 
+# many to one based on the output to DBGgenes.
+#
+# Let's look at the values for different IPIs for the same
+# ENTREZ id.
+DBGIPIEnt = open('DBGIPIEnt.txt','w')
+for ENTREZ in IPIEntvals.keys():
+    DBGIPIEnt.write(ENTREZ + "\t" + str(IPIEntvals[ENTREZ]) + "\n")
+DBGIPIEnt.close()
+# Based on inspection of this result, the typical case seems
+# to be taht different isoforms map to the same ENTREZ id,
+# so the most likely action will be to sum the values when passed
+# to the model.
+###################################################
+
 for clPROT in n60_PROTtoCORE.keys():
     clCORE = n60_PROTtoCORE[clPROT]
     tissue = clCORE
@@ -800,40 +881,54 @@ for clPROT in n60_PROTtoCORE.keys():
     MoutFI.write("gene\tmean\tvar\n")
     PoutFI.write("gene\tmean\tvar\n")
     MPoutFI.write("gene\tmean\tvar\n")    
-    for g in PROTMRNA[clPROT]:
-        ENTREZ = "UNKNOWN ENTREZ ID"
-        if IPIToEntrez.has_key(g):
-            ENTREZ = IPIToEntrez[g]            
-        if modgenes.has_key(ENTREZ): 
-            mpEXP = PROTMRNA[clPROT][g]
-            pEXP = NaN
-            mEXP = NaN
+    for g in ModPROTMRNA[clPROT]:
+        mpEXP = np.array(ModPROTMRNA[clPROT][g])
+        mpEXP = mpEXP[np.logical_not(np.isnan(mpEXP))]
+        pEXP = NaN
+        mEXP = NaN
+        if len(mpEXP) > 0:
+            mpEXP = sum(mpEXP)
             modMPcount = modMPcount + 1
-            if PROTBoth[clPROT].has_key(g):
-                pEXP = PROTBoth[clPROT][g]
-                modPcount = modPcount + 1                
-            if MRNAD[clPROT].has_key(g):    
-                mEXP = m_MtoP*MRNAD[clPROT][g] + b_MtoP
+        else:
+            mpEXP = NaN    
+        if ModPROTBoth[clPROT].has_key(g):
+            pEXP = np.array(ModPROTBoth[clPROT][g])
+            pEXP = pEXP[np.logical_not(np.isnan(pEXP))]
+            if len(pEXP) > 0:
+                pEXP = sum(pEXP)
+                modPcount = modPcount + 1
+            else:
+                pEXP = NaN    
+        if ModMRNAD[clPROT].has_key(g):    
+            mEXP = np.array(ModMRNAD[clPROT][g])
+            mEXP = mEXP[np.logical_not(np.isnan(mEXP))]
+            if len(mEXP) > 0:
+                mEXP = sum(mEXP)
                 modMcount = modMcount + 1
-            mpEXP = str(mpEXP)
-            mEXP = str(mEXP)
-            pEXP = str(pEXP)                
-            outlist = [ENTREZ, g, clPROT, clCORE,
-                       mEXP, pEXP, mpEXP]
-            modelDataFI.write("\t".join(outlist)+"\n")
-            outlist = [ENTREZ, mEXP, "1"]
-            MoutFI.write("\t".join(outlist)+"\n")
-            outlist = [ENTREZ, pEXP, "1"]
-            PoutFI.write("\t".join(outlist)+"\n")
-            outlist = [ENTREZ, mpEXP, "1"]
-            MPoutFI.write("\t".join(outlist)+"\n")
+            else:
+                mEXP = NaN
+            # This was already done above:    
+            # mEXP = m_MtoP*mEXP + b_MtoP
+        mpEXP = str(mpEXP)
+        mEXP = str(mEXP)
+        pEXP = str(pEXP)                
+        outlist = [g, EntrezToIPI[g], clPROT, clCORE,
+                   mEXP, pEXP, mpEXP]
+        modelDataFI.write("\t".join(outlist)+"\n")
+        outlist = [g, mEXP, "1"]
+        MoutFI.write("\t".join(outlist)+"\n")
+        outlist = [g, pEXP, "1"]
+        PoutFI.write("\t".join(outlist)+"\n")
+        outlist = [g, mpEXP, "1"]
+        MPoutFI.write("\t".join(outlist)+"\n")
     MoutFI.close()
     PoutFI.close()
     MPoutFI.close()   
 modelDataFI.close()
 
-modMcount = modMcount/59.0
-modPcount = modPcount/59.0
-modMPcount = modMPcount/59.0
+modMcount = modMcount/float(nCL)
+modPcount = modPcount/float(nCL)
+modMPcount = modMPcount/float(nCL)
+
 print("Average # of model genes with data (mRNA, Protein, Both): (" + \
       str(modMcount) + ", " + str(modPcount) + ", " + str(modMPcount) + ").") 
