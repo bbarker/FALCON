@@ -179,8 +179,15 @@ def lineCorrPlot(x, y, m, ival, fig, axpos):
     ilen = len(irange)
     z = np.zeros([ilen, 1])
     xfull = np.zeros([ilen,1])
-    # Need to sort (x, y) by min(x,y)
-    (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
+    # Need to sort (x, y)
+    #(x,y) = zip(*sorted(zip(x,y), key=np.min))
+    # min may be biased against larger values since
+    # there may be a maximum intensity value; use mean
+    XY = sorted(zip(x,y), key=np.mean)
+    print(XY[0])
+    print(XY[len(XY)-1])
+    (x,y) = zip(*XY)
+    #(x,y) = zip(*sorted(zip(x,y), key=np.mean)) 
     end = len(x)-1
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, [0])
@@ -214,8 +221,12 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     z = np.zeros([ilen, jlen])
     xfull = np.zeros([ilen, jlen])
     yfull = np.zeros([ilen, jlen])
-    # Need to sort (x, y) by min(x,y)
-    (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
+    # Need to sort (x, y)
+    XY = sorted(zip(x,y), key=np.mean)
+    print(XY[0])
+    print(XY[len(XY)-1])
+    (x,y) = zip(*XY)    
+    (x,y) = zip(*sorted(zip(x,y), key=np.mean)) 
     end = len(x)-1
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, jrange)
@@ -508,6 +519,25 @@ fig.savefig('prot_DeepProt_correlation.png', bbox_inches='tight',
 print("Total number of Deep vs notDeep pairs, excluding zeros: " +
       str(len(x_Deep)))
 
+
+# This is compute intensive, so it should be commented out usually
+#
+(fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 20000, 300, 1)
+ax.view_init(azim=72)
+fig.tight_layout()
+fig.savefig('Intensity_corr_mesh_72_meansort.png', bbox_inches='tight', dpi=300)
+ax.view_init(azim=162)
+fig.tight_layout()
+fig.savefig('Intensity_corr_mesh_162_meansort.png', bbox_inches='tight', dpi=300)
+
+if not os.path.isdir('test_corr_fig'):                                   
+    os.mkdir('test_corr_fig')                                            
+for i in range(0,360, 2):                                                
+    ax.view_init(azim=i)                                                 
+    fig.tight_layout()                                                   
+    fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png',  
+                bbox_inches='tight', dpi=100)                            
+    
 fig = plt.figure()
 xfmt = mpl.ticker.ScalarFormatter()
 xfmt.set_powerlimits((-3, 2))
@@ -537,24 +567,7 @@ ax2.annotate('LFQ threshold for zeros: ' + str(PIntensZeroVal)[0:4],
 fig.tight_layout()
 fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
 
-# This is compute intensive, so it should be commented out usually
-#
-# (fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 20000, 300, 1)
-# ax.view_init(azim=72)
-# fig.tight_layout()
-# fig.savefig('Intensity_corr_mesh_72.png', bbox_inches='tight', dpi=300)
-# ax.view_init(azim=162)
-# fig.tight_layout()
-# fig.savefig('Intensity_corr_mesh_162.png', bbox_inches='tight', dpi=300)
-
-# if not os.path.isdir('test_corr_fig'):                                   
-#     os.mkdir('test_corr_fig')                                            
-# for i in range(0,360, 2):                                                
-#     ax.view_init(azim=i)                                                 
-#     fig.tight_layout()                                                   
-#     fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png',  
-#                 bbox_inches='tight', dpi=100)                            
-
+    
 
 #output = open('Intensity_corr_mesh.pickle', 'wb')
 #pickle.dump(fig,output)
