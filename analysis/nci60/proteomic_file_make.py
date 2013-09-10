@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
+# Copyright Brandon Barker
+# August 2013
+
 # We generate correlations between recon2 genes' 
 # mRNA expression profiles and proteomic profiles, 
 # output the consolidated data for analysis, and 
-# output protein only and protein + scaled mRNA data
+# output protein only and protein + mRNA data 
 # as input to FALCON.
 
 # INPUT: (Please edit if necessary)
@@ -21,13 +24,27 @@ deepProtEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/DeepProt
 # mRNA expression file (Gholami_Table_S8_mRNA.csv)
 mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Table_S8_mRNA.csv'
 
+
 # OUTPUT:
 #
 # scatter between proteomic and deep proteomic data:
-# RUNDIR/prot_DeepProt_correlation.png
+# RUNDIR/prot_DeepProt_correlation.*
 #
 # scatter between merged proteomic and mRNA data:
-# RUNDIR/mRNA_protein_correlation.png
+# RUNDIR/mRNA_protein_correlation.*
+#
+# 3d surface of pearson correlations used for noise analysis
+# RUNDIR/Intensity_corr_mesh_*
+#
+# 2d plot of pearson correlation for noise analysis
+# RUNDIR/Intensity_corr_line.*
+#
+# Histogram of protein and microarray absolute expression
+# RUNDIR/expression_dists.*
+#
+# Histogram of protein and microarray intensities subsequently
+# mapped to zero.
+# RUNDIR/expression_zero_dists.*
 #
 # mRNA files for input to FALCON:
 # RUNDIR/nci60mRNA/<individual_exp_files.csv>
@@ -64,9 +81,6 @@ from sklearn import linear_model
 import pickle
 #import Bio.Cluster
 #import rpy2
-
-#if len(sys.argv) != 6:
-#    sys.exit('ERROR: Usage %s model_genes_file' % sys.argv[0])
 
 NaN = float("nan")
 
@@ -180,14 +194,11 @@ def lineCorrPlot(x, y, m, ival, fig, axpos):
     z = np.zeros([ilen, 1])
     xfull = np.zeros([ilen,1])
     # Need to sort (x, y)
-    #(x,y) = zip(*sorted(zip(x,y), key=np.min))
-    # min may be biased against larger values since
-    # there may be a maximum intensity value; use mean
-    XY = sorted(zip(x,y), key=np.mean)
-    print(XY[0])
-    print(XY[len(XY)-1])
-    (x,y) = zip(*XY)
-    #(x,y) = zip(*sorted(zip(x,y), key=np.mean)) 
+    # min may be biased against larger values.
+    # It will be interesting to check the analysis
+    # with independently sorted indices, which
+    # also removes any scaling issues.
+    (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
     end = len(x)-1
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, [0])
@@ -201,7 +212,6 @@ def lineCorrPlot(x, y, m, ival, fig, axpos):
         z[int(ij[0]/ival)] = Rvals[int(ij[0]/ival)]
         xfull[int(ij[0]/ival)] = ij[0]
     ax = fig.add_subplot(axpos)
-    #ax = fig.gca(projection='3d')
     ax.plot(xfull, z, lw=2)
     ax.set_xlabel('removed from bottom')
     ax.set_ylabel("Pearson's r")    
@@ -222,11 +232,7 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     xfull = np.zeros([ilen, jlen])
     yfull = np.zeros([ilen, jlen])
     # Need to sort (x, y)
-    XY = sorted(zip(x,y), key=np.mean)
-    print(XY[0])
-    print(XY[len(XY)-1])
-    (x,y) = zip(*XY)    
-    (x,y) = zip(*sorted(zip(x,y), key=np.mean)) 
+    (x,y) = zip(*sorted(zip(x,y), key=np.min)) 
     end = len(x)-1
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, jrange)
@@ -243,7 +249,6 @@ def centerMeshCorrPlot(x, y, m, n, ival):
         yfull[int(ij[0]/ival)][int(ij[1]/ival)] = ij[1]        
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    #ax = fig.gca(projection='3d')
     ax.plot_surface(xfull, yfull, z, cmap=cm.coolwarm, linewidth=0.2)
     ax.set_xlabel('removed from bottom')
     ax.set_ylabel('removed from top')
@@ -522,21 +527,21 @@ print("Total number of Deep vs notDeep pairs, excluding zeros: " +
 
 # This is compute intensive, so it should be commented out usually
 #
-(fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 20000, 300, 1)
-ax.view_init(azim=72)
-fig.tight_layout()
-fig.savefig('Intensity_corr_mesh_72_meansort.png', bbox_inches='tight', dpi=300)
-ax.view_init(azim=162)
-fig.tight_layout()
-fig.savefig('Intensity_corr_mesh_162_meansort.png', bbox_inches='tight', dpi=300)
+# (fig, ax) = centerMeshCorrPlot(x_Deep, y_notDeep, 20000, 300, 1)
+# ax.view_init(azim=72)
+# fig.tight_layout()
+# fig.savefig('Intensity_corr_mesh_72', bbox_inches='tight', dpi=300)
+# ax.view_init(azim=162)
+# fig.tight_layout()
+# fig.savefig('Intensity_corr_mesh_162', bbox_inches='tight', dpi=300)
 
-if not os.path.isdir('test_corr_fig'):                                   
-    os.mkdir('test_corr_fig')                                            
-for i in range(0,360, 2):                                                
-    ax.view_init(azim=i)                                                 
-    fig.tight_layout()                                                   
-    fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png',  
-                bbox_inches='tight', dpi=100)                            
+# if not os.path.isdir('test_corr_fig'):                                   
+#     os.mkdir('test_corr_fig')                                            
+# for i in range(0,360, 2):                                                
+#     ax.view_init(azim=i)                                                 
+#     fig.tight_layout()                                                   
+#     fig.savefig('test_corr_fig/Intensity_corr_mesh_' + str(i) + '.png',  
+#                 bbox_inches='tight', dpi=100)                            
     
 fig = plt.figure()
 xfmt = mpl.ticker.ScalarFormatter()
@@ -626,7 +631,8 @@ MIntens1q = np.percentile(mrnaZeroCandidates,25)
 MIntens3q = np.percentile(mrnaZeroCandidates,75)
 # Since the r^2 value is approximately 0.25, 
 # probably the most we can assume is that the first
-# quartile is zero or very small.
+# quartile is zero or very small, but this is not
+# a safe analysis and more work is needed.
 MIntensZeroVal = MIntens1q
 print("Min, Quartiles, Max from mRNA zero-cutoff values: " + 
       str([MIntensMin, MIntens1q, MIntensMed, MIntens3q, 
@@ -762,7 +768,6 @@ ax1.set_xlabel('shifted intensity')
 ax1.set_ylabel('normalized density')
 ax1.set_title('all genes')
 ax1.legend()
-#ax1.hist(xPM, bins, alpha=0.5)
 ax2 = fig.add_subplot(122)
 ax2.hist(xM_mod, bins, alpha=0.5, normed=1, label='mRNA')
 ax2.hist(xP_mod, bins, alpha=0.5, normed=1, label='Protein')
@@ -787,8 +792,8 @@ ax1.legend()
 fig.tight_layout()
 fig.savefig('expression_zero_dists.png', bbox_inches='tight', dpi=300)
 
-#n, bins, patches = plt.hist(x, 50, normed=1, facecolor='g', alpha=0.75)
 
+# Begin the process of summing isoform data as input to FALCON.
 modMcount = 0
 modPcount = 0
 modMPcount = 0
