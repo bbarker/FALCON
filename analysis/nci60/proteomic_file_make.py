@@ -58,6 +58,10 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 # table of all 3 data types from all cell lines in the model:
 modDatSave = 'model_expression.csv'
 #
+# ~~~ In what follows, threshval is a tuple delimited by '_',
+# ~~~ with first the microarray zero-cutoff value, then the 
+# ~~~ protein zero-cutoff value, and finally, the correlation
+# ~~~ between the resultant mRNA and protein values.
 #
 # mRNA files for input to FALCON:
 # RUNDIR/nci60mRNA_thresh/threshval/<individual_exp_files.csv>
@@ -68,8 +72,9 @@ modDatSave = 'model_expression.csv'
 # merged proteomic and mRNA files for input to FALCON:
 # RUNDIR/nci60prot_mRNA_thresh/threshval/<individual_exp_files.csv>
 
-
+import numpy as np
 import multiprocessing
+nthreads = int(np.floor(multiprocessing.cpu_count()*0.9))
 
 # 
 # Example run in directory
@@ -79,7 +84,6 @@ import multiprocessing
 import os
 import sys
 import copy
-import numpy as np
 #import pylab as P
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -214,7 +218,7 @@ def lineCorrPlot(x, y, m, ival, fig, axpos):
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, [0])
     len_i_by_j = ilen 
-    pool = multiprocessing.Pool(30)
+    pool = multiprocessing.Pool(nthreads)
     Rvals = pool.map(sublistcorr(x, y, end), i_by_j)
     pool.close()
     i_by_j = product(irange, [0])
@@ -248,7 +252,7 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     print([x[0], y[0], x[end], y[end]]) 
     i_by_j = product(irange, jrange)
     len_i_by_j = ilen * jlen
-    pool = multiprocessing.Pool(30)
+    pool = multiprocessing.Pool(nthreads)
     Rvals = pool.map(sublistcorr(x, y, end), i_by_j)
     print(type(Rvals))
     pool.close()
@@ -592,7 +596,7 @@ fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
 
 # Make copies of main expression dictionaries
 # for later use in zero-threshold testing.
-OMRNAD = copy.deepcopy(MRNAD)
+OMICRD = copy.deepcopy(MRNAD)
 OPROTBoth = copy.deepcopy(PROTD)
 for cl in DPROTD.keys():
     for g in DPROTD[cl].keys():
@@ -983,9 +987,11 @@ print("Average # of model genes with data (mRNA, Protein, Both): (" + \
 # but no figures, for the purpose of systematically testing different
 # zero thresholds.       
 # Percentiles and zero values can be calculated in the calling loop.
-(Mflat, Mflat_mod) = flattenExpression(OMRNAD)
+(Mflat, Mflat_mod) = flattenExpression(OMICRD)
 Mflat = sorted(Mflat)
-def zeroAdjustExpression(OMICRD, OPROTD, pz, mz):
+def zeroAdjustExpression(mz_pz):
+    mz = mz_pz[0]
+    pz = mz_pz[1]
     p_zero = y_notDeep[0]
     m_zero = Mflat[0]
     if pz >= 0:
@@ -993,7 +999,7 @@ def zeroAdjustExpression(OMICRD, OPROTD, pz, mz):
     if mz >= 0:    
         m_zero = Mflat[mz]
     LMICRD = copy.deepcopy(OMICRD)
-    LPROTD = copy.deepcopy(OPROTD)
+    LPROTD = copy.deepcopy(OPROTBoth)
     # Zero adjust expression values
     for cl in LPROTD.keys():
         for g in LPROTD[cl].keys():
@@ -1182,14 +1188,21 @@ if True:
     # for some cell lines, it will be interesting to know where these fall.
     print("Considering first " + str(PZeroEnd) + " protein pairs for zero"
           + " adjustment, up to max(R) = " + str(Rbott[PZeroEnd]) + ".")
+    m_idx = []
+    p_idx = []     
     for i in range(-1, num_Mint):
-        for j in range(-1, num_Pint):
-            mz = -1
-            pz = -1
-            if i >= 0:    
-                mzVAL = np.percentile(Mflat,int(100.0*i/num_Mint))
-                mz = np.searchsorted(Mflat, mzVAL)
-            if j >= 0:
-                pzVAL = np.percentile(y_notDeep[0:PZeroEnd+1],int(100.0*j/num_Pint))
-                pz = np.searchsorted(y_notDeep, pzVAL)                
-            zeroAdjustExpression(OMRNAD, OPROTBoth, pz, mz)
+        mz = -1
+        if i >= 0:    
+            mzVAL = np.percentile(Mflat,int(100.0*i/num_Mint))
+            mz = np.searchsorted(Mflat, mzVAL)
+        m_idx.append(mz)
+    for j in range(-1, num_Pint):
+        pz = -1
+        if j >= 0:
+            pzVAL = np.percentile(y_notDeep[0:PZeroEnd+1],int(100.0*j/num_Pint))
+            pz = np.searchsorted(y_notDeep, pzVAL)                
+        p_idx.append(pz)        
+    i_by_j = product(m_idx, p_idx)
+    pool = multiprocessing.Pool(nthreads)
+    pool.map(zeroAdjustExpression, i_by_j)
+    pool.close()
