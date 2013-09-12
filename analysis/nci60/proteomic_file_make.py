@@ -57,6 +57,17 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 #
 # table of all 3 data types from all cell lines in the model:
 modDatSave = 'model_expression.csv'
+#
+#
+# mRNA files for input to FALCON:
+# RUNDIR/nci60mRNA_thresh/threshval/<individual_exp_files.csv>
+#
+# merged proteomic files for input to FALCON:
+# RUNDIR/nci60prot_thresh/threshval/<individual_exp_files.csv>
+#
+# merged proteomic and mRNA files for input to FALCON:
+# RUNDIR/nci60prot_mRNA_thresh/threshval/<individual_exp_files.csv>
+
 
 import multiprocessing
 
@@ -159,7 +170,7 @@ def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez):
                             + cl + " label mismatch!")
     print("Found " + str(len(x)) + 
           " (mRNA, Prot) data points for model genes.")
-    print("m-P mismatches: " + str(MPmissed))
+    #print("m-P mismatches: " + str(MPmissed))
     return(x, y, x_all, y_all)
 
 # Apparently a closure won't work with multiprocessing.Pool
@@ -547,9 +558,9 @@ fig = plt.figure()
 xfmt = mpl.ticker.ScalarFormatter()
 xfmt.set_powerlimits((-3, 2))
 xfmt.set_scientific(True)
-(ax1, R) = lineCorrPlot(x_Deep, y_notDeep, len(x_Deep)-3, 1, fig, 121)
+(ax1, Rbott) = lineCorrPlot(x_Deep, y_notDeep, len(x_Deep)-3, 1, fig, 121)
 ax1.xaxis.set_major_formatter(xfmt)
-(ax2, R) = lineCorrPlot(x_Deep, y_notDeep, 7000, 1, fig, 122)
+(ax2, Rbottzoom) = lineCorrPlot(x_Deep, y_notDeep, 7000, 1, fig, 122)
 ax2.xaxis.set_major_formatter(xfmt)
 ax1.set_title("all pairs")
 ax2.set_title("zoomed to bottom 7000 pairs")
@@ -567,7 +578,7 @@ for i in range(1500, 4000):
               " at index " + str(i))
         break
 ax2.annotate('LFQ threshold for zeros: ' + str(PIntensZeroVal)[0:4], 
-             xy=(i, R[i]), xytext=(i-400, R[i]+0.02), 
+             xy=(i, Rbott[i]), xytext=(i-400, Rbott[i]+0.02), 
              arrowprops=dict(facecolor='black', shrink=0.05),)
 fig.tight_layout()
 fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
@@ -578,10 +589,24 @@ fig.savefig('Intensity_corr_line.png', bbox_inches='tight', dpi=300)
 #pickle.dump(fig,output)
 #output.close()
 
+
+# Make copies of main expression dictionaries
+# for later use in zero-threshold testing.
+OMRNAD = copy.deepcopy(MRNAD)
+OPROTBoth = copy.deepcopy(PROTD)
+for cl in DPROTD.keys():
+    for g in DPROTD[cl].keys():
+        if DPROTD[cl][g] > 0:
+            OPROTBoth[cl][g] = mp*DPROTD[cl][g] + bp
+# At this point, the proteins have been normalized,
+# but not the microarray data.
+
+
+
         
 # Combine proteomic data and set low intensity
 # values to zero.
-# Also, convert 0s in proteomic data to NaNs
+# Also, convert existing 0s in proteomic data to NaNs
 # based on the observation observed above that
 # these 0s are most certainly "missing data"
 #
@@ -950,3 +975,222 @@ modMPcount = modMPcount/float(nCL)
 
 print("Average # of model genes with data (mRNA, Protein, Both): (" + \
       str(modMcount) + ", " + str(modPcount) + ", " + str(modMPcount) + ").") 
+
+
+
+
+# Now we write a global function that does much of the above anlaysis
+# but no figures, for the purpose of systematically testing different
+# zero thresholds.       
+# Percentiles and zero values can be calculated in the calling loop.
+(Mflat, Mflat_mod) = flattenExpression(OMRNAD)
+Mflat = sorted(Mflat)
+def zeroAdjustExpression(OMICRD, OPROTD, pz, mz):
+    p_zero = y_notDeep[0]
+    m_zero = Mflat[0]
+    if pz >= 0:
+        p_zero = y_notDeep[pz]
+    if mz >= 0:    
+        m_zero = Mflat[mz]
+    LMICRD = copy.deepcopy(OMICRD)
+    LPROTD = copy.deepcopy(OPROTD)
+    # Zero adjust expression values
+    for cl in LPROTD.keys():
+        for g in LPROTD[cl].keys():
+            if LPROTD[cl][g] == 0:
+                LPROTD[cl][g] = NaN
+            elif LPROTD[cl][g] < p_zero:
+                LPROTD[cl][g] = 0
+            else:
+                LPROTD[cl][g] = LPROTD[cl][g] - p_zero    
+    for cl in LMICRD.keys():
+        for g in LMICRD[cl].keys():
+            if LMICRD[cl][g] < m_zero:
+                LMICRD[cl][g] = 0
+            else:
+                LMICRD[cl][g] = LMICRD[cl][g] - m_zero
+
+    # Recalculate line of best fit for micr -> prot
+    (x_b, y_b, x_ball, y_ball) = getProt_mRNA_pairs(LMICRD, LPROTD, IPIToEntrez)
+    clf = linear_model.LinearRegression(fit_intercept=False)
+    A = np.vstack([x_b, np.zeros(len(x_b))]).T
+    clf.fit(A,y_b)
+    m = clf.coef_[0]
+                
+    # Combine proteomic and mRNA data
+    LPROTMRNA = copy.deepcopy(LPROTD)
+    for cl in LMICRD.keys():
+        for g in LMICRD[cl].keys():        
+            if LPROTMRNA[cl].has_key(g):
+                if LPROTMRNA[cl][g] != LPROTMRNA[cl][g]:
+                    if LMICRD[cl][g] == LMICRD[cl][g]:
+                        LPROTMRNA[cl][g] = m*LMICRD[cl][g]
+
+            else:
+                LPROTMRNA[cl][g] = m*LMICRD[cl][g]
+
+    # Begin the process of summing isoform data as input to FALCON.
+    mthresh_label = str(m_zero)[0:5] + "_" + str(m)[0:5]
+    pthresh_label = str(p_zero)[0:5] + "_" + str(m)[0:5]
+    mpthresh_label = str(m_zero)[0:5] + "_" + str(p_zero)[0:5] + "_" + str(m)[0:5]    
+    if mz >= 0:
+        if not os.path.isdir('nci60mRNA_thresh'):
+            if os.path.exists('nci60mRNA_thresh'):
+                raise Exception("Specified output directory is a file!")
+            os.mkdir('nci60mRNA_thresh')
+        if not os.path.isdir('nci60mRNA_thresh/' + mthresh_label):
+            if os.path.exists('nci60mRNA_thresh/' + mthresh_label):
+                raise Exception("Specified output directory is a file!")
+            os.mkdir('nci60mRNA_thresh/' + mthresh_label)
+    if pz >= 0:
+        if not os.path.isdir('nci60prot_thresh'):
+            if os.path.exists('nci60prot_thresh'):
+                raise Exception("Specified output directory is a file!")
+            os.mkdir('nci60prot_thresh')
+        if not os.path.isdir('nci60prot_thresh/' + pthresh_label):
+            if os.path.exists('nci60prot_thresh/' + pthresh_label):
+                raise Exception("Specified output directory is a file!")
+            os.mkdir('nci60prot_thresh/' + pthresh_label)
+    if not os.path.isdir('nci60prot_mRNA_thresh'):
+        if os.path.exists('nci60prot_mRNA_thresh'):
+            raise Exception("Specified output directory is a file!")
+        os.mkdir('nci60prot_mRNA_thresh')
+    if not os.path.isdir('nci60prot_mRNA_thresh/' + mpthresh_label):
+        if os.path.exists('nci60prot_mRNA_thresh/' + mpthresh_label):
+            raise Exception("Specified output directory is a file!")
+        os.mkdir('nci60prot_mRNA_thresh/' + mpthresh_label)
+
+        
+    IPIEntvals = {}
+    testCL = LPROTMRNA.keys()[0]
+    nCL = len(LPROTMRNA.keys())
+    ModLMICRD = {}
+    ModLPROTD = {}
+    ModLPROTMRNA = {}
+    for clPROT in n60_PROTtoCORE.keys():
+        ModLMICRD[clPROT] = {}
+        ModLPROTD[clPROT] = {}
+        ModLPROTMRNA[clPROT] = {}
+        clCORE = n60_PROTtoCORE[clPROT]
+        tissue = clCORE
+        tissue = tissue.replace("(","_")
+        tissue = tissue.replace(")","_")
+        tissue = tissue.replace(" ","_")    
+        tissue = tissue.replace("/","_")
+        tissue = tissue.replace("-","_")    
+        for g in LPROTMRNA[clPROT]:
+            ENTREZ = "UNKNOWN ENTREZ ID"
+            if IPIToEntrez.has_key(g):
+                ENTREZ = IPIToEntrez[g]  
+                if modgenes.has_key(ENTREZ): 
+                    mpEXP = LPROTMRNA[clPROT][g]
+                    pEXP = NaN
+                    mEXP = NaN
+                    if mpEXP == mpEXP:
+                        if ModLPROTMRNA[clPROT].has_key(ENTREZ):
+                            ModLPROTMRNA[clPROT][ENTREZ].append(mpEXP)
+                        else:
+                            ModLPROTMRNA[clPROT][ENTREZ] = [mpEXP]
+                        if clPROT == testCL:
+                            if IPIEntvals.has_key(ENTREZ):
+                                IPIEntvals[ENTREZ].append([g,mpEXP])
+                            else:
+                                IPIEntvals[ENTREZ] = [[g,mpEXP]]
+                    if pz >= 0:
+                        if LPROTD[clPROT].has_key(g):
+                            pEXP = LPROTD[clPROT][g]
+                            if LPROTD[clPROT][g] == LPROTD[clPROT][g]:
+                                if ModLPROTD[clPROT].has_key(ENTREZ):
+                                    ModLPROTD[clPROT][ENTREZ].append(pEXP)
+                                else:
+                                    ModLPROTD[clPROT][ENTREZ] = [pEXP]
+                    if mz >= 0:
+                        if LMICRD[clPROT].has_key(g):    
+                            mEXP = m*LMICRD[clPROT][g]
+                            if LMICRD[clPROT][g] == LMICRD[clPROT][g]:
+                                if ModLMICRD[clPROT].has_key(ENTREZ):
+                                    ModLMICRD[clPROT][ENTREZ].append(mEXP)
+                                else:
+                                    ModLMICRD[clPROT][ENTREZ] = [mEXP]
+
+    for clPROT in n60_PROTtoCORE.keys():
+        clCORE = n60_PROTtoCORE[clPROT]
+        tissue = clCORE
+        tissue = tissue.replace("(","_")
+        tissue = tissue.replace(")","_")
+        tissue = tissue.replace(" ","_")    
+        tissue = tissue.replace("/","_")
+        tissue = tissue.replace("-","_")
+        MoutFI = 0
+        PoutFI = 0
+        if mz >= 0:
+            MoutFI = open('nci60mRNA_thresh/' + mthresh_label + '/'
+                          + tissue + '.csv','w')
+            MoutFI.write("gene\tmean\tvar\n")            
+        if pz >= 0:    
+            PoutFI = open('nci60prot_thresh/' + pthresh_label + '/'
+                          + tissue + '.csv','w')
+            PoutFI.write("gene\tmean\tvar\n")
+        MPoutFI = open('nci60prot_mRNA_thresh/' + mpthresh_label 
+                       + '/' + tissue + '.csv','w')
+        MPoutFI.write("gene\tmean\tvar\n")    
+        for g in ModLPROTMRNA[clPROT]:
+            mpEXP = np.array(ModLPROTMRNA[clPROT][g])
+            mpEXP = mpEXP[np.logical_not(np.isnan(mpEXP))]
+            if len(mpEXP) > 0:
+                mpEXP = sum(mpEXP)
+            else:
+                mpEXP = NaN    
+            mpEXP = str(mpEXP)
+            outlist = [g, mpEXP, "1"]
+            MPoutFI.write("\t".join(outlist)+"\n")
+            if mz >= 0:
+                mEXP = NaN
+                if ModLMICRD[clPROT].has_key(g):    
+                    mEXP = np.array(ModLMICRD[clPROT][g])
+                    mEXP = mEXP[np.logical_not(np.isnan(mEXP))]
+                    if len(mEXP) > 0:
+                        mEXP = sum(mEXP)
+                    else:
+                        mEXP = NaN
+                mEXP = str(mEXP)
+                outlist = [g, mEXP, "1"]
+                MoutFI.write("\t".join(outlist)+"\n")
+            if pz >= 0:
+                pEXP = NaN            
+                if ModLPROTD[clPROT].has_key(g):
+                    pEXP = np.array(ModLPROTD[clPROT][g])
+                    pEXP = pEXP[np.logical_not(np.isnan(pEXP))]
+                    if len(pEXP) > 0:
+                        pEXP = sum(pEXP)
+                    else:
+                        pEXP = NaN    
+                pEXP = str(pEXP)                
+                outlist = [g, pEXP, "1"]
+                PoutFI.write("\t".join(outlist)+"\n")
+        if mz >= 0:
+            MoutFI.close()
+        if pz >= 0:
+            PoutFI.close()
+        MPoutFI.close()   
+
+num_Pint = 50
+num_Mint = 100
+PZeroEnd = np.argmax(Rbott)
+# For now, it appears we have a reasonable range to search for zero
+# values in for protein intensities; this is not really the case
+# for microarray intensities. Once we have corresponding RNA-Seq data
+# for some cell lines, it will be interesting to know where these fall.
+print("Considering first " + str(PZeroEnd) + " protein pairs for zero"
+      + " adjustment, up to R = " + str(Rbott[PZeroEnd]) + ".")
+for i in range(-1, num_Pint):
+    for j in range(-1, num_Mint):
+        pz = -1
+        mz = -1
+        if i >= 0:
+            pzVAL = np.percentile(y_notDeep[0:PZeroEnd+1],int(100.0*i/num_Pint))
+            pz = np.searchsorted(y_notDeep, pzVAL)
+        if j >= 0:    
+            mzVAL = np.percentile(Mflat,int(100.0*j/num_Mint))
+            mz = np.searchsorted(Mflat, mzVAL)
+        zeroAdjustExpression(OMRNAD, OPROTBoth, pz, mz)
