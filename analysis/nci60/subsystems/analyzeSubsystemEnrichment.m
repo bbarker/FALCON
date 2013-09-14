@@ -1,6 +1,7 @@
-%Takes a particular subsystem in human recon 2 and converts Entrez gene ids to IPI ids. Looks at quantified protein 
-%and mRNA amounts in data set for the IPI ids.One potential flaw, and/or statements in gene rules 
-function [num num2 pMRNA pProtein missingGenesMRNA missingGenesProtein residuals]=analyzeSubsystemEnrichment(converter,data,subsys,rec2)
+%Takes a particular subsystem in human recon 2 and converts Entrez gene ids
+%to IPI ids. Looks at quantified protein and mRNA amounts in data set
+%for the IPI ids.One potential flaw, and/or statements in gene rules 
+function [num num2 pMRNA pProtein missingGenesMRNA missingGenesProtein residuals]=analyzeSubsystemEnrichment(converter, data, subsys, rec2)
 
 %INPUT
 %converter is a (1x2) cell array with Entrez ids in {1,1} and the corresponding IPI ids in {1,2}.
@@ -12,9 +13,12 @@ function [num num2 pMRNA pProtein missingGenesMRNA missingGenesProtein residuals
 %num2 is number of protein intensities
 %pMRNA is genes in paper with mRNA intensity/possible genes for the subsystem
 %pProtein is genes in paper with protein intensity/possible genes for the subsystem
-%missingGenesMRNA a cell array containing the Entrez id of all genes in the model for the subsystem missing an MRNA intensity
-%missingGenesProtein a cell array containing the Entrez id of all genes in the model for the subsystem missing an protein intensity
-%residual is vector containing the absolute value of the difference between MRNA and protein intensites
+%missingGenesMRNA a cell array containing the Entrez id of all genes in the 
+%model for the subsystem missing an MRNA intensity
+%missingGenesProtein a cell array containing the Entrez id of all genes in 
+%the model for the subsystem missing an protein intensity
+%residual is vector containing the absolute value of the difference between
+%MRNA and protein intensites
 %Narayanan Sadagopan, September 2013
 
 num = 0;   %number of elements of mRNA
@@ -37,7 +41,7 @@ count9 = 1;  %indexing for missing mRNA genes
 count10 = 1;  %indexing for missing protein genes
 
 for x = 1:7440
-    if (strcmp(rec2.subSystems{x},subsys))
+    if (strcmp(rec2.subSystems{x}, subsys))
         for b = 1:2194
             if (rec2.rxnGeneMat(x,b) == 1)
                 count4 = count4 + 1;    
@@ -48,7 +52,7 @@ for x = 1:7440
                         for a = 1:length(data{1,2})
                             truth = 0; %to check for mRNA intensity for residual calc
                             truth2 = 0; %to check for protein intensity for residual calc   
-                            if (strcmp(converter{1,2}{y},data{1,2}{a}))
+                            if (strcmp(converter{1,2}{y}, data{1,2}{a}))
                                 if (data{1,5}(a) == data{1,5}(a))  %removes any NaN values
                                     allData(count) = data{1,5}(a);
                                     count = count + 1;

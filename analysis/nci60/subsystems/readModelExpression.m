@@ -8,16 +8,16 @@ function C = readModelExpression ()
 
 %read file
 fileID = fopen('model_expression.csv');
-modelExpression = textscan(fileID,'%s %s %s %s %f %f %f',11879);
-modelExpression2 = textscan(fileID,'%s %s %s %s %s %f %f %f',1480);
-modelExpression3 = textscan(fileID,'%s %s %s %s %f %f %f',14828);
-modelExpression4 = textscan(fileID,'%s %s %s %s %s %f %f %f',1482);
-modelExpression5 = textscan(fileID,'%s %s %s %s %f %f %f',16321);
-modelExpression6 = textscan(fileID,'%s %s %s %s %s %f %f %f',1493);
-modelExpression7 = textscan(fileID,'%s %s %s %s %f %f %f',14826);
-modelExpression8 = textscan(fileID,'%s %s %s %s %s %f %f %f',1483);
-modelExpression9 = textscan(fileID,'%s %s %s %s %f %f %f',19293);
-modelExpression10 = textscan(fileID,'%s %s %s %s %s %f %f %f',1489);
+modelExpression = textscan(fileID,'%s %s %s %s %f %f %f', 11879);
+modelExpression2 = textscan(fileID,'%s %s %s %s %s %f %f %f', 1480);
+modelExpression3 = textscan(fileID,'%s %s %s %s %f %f %f', 14828);
+modelExpression4 = textscan(fileID,'%s %s %s %s %s %f %f %f', 1482);
+modelExpression5 = textscan(fileID,'%s %s %s %s %f %f %f', 16321);
+modelExpression6 = textscan(fileID,'%s %s %s %s %s %f %f %f', 1493);
+modelExpression7 = textscan(fileID,'%s %s %s %s %f %f %f', 14826);
+modelExpression8 = textscan(fileID,'%s %s %s %s %s %f %f %f', 1483);
+modelExpression9 = textscan(fileID,'%s %s %s %s %f %f %f', 19293);
+modelExpression10 = textscan(fileID,'%s %s %s %s %s %f %f %f', 1489);
 modelExpression11 = textscan(fileID,'%s %s %s %s %f %f %f');
 fclose(fileID);
 C = modelExpression;
