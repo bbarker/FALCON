@@ -15,7 +15,7 @@ function [] = subsystemsMakeHist(converter,data,subsys,rec2,name,name2)
 %get data of gene coverage for all subsystems
 count = 1;
 for x = 1:length(subsys)
-    [num{count} num2{count} pMRNA{count} pProtein{count}]=analyzeSubsystemEnrichment2(converter,data,subsys{x},rec2);
+    [num{count} num2{count} pMRNA{count} pProtein{count}]=analyzeSubsystemEnrichment(converter,data,subsys{x},rec2);
     count = count + 1;
 end
 
