@@ -1,4 +1,4 @@
-function runComparisonScript(model, method, expFileDir, envConstrain)
+function runComparisonScript(model, method, expFileDir, envConstrain, CL)
 %INPUT
 % model   (reversible form; the following fields are required)
 %   S            Stoichiometric matrix
@@ -15,21 +15,53 @@ function runComparisonScript(model, method, expFileDir, envConstrain)
 %                'FBA'
 %                'LMOMA' (Linear MoMA)
 %                'FALCON'
+%
+%OPTIONAL INPUTS
+% envConstrain   'medium', 'core', or 'core_med':
+%                whether or not to constraints that are 
+%                medium-based CoRe-based, or both.
+%
+% CL             If nonempty or exists, should be the name
+%                of a single cell-line to run.
+%
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
 %
 % Yiping Wang    08/??/13 
-
+% Branon Barker  09/15/13   Changed output naming;
+%                           added option for single cell line run.
 
 
 mediumExcIdxs = loadMediumExcIdxs(model);
 [celllinesarray jainMetsArray coretable] = readJainTable();
 jainMetsToExcIdxs = loadJainMetsToExcIdxs(jainMetsArray, model);
 
+%In case we only want to run a single cell line:
+if exist('CL', 'var')
+  clIdx = find(strcmp(celllinesarray, CL));
+  celllinesarray = celllinesarray(clIdx);
+end
+
+
 for i = 1:length(celllinesarray)  
     consString = '';
     if exist('envConstrain', 'var')
-        consString = [envConstrain '_'];
+        if length(envConstrain) > 0
+            consString = [envConstrain '_'];
+        end
+    end
+    modelToRun = model;
+    if exist('envConstrain', 'var')
+	if strcmp(envConstrain, 'medium')
+	    modelToRun = constrainMediumExc(model, coretable(:,i));
+	end
+	if strcmp(envConstrain, 'core')
+	    modelToRun = constrainCOREExc(model, coretable(:,i));
+	end
+	if strcmp(envConstrain, 'core_med')
+	    modelToRun = constrainCOREExc(model, coretable(:,i));
+	    modelToRun = constrainMediumExc(model, coretable(:,i));
+	end
     end
     expressionFile = convertExpressionFileName(celllinesarray{i});
     outputDir = [method '_simresults_' consString expFileDir '/'];
@@ -38,19 +70,6 @@ for i = 1:length(celllinesarray)
     outputFI = fopen(outputFile, 'w');
     v_solirrev = [];
     v_solrev = [];
-    modelToRun = model;    
-    if exist('envConstrain', 'var')
-        if strcmp(envConstrain, 'medium')
-            modelToRun = constrainMediumExc(model, coretable(:,i));
-        end
-        if strcmp(envConstrain, 'core')
-            modelToRun = constrainCOREExc(model, coretable(:,i));
-        end
-        if strcmp(envConstrain, 'core_med')
-            modelToRun = constrainCOREExc(model, coretable(:,i));
-            modelToRun = constrainMediumExc(model, coretable(:,i));
-        end
-    end
     if(strcmp(method, 'FALCON'))    
         expressionFileLoc = [expFileDir '/' expressionFile '.csv']
         [v_solirrev v_solrev] = runFalcon(modelToRun, ...
