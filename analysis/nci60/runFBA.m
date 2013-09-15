@@ -14,7 +14,7 @@ function [v_solirrev v_solrev] = runFBA(model)
 %
 %
 % Yiping Wang    09/08/13
-% Brandon Barker 09/14/2013  Now calls convertToIrreversible
+% Brandon Barker 09/14/2013  Now calls convertIrrevFluxDistribution
 
 [modelIrrev matchRev rev2irrev irrev2rev] = convertToIrreversible(model);
 modelIrrev = changeObjective(modelIrrev, 'biomass_reaction');

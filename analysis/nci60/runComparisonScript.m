@@ -27,8 +27,12 @@ mediumExcIdxs = loadMediumExcIdxs(model);
 jainMetsToExcIdxs = loadJainMetsToExcIdxs(jainMetsArray, model);
 
 for i = 1:length(celllinesarray)  
+    consString = '';
+    if exist('envConstrain', 'var')
+        consString = [envConstrain '_'];
+    end
     expressionFile = convertExpressionFileName(celllinesarray{i});
-    outputDir = ['sims_' expFileDir '/'];
+    outputDir = [method '_simresults_' consString expFileDir '/'];
     mkdir(outputDir);
     outputFile = [outputDir expressionFile 'out'];
     outputFI = fopen(outputFile, 'w');
@@ -92,11 +96,6 @@ for i = 1:length(celllinesarray)
     fprintf(outputFI, 'All fluxes from v_solex:\n');
     for j = 1:length(jainMetsArray)
 	jthExcIdxs = jainMetsToExcIdxs(jainMetsArray{j});
-        disp(j);
-        disp(jainMetsArray{j}); 
-        disp(jthExcIdxs);
-        disp(length(v_solrev));
-        disp('===================')
         fprintf(outputFI, '%s\t%20.15f\n', jainMetsArray{j}, ...
                 sum(v_solrev(jthExcIdxs)));
     end
