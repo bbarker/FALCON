@@ -15,8 +15,8 @@ function runComparisonScript(model, method, expFileDir, envConstrain)
 %                'FBA'
 %                'LMOMA' (Linear MoMA)
 %                'FALCON'
-%OUTPUT
-%
+%OUTPUT      a file in 'outputDir' (defined below) for each
+%            cell line.
 %
 % Yiping Wang    08/??/13 
 
