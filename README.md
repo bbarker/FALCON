@@ -5,6 +5,12 @@ Flux Assignment (with) LAD Convex Objectives (and) Normalization.
 LAD, or Least Absolute Deviations, is the 1-norm version of least squares.
 
 
+For other data and information related to FALCON and and associated
+pubications, please see:
+
+http://openwetware.org/wiki/Barker:Notebook/FALCON
+
+
 To INSTALL
 
 

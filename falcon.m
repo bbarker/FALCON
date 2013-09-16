@@ -73,11 +73,11 @@ v_all = [];
 %upt_ub_save = zeros(1, length(upt_const));
 %upt_lb_save = zeros(1, length(upt_const));
 %for i = 1:length(gene_to_scale)
-%  uptake              = find(strcmp(gene_to_scale{i},m.rxnNames));
-%  upt_lb_save(i)        = m.lb(uptake)
-%  m.lb(uptake)	= upt_const{i};
-%  upt_ub_save(i)        = m.ub(uptake)
-%  m.ub(uptake)	= upt_const{i};  
+%  uptake          = find(strcmp(gene_to_scale{i},m.rxnNames));
+%  upt_lb_save(i)  = m.lb(uptake)
+%  m.lb(uptake)    = upt_const{i};
+%  upt_ub_save(i)  = m.ub(uptake)
+%  m.ub(uptake)    = upt_const{i};  
 %end
 %Scale expression by first uptake flux argument
 %in the first iteration:
@@ -99,7 +99,7 @@ disp([r_pri_max max(r)]);
 %See if this helps to get more irreversible reactions
 solFBA = optimizeCbModel(m,'max');
 fOpt = solFBA.f;
-m.lb(m.c == 1)	= minFit; %.1249
+m.lb(m.c == 1)    = minFit; %.1249
 
 infval = inf;
 % kieran: 21 sep 11
@@ -161,13 +161,13 @@ while sum(~m.rev) > nR_old
       %consider adding conditionals here for U or L == 0.
       %since v >= 0 just gives -v =< 0 under CC transform
       for k = 1:nrxns
-	f(k) = -rc; %regularization constant 
+    f(k) = -rc; %regularization constant 
         N(s1+1, k) = 1; N(s1+1, nrxns+2) = -U(k);
         b(s1+1) = 0; csense(s1+1) = 'L';
         N(s1+2, k) = -1; N(s1+2, nrxns+2) = L(k);
         b(s1+2) = 0; csense(s1+2) = 'L'; 
         L(k) = -infval; U(k) = infval;
-	s1 = s1+2;
+    s1 = s1+2;
       end 
     %Require the sum of fluxes to be above a threshold
     %It is worth noting that these are the
@@ -185,34 +185,34 @@ while sum(~m.rev) > nR_old
         k = k+1;
         d = r(k);
         s = r_sd(k);
-	cons1 = 0;
-	if k == r_group(k)
-	  cons1 = s1+1;
-	  r_group_cons(k) = cons1;
-	else
-	  cons1 = r_group_cons(r_group(k));
-	end
+    cons1 = 0;
+    if k == r_group(k)
+      cons1 = s1+1;
+      r_group_cons(k) = cons1;
+    else
+      cons1 = r_group_cons(r_group(k));
+    end
         if ~isnan(d) %&& s>0 %(assumed)
-	    %First abs constaint:
-	    N(cons1,nrxns+1) = -d; %This is the normalization variable
-	    N(cons1,k) = 1;  
+        %First abs constaint:
+        N(cons1,nrxns+1) = -d; %This is the normalization variable
+        N(cons1,k) = 1;  
             N(cons1,s2+1) = -1; %delta variable
-	    b(cons1) = 0;
-	    %Second abs constaint:
-	    N(cons1+1,nrxns+1) = d; %This is the normalization variable
-	    N(cons1+1,k) = -1;  
+        b(cons1) = 0;
+        %Second abs constaint:
+        N(cons1+1,nrxns+1) = d; %This is the normalization variable
+        N(cons1+1,k) = -1;  
             N(cons1+1,s2+1) = -1; %delta variable
-	    b(cons1+1) = 0;
+        b(cons1+1) = 0;
 
-	    L(s2+1) = 0;         % this can be left as 0 in the CC transform 
-	    U(s2+1) = infval;    % because it is just the same has having -delta <= 0
-	    csense(cons1)   = 'L';
-	    csense(cons1+1) = 'L';
-	    f(s2+1) = - 1/s;
-	    if k == r_group(k)
-	      s1=s1+2;
-	    end
-	    s2=s2+1;
+        L(s2+1) = 0;         % this can be left as 0 in the CC transform 
+        U(s2+1) = infval;    % because it is just the same has having -delta <= 0
+        csense(cons1)   = 'L';
+        csense(cons1+1) = 'L';
+        f(s2+1) = - 1/s;
+        if k == r_group(k)
+          s1=s1+2;
+        end
+        s2=s2+1;
         end %end of if not nan
     end %end while k < nrxns
     disp('s1 s2:');
@@ -254,22 +254,22 @@ while sum(~m.rev) > nR_old
           v_orig = v;
           if v(nrxns+2) ~= 0
             v_orig = v/v(nrxns+2); %Transform to original
-	  end
+      end
           v_sol = v_orig(1:nrxns);
-	  v_all = [v_all v_sol];
-   	  nvar = v_orig(nrxns+1);
-	  %nvarp = nvar*nvarp;
-	  %disp('New nvar, cumulative nvar is:');
-	  %disp([nvar nvarp]);
-	  disp('New nvar, zvar is:');
-	  disp([nvar v(nrxns+2)]);
-	  %Renormalize expression:
-	  %r = r*nvar;
-	  %r_sd = r_sd*nvar;
-	%else
-	  [m.lb m.ub m.rev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, m.rev, nrxns, cnt);
-	%end
-      	disp(v_sol(1:15)');
+      v_all = [v_all v_sol];
+         nvar = v_orig(nrxns+1);
+      %nvarp = nvar*nvarp;
+      %disp('New nvar, cumulative nvar is:');
+      %disp([nvar nvarp]);
+      disp('New nvar, zvar is:');
+      disp([nvar v(nrxns+2)]);
+      %Renormalize expression:
+      %r = r*nvar;
+      %r_sd = r_sd*nvar;
+    %else
+      [m.lb m.ub m.rev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, m.rev, nrxns, cnt);
+    %end
+        disp(v_sol(1:15)');
         disp([sum(~m.rev) nR_old]);    
     end
 %    splitTurn = ~splitTurn;
