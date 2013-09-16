@@ -15,6 +15,13 @@ function runComparisonScript(model, method, expFileDir, envConstrain, CL)
 %                'FBA'
 %                'LMOMA' (Linear MoMA)
 %                'FALCON'
+% 
+% expFileDir    Relative path to top level directory containing
+%               cell-line expression files. These files are
+%               tab-delimited file with a head for the columns:
+%               gene (entrez gene id), mean (expression value,
+%               and standard deviation (of expression).
+%
 %
 %OPTIONAL INPUTS
 % envConstrain   'medium', 'core', or 'core_med':
