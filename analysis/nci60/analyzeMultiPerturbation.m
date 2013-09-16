@@ -1,4 +1,6 @@
-function analyzeMultiPerturbtion(model, expFileDir)
+function analyzeMultiPerturbation(model, expFileDir)
+%
+% Note: model not used yet
 %
 % Analyzes FALCON output from runMultiPerturbtion for a single cell line,
 % and searches subdirectories for files beloging to this cell line,
@@ -38,8 +40,14 @@ pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
 %expressionFile = convertExpressionFileName(CL);
 
 parfor i = 1:length(pertPaths)
+    fluxFileList = dir([pertPaths{i} '/*out']);
+    fluxFileList = struct2cell(fluxFileList);
+    fluxFileList = fluxFileList(1,:);
     expSubDir = pertPaths{i};
     simParams = directoryLabelParse(expSubDir,'_');
-
+    for j = 1:length(fluxFileList)
+        fluxFile = [pertPaths{i} '/' fluxFileList{j}];
+	subsetsToStats = analyzeV_solFileOneCellLine(fluxFile);
+    end
 end
 
