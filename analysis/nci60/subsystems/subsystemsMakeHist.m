@@ -27,16 +27,18 @@ m = [pMRNA{:}];
 p = [pProtein{:}];
 
 %make histograms
-fh = figure;
+figure;
 hist(m,20);
-title_handle = title('MRNA');
-set(title_handle,'String', 'MRNA');
-print(fh,'-dpng', name);
-close(fh);
-fh2 = figure;
+title('mRNA');
+xlabel('ratio of genes present in paper to subsystem genes');
+ylabel('frequency');
+print('-dpng', name);
+close;
+figure;
 hist(p,20);
-title_handle = title('Protein');
-set(title_handle,'String', 'Protein');
-print(fh2,'-dpng', name2);
-close(fh2);
+title('Protein');
+xlabel('ratio of genes present in paper to subsystem genes');
+ylabel('frequency');
+print('-dpng', name2);
+close;
 
