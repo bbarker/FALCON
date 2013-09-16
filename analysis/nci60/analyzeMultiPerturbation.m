@@ -1,6 +1,6 @@
-function runMultiPerturbtion(model, expFileDir, CL, envConstrain, addLabel)
+function analyzeMultiPerturbtion(model, expFileDir)
 %
-% Calls runComparisonScript for FALCON for a single cell line,
+% Analyzes FALCON output from runMultiPerturbtion for a single cell line,
 % and searches subdirectories for files beloging to this cell line,
 % which should have directory labels corresponding to their perturbation
 % and condition. If multiple perturbations apply, then a "_" should 
@@ -25,37 +25,21 @@ function runMultiPerturbtion(model, expFileDir, CL, envConstrain, addLabel)
 %               gene (entrez gene id), mean (expression value,
 %               and standard deviation (of expression).
 %
-% CL            If nonempty or exists, should be the name
-%               of a single cell-line to run.
-%
-%
-%OPTIONAL INPUTS
-% envConstrain   'medium', 'core', or 'core_med':
-%                whether or not to constraints that are 
-%                medium-based CoRe-based, or both.
-%
-% addLabel       Label for any changes made to the model 
-%                to be used in naming the output directory.
-%
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
 %
-% Brandon Barker 09/15/13
+% Brandon Barker 09/16/13
 %
 
 %Get a list of subdirectories in the specified directory
 pertPaths = setdiff(strsplit(genpath(expFileDir),':'), {expFileDir});
 pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
-expressionFile = convertExpressionFileName(CL);
 
-modLabel = '';
-if exist('addLabel', 'var')
-    if length(addLabel) > 0
-	modLabel = addLabel;
-    end
-end
+%expressionFile = convertExpressionFileName(CL);
 
 parfor i = 1:length(pertPaths)
     expSubDir = pertPaths{i};
-    runComparisonScript(model, 'FALCON', expSubDir, '', CL, modLabel);
+    simParams = directoryLabelParse(expSubDir,'_');
+
 end
+
