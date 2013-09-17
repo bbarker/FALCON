@@ -1,4 +1,4 @@
-function runComparisonScript(model, method, expFileDir, envConstrain, CL)
+function runComparisonScript(model, method, expFileDir, envConstrain, CL, addLabel)
 %INPUT
 % model   (reversible form; the following fields are required)
 %   S            Stoichiometric matrix
@@ -30,6 +30,9 @@ function runComparisonScript(model, method, expFileDir, envConstrain, CL)
 %
 % CL             If nonempty or exists, should be the name
 %                of a single cell-line to run.
+%
+% addLabel       Label for any changes made to the model 
+%                to be used in naming the output directory.
 %
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
@@ -71,7 +74,13 @@ for i = 1:length(celllinesarray)
 	end
     end
     expressionFile = convertExpressionFileName(celllinesarray{i});
-    outputDir = [method '_simresults_' consString expFileDir '/'];
+    modLabel = '';
+    if exist('addLabel', 'var')
+        if length(addLabel) > 0
+            modLabel = ['_' addLabel];
+        end
+    end
+    outputDir = [method modLabel '_simresults_' consString expFileDir '/'];
     mkdir(outputDir);
     outputFile = [outputDir expressionFile 'out'];
     outputFI = fopen(outputFile, 'w');

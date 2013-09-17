@@ -14,3 +14,7 @@ function params = directoryLabelParse(aPath, delim)
 % params vector of numeric values
 %
 
+folders = strsplit(aPath, '/');
+subDir = folders{end};
+params = strsplit(subDir, delim);
+params = cellfun(@str2num, params);
