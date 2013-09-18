@@ -26,7 +26,7 @@ missingGenesMRNA{1} = '0';  %genes in model that don't have an mRNA intensity
 missingGenesProtein{1} = '0';  %genes in model that don't have an protein intensity
 allGenes(1) = 50; %all genes in model for the subsystem
 foundGenesMRNA(1) = 3000;  %genes that have mRNA intensity
-foundGenesMRNA(1) = 3000;  %genes that have protein intensity
+foundGenesProtein(1) = 3000;  %genes that have protein intensity
 
 count = 1;  %indexing for mRNA genes
 count2 = 1;  %indexing for protein genes

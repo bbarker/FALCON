@@ -22,16 +22,18 @@ for x = 1:length(subsys)
     count = count + 1;
 end
 
+
+
 %make histograms
 figure;
-hist(m,20);
+hist(pMRNA,20);
 title('mRNA');
 xlabel('ratio of genes present in paper to subsystem genes');
 ylabel('frequency');
 print('-dpng', name);
 close;
 figure;
-hist(p,20);
+hist(pProtein,20);
 title('Protein');
 xlabel('ratio of genes present in paper to subsystem genes');
 ylabel('frequency');
