@@ -41,6 +41,7 @@ pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
 
 statsMegaCell = cell([1, length(pertPaths)]);
 maxStasLen = 0;
+numCellLines = 0;
 for i = 1:length(pertPaths)
     fluxFileList = dir([pertPaths{i} '/*out']);
     fluxFileList = struct2cell(fluxFileList);
@@ -56,7 +57,8 @@ for i = 1:length(pertPaths)
     statsMegaCell{i} = statsCell;
 end
 
-flatAnalysisFI = fopen([expFileDir 'flatAnalysis.csv']);
+
+flatAnalysisFI = fopen([expFileDir 'flatAnalysis.csv'], 'w');
 
 for i = 1:numCellLines
     for j = 1:length(pertPaths)

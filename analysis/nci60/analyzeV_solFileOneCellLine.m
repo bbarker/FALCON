@@ -11,7 +11,7 @@ nFields = 13;
 %
 %%%% ***    ***   *** 
 
-[cellLinesArray jainMetsArray coreTable ... 
+[cellLinesArray jainMetsArray coreTable ...
     FVAVminArray FVAVmaxArray] = readJainTable();
 subsetsToStats = containers.Map;
 % !!! This shouldn't be the mean of the whole Table...
@@ -22,7 +22,6 @@ sortedV_solExc = v_solExc(sortedCoreTableColIdxs);
 %[sortedCoreTableCol sortedV_solExc]
 sortedFVAVmaxArray = FVAVmaxArray(sortedCoreTableColIdxs);
 sortedFVAVminArray = FVAVminArray(sortedCoreTableColIdxs);
-disp(length(sortedCoreTableColIdxs));
 for i = 1:length(sortedCoreTableColIdxs)
     statsArray = zeros(nFields,1);
 
@@ -72,25 +71,15 @@ for i = 1:length(sortedCoreTableColIdxs)
 	%statsarray(1)=corr(trimmedv_solex,trimmedcoretablecol,'type','Pearson');
         %statsarray(2)=corr(trimmedv_solex,trimmedcoretablecol,'type','Spearman');
         %statsarray(3)=corr(trimmedv_solex,trimmedcoretablecol,'type','Kendall');
-	statsArray(1) = corr(sortedV_solExc(includedIdxs), ...
-                        sortedCoreTableCol(includedIdxs), ...
-                        'type', 'Pearson');
-	statsArray(2) = corr(sortedV_solExc(includedIdxs), ...
-                        sortedCoreTableCol(includedIdxs), ...
-                        'type', 'Spearman');
-	statsArray(3) = corr(sortedV_solExc(includedIdxs), ...
-                        sortedCoreTableCol(includedIdxs), ...
-                        'type', 'Kendall');
-	statsArray(4) = (sortedV_solExc(includedIdxs)' * ...
-                        sortedCoreTableCol(includedIdxs)) / ...
-                        (norm(sortedV_solExc(includedIdxs)) * ... 
-                        norm(sortedCoreTableCol(includedIdxs)));
-	statsArray(5) = mean(sortedV_solExc(includedIdxs)-sortedCoreTableCol(includedIdxs));
+        Vest = columnVector(sortedV_solExc(includedIdxs));
+        Vexp = columnVector(sortedCoreTableCol(includedIdxs));
+	statsArray(1) = corr(Vest, Vexp, 'type', 'Pearson');
+	statsArray(2) = corr(Vest, Vexp, 'type', 'Spearman');
+	statsArray(3) = corr(Vest, Vexp, 'type', 'Kendall');
+	statsArray(4) = Vest' * Vexp / (norm(Vest) * norm(Vexp));
+	statsArray(5) = mean(Vest - Vexp);
 	statsArray(6) = uptakeTruePos / (uptakeTruePos + uptakeFalseNeg);
 	statsArray(7) = releaseTruePos / (releaseTruePos + releaseFalseNeg);
-    end
-    if i == 3
-        disp('Found 3');
     end
     subsetsToStats(num2str(i))=statsArray;
 end
