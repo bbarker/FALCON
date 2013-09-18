@@ -39,15 +39,40 @@ pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
 
 %expressionFile = convertExpressionFileName(CL);
 
-parfor i = 1:length(pertPaths)
+statsMegaCell = cell([1, length(pertPaths)]);
+maxStasLen = 0;
+for i = 1:length(pertPaths)
     fluxFileList = dir([pertPaths{i} '/*out']);
     fluxFileList = struct2cell(fluxFileList);
     fluxFileList = fluxFileList(1,:);
     expSubDir = pertPaths{i};
     simParams = directoryLabelParse(expSubDir,'_');
-    for j = 1:length(fluxFileList)
+    numCellLines = length(fluxFileList);
+    statsCell = cell([1, numCellLines]);
+    parfor j = 1:numCellLines
         fluxFile = [pertPaths{i} '/' fluxFileList{j}];
-	subsetsToStats = analyzeV_solFileOneCellLine(fluxFile);
+	statsCell{j} = analyzeV_solFileOneCellLine(fluxFile);
+    end
+    statsMegaCell{i} = statsCell;
+end
+
+flatAnalysisFI = fopen([expFileDir 'flatAnalysis.csv']);
+
+for i = 1:numCellLines
+    for j = 1:length(pertPaths)
+        statsCell = statsMegaCell{j};
+	statsLen = length(keys(statsCell{i}));
+	disp(['stats length: ' num2str(statsLen)]);
+        valString = '';
+
+        for k = 1:(statsLen - 3) % 3 fields are non-integer
+	    disp(num2str(k));
+	    disp(keys(statsCell{i}));
+	    statsArray = statsCell{i}(num2str(k));
+            valString = [valString '\t' num2str(statsArray(1))];
+        end
+        %fprintf(flatAnalysisFI,,A1,...,An)
     end
 end
 
+fclose(flatAnalysisFI);

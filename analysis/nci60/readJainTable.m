@@ -17,7 +17,7 @@ coretable = [];
 celllinesarray = {};
 for i = 1:length(celllinesarray1)
     celllinesarray{end + 1} = celllinesarray1{i};
-    coretable(:, end + 1) = mean(coretable1(:, (i*2-1):(i*2)));
+    coretable(:, end + 1) = mean(coretable1(:, (i*2-1):i*2), 2);
 end
 metsarray = exctextarray(10:100, 2);
 FVAvminarray = excnumarray(8:98, 1);

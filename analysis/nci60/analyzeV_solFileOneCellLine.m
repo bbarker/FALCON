@@ -3,24 +3,34 @@ function subsetsToStats = analyzeV_solFileOneCellLine(inputFI)
 % Needs a spot of commenting in the code too
 %
 %
+
+%%%% *** Settings ***
+%
+% Number of fields in subsetsToStats
+nFields = 13;
+%
+%%%% ***    ***   *** 
+
 [cellLinesArray jainMetsArray coreTable ... 
     FVAVminArray FVAVmaxArray] = readJainTable();
 subsetsToStats = containers.Map;
-[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable(:,1));
+% !!! This shouldn't be the mean of the whole Table...
+%coreTable = mean(coreTable);
+[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable);
 v_solExc = readV_solFile(inputFI);
 sortedV_solExc = v_solExc(sortedCoreTableColIdxs);
 %[sortedCoreTableCol sortedV_solExc]
 sortedFVAVmaxArray = FVAVmaxArray(sortedCoreTableColIdxs);
 sortedFVAVminArray = FVAVminArray(sortedCoreTableColIdxs);
+disp(length(sortedCoreTableColIdxs));
 for i = 1:length(sortedCoreTableColIdxs)
-    statsArray = zeros(13,1);
+    statsArray = zeros(nFields,1);
 
     uptakeTruePos=0;
     uptakeFalseNeg=0;
     releaseTruePos=0;
     releaseFalseNeg=0;
     includedIdxs=[];
-    %disp(i);
     for j=1:i
 	if(sortedCoreTableCol(j) > 0 && sortedFVAVmaxArray(j) == 0)
 	    statsArray(12) = statsArray(12) + 1;
@@ -78,6 +88,9 @@ for i = 1:length(sortedCoreTableColIdxs)
 	statsArray(5) = mean(sortedV_solExc(includedIdxs)-sortedCoreTableCol(includedIdxs));
 	statsArray(6) = uptakeTruePos / (uptakeTruePos + uptakeFalseNeg);
 	statsArray(7) = releaseTruePos / (releaseTruePos + releaseFalseNeg);
+    end
+    if i == 3
+        disp('Found 3');
     end
     subsetsToStats(num2str(i))=statsArray;
 end
