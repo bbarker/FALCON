@@ -77,7 +77,9 @@ for i = 1:length(sortedCoreTableColIdxs)
 	statsArray(2) = corr(Vest, Vexp, 'type', 'Spearman');
 	statsArray(3) = corr(Vest, Vexp, 'type', 'Kendall');
 	statsArray(4) = Vest' * Vexp / (norm(Vest) * norm(Vexp));
-	statsArray(5) = mean(Vest - Vexp);
+	% Changing this to norm to account for cancellation.
+	% statsArray(5) = mean(Vest - Vexp);
+	statsArray(5) = norm(Vest - Vexp, 1);
 	statsArray(6) = uptakeTruePos / (uptakeTruePos + uptakeFalseNeg);
 	statsArray(7) = releaseTruePos / (releaseTruePos + releaseFalseNeg);
     end
