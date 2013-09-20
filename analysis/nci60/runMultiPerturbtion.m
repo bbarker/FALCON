@@ -57,5 +57,5 @@ end
 
 parfor i = 1:length(pertPaths)
     expSubDir = pertPaths{i};
-    runComparisonScript(model, 'FALCON', expSubDir, '', CL, modLabel);
+    runComparisonScript(model, 'FALCON', expSubDir, envConstrain, CL, modLabel);
 end

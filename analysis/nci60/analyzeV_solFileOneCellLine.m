@@ -88,7 +88,7 @@ for i = 1:length(sortedCoreTableColIdxs)
 	statsCell('ReleaseSensitivity') = releaseTruePos / ... 
                                           (releaseTruePos + releaseFalseNeg);
     end
-    subsetsToStats(num2str(i))=statsCell;
+    subsetsToStats(num2str(i)) = statsCell;
 end
 
 statKeys = keys(subsetsToStats('1'));
