@@ -33,6 +33,8 @@ function analyzeMultiPerturbation(model, expFileDir)
 % Brandon Barker 09/16/13
 %
 
+tab = sprintf('\t');
+
 %Get a list of subdirectories in the specified directory
 pertPaths = setdiff(strsplit(genpath(expFileDir),':'), {expFileDir});
 pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
@@ -43,21 +45,29 @@ statsMegaCell = cell([1, length(pertPaths)]);
 maxStasLen = 0;
 numCellLines = 0;
 fluxFileList = {};
+
+nParams = length(directoryLabelParse(pertPaths{1},'_'));
+paramMat = zeros(length(pertPaths), nParams);
 for i = 1:length(pertPaths)
-    fluxFileList = dir([pertPaths{i} '/*out']);
+    expSubDir = pertPaths{i};
+    paramMat(i,:) = directoryLabelParse(expSubDir,'_');
+end
+[paramsSorted, paramsIdx] = sortrows(paramMat);
+
+for i = 1:length(pertPaths)
+    ppIdx = paramsIdx(i);
+    fluxFileList = dir([pertPaths{ppIdx} '/*out']);
     fluxFileList = struct2cell(fluxFileList);
     % This assumes all the subdirectories have
     % the same file names.
     fluxFileList = sort(fluxFileList(1,:));
-    expSubDir = pertPaths{i};
-    simParams = directoryLabelParse(expSubDir,'_');
     numCellLines = length(fluxFileList);
-    statsCell = cell([1, numCellLines]);
+    subsetsToStatsCell = cell([1, numCellLines]);
     parfor j = 1:numCellLines
-        fluxFile = [pertPaths{i} '/' fluxFileList{j}];
-	statsCell{j} = analyzeV_solFileOneCellLine(fluxFile);
+        fluxFile = [pertPaths{ppIdx} '/' fluxFileList{j}];
+	subsetsToStatsCell{j} = analyzeV_solFileOneCellLine(fluxFile);
     end
-    statsMegaCell{i} = statsCell;
+    statsMegaCell{ppIdx} = subsetsToStatsCell;
 end
 
 
@@ -65,7 +75,6 @@ end
 metDepth = [2 3 4 5 6 10 15]; 
 
 % Which stats to get and their labels.
-statIdx = [1 2 3 4 5 6 7];
 statLabel = {'Pearson', 'Spearman', 'Kendall', 'CosineSim', ...
              'L1Dist', 'UptakeSensitivity', 'ReleaseSensitivity'};
 
@@ -80,14 +89,18 @@ mkdir(dirOut);
 for i = 1:numCellLines
     for k = 1:length(metDepth)
 	dstr = num2str(metDepth(k));
-        for s = 1:length(statIdx)
-	    sidx = statIdx(s);
+        for s = 1:length(statLabel)
+	    skey = statLabel{s};
             valString = '';
 	    for j = 1:length(pertPaths)
-		statsCell = statsMegaCell{j};
-		statsArray = statsCell{i}(dstr);
-		valString = [valString '\t' num2str(statsArray(sidx))];
+                ppIdx = paramsIdx(j);
+		subsetsToStatsCell = statsMegaCell{ppIdx};
+		statsCell = subsetsToStatsCell{i}(dstr);
+		% valString = [valString '\t' num2str(statsCell(skey))];
+                valString = sprintf('%s\t%s', valString, ...
+                                    num2str(statsCell(skey)));
 	    end
+	    valString = lstrtrim(valString, tab);
             % Probably need to use sprintf here.
 	    fileName = [dirOut '/' fluxFileList{i} '_' ... 
                         statLabel{s} dstr '.csv'];
