@@ -12,7 +12,7 @@ for i = 1:length(modelConstrained.rxns)
         foundInJainMetsToExcIdxs = 0;
 	for k = 1:length(jainMetsArray)
 	    kthExcIdxs = jainMetsToExcIdxs(jainMetsArray{k});
-	    if(sum(kthExcIdxs == j) ~= 0)
+	    if(sum(kthExcIdxs == i) ~= 0)
 		foundInJainMetsToExcIdxs = 1;    
 	    end
 	end
