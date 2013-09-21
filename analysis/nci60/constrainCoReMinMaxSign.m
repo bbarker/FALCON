@@ -25,10 +25,10 @@ for i = 1:length(modelConstrained.rxns)
 		if coretableMin(k) > 0
                     modelConstrained.lb(rxnIdx) = 0;
                     % Should we unconstrain with such large bounds?
-                    modelConstrained.ub(rxnIdx) = 1000;
+                    % modelConstrained.ub(rxnIdx) = 1000;
                     modelConstrained.rev(rxnIdx) = 0;
                 elseif coretableMax(k) < 0
-                    modelConstrained.lb(rxnIdx) = -1000;
+                    %modelConstrained.lb(rxnIdx) = -1000;
                     modelConstrained.ub(rxnIdx) = 0;
                     modelConstrained.rev(rxnIdx) = 0;
                 end
