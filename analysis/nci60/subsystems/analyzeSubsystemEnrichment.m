@@ -1,13 +1,14 @@
 %Takes a particular subsystem in human recon 2 and converts Entrez gene ids
 %to IPI ids. Looks at quantified protein and mRNA amounts in data set
 %for the IPI ids.One potential flaw, and/or statements in gene rules 
-function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals]=analyzeSubsystemEnrichment(converter, data, subsys, rec2)
+function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals]=analyzeSubsystemEnrichment(converter, data, subsys, rec2, includeZero)
 
 %INPUT
-%converter is a (1x2) cell array with Entrez ids in {1,1} and the corresponding IPI ids in {1,2}.
+%converter is a (1x2) cell array with Entrez ids in {1,1} and the corresponding IPI ids in {1,2} (output of getConverter)
 %data is the output of readModelExpression
 %subsys is a human recon 2 subsystem
 %rec2 is the human recon 2 model
+%includeZero is whether or not zero intensities are counted. 1 is for yes. 0 is for no.
 %OUTPUT
 %pMRNA is genes in paper with mRNA intensity/possible genes for the subsystem
 %pProtein is genes in paper with protein intensity/possible genes for the subsystem
@@ -46,25 +47,48 @@ for x = 1:7440
                 for y = 1:length(converter{1,1})
                     if (strcmp(converter{1,1}(y),rec2.genes(b)))
                         for a = 1:length(data{1,2})
-                            truth = 0; %to check for mRNA intensity for residual calc
-                            truth2 = 0; %to check for protein intensity for residual calc   
-                            if (strcmp(converter{1,2}{y}, data{1,2}{a}))
-                                if (data{1,5}(a) == data{1,5}(a))  %removes any NaN values
-                                    truth = 1;
-                                    truth3 = 1;
-                                    foundGenesMRNA(count) = b;
-                                    count = count + 1;
+                            if (includeZero)
+                                truth = 0; %to check for mRNA intensity for residual calc
+                                truth2 = 0; %to check for protein intensity for residual calc   
+                                if (strcmp(converter{1,2}{y}, data{1,2}{a}))
+                                    if (data{1,5}(a) == data{1,5}(a))  %removes any NaN values
+                                        truth = 1;
+                                        truth3 = 1;
+                                        foundGenesMRNA(count) = b;
+                                        count = count + 1;
+                                    end
+                                    if (data{1,6}(a) == data{1,6}(a))  %removes any NaN values
+                                        truth2 = 1;
+                                        truth4 = 1;
+                                        foundGenesProtein(count2) = b;
+                                        count2 = count2 + 1;
+                                    end
                                 end
-                                if (data{1,6}(a) == data{1,6}(a))  %removes any NaN values
-                                    truth2 = 1;
-                                    truth4 = 1;
-                                    foundGenesProtein(count2) = b;
-                                    count2 = count2 + 1;
+                                if (truth&&truth2)
+                                    residuals(count3) = abs(data{1,5}(a) - data{1,6}(a));
+                                    count3 = count3 + 1;
                                 end
-                            end
-                            if (truth&&truth2)
-                                residuals(count3) = abs(data{1,5}(a) - data{1,6}(a));
-                                count3 = count3 + 1;
+                            else
+                                truth = 0; %to check for mRNA intensity for residual calc
+                                truth2 = 0; %to check for protein intensity for residual calc   
+                                if (strcmp(converter{1,2}{y}, data{1,2}{a}))
+                                    if (data{1,5}(a) == data{1,5}(a) && data{1,5}(a)~=0)  %removes any NaN values
+                                        truth = 1;
+                                        truth3 = 1;
+                                        foundGenesMRNA(count) = b;
+                                        count = count + 1;
+                                    end
+                                    if (data{1,6}(a) == data{1,6}(a) && data{1,6}(a)~=0)  %removes any NaN values
+                                        truth2 = 1;
+                                        truth4 = 1;
+                                        foundGenesProtein(count2) = b;
+                                        count2 = count2 + 1;
+                                    end
+                                end
+                                if (truth&&truth2)
+                                    residuals(count3) = abs(data{1,5}(a) - data{1,6}(a));
+                                    count3 = count3 + 1;
+                                end
                             end
                         end
                     end
