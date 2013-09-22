@@ -14,8 +14,25 @@ nFields = 13;
 [cellLinesArray jainMetsArray coreTable ...
     FVAVminArray FVAVmaxArray] = readJainTable();
 
+% Need to find index of file in coretable
+inputFiSplit = strsplit(inputFI, '/');
+fileName = inputFiSplit{end};
+CLidx = -1;
+for i = 1:length(cellLinesArray)
+    CL = convertExpressionFileName(cellLinesArray{i});
+    empty = isempty(regexp(fileName, ['^' CL]));
+    if ~empty
+        CLidx = i;
+        break;
+    end
+end
+if CLidx <= 0
+    disp('Error: cell line not found.');
+    return;
+end
+
 subsetsToStats = containers.Map;
-[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable);
+[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable(:, CLidx));
 v_solExc = readV_solFile(inputFI);
 sortedV_solExc = v_solExc(sortedCoreTableColIdxs);
 sortedFVAVmaxArray = FVAVmaxArray(sortedCoreTableColIdxs);
