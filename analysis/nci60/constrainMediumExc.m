@@ -1,16 +1,28 @@
-function modelConstrainedCOREExc = constrainCOREExc(model, coreValues)
-%This function takes an original model, usually rec2, and outputs a cell array of models
-%with the bounds on certain reactions sequentially constrained, depending on .
+function modelConstrained = constrainMediumExc(model)
+% This function takes an original model, usually recon 2, and 
+% constrains all models to only have very small uptake values unless
+% they are one of the key medium components.
 
-[celllinesarray jainMetsArray coretable] = readJainTable();
-jainMetsToExcIdxs = loadJainMetsToExcIdxs(jainMetsArray, model);
+% Yiping Wang      08/??/2013
+% Brandon Barker   09/21/2013    Changed to allow small amounts of
+%                                uptake not listed for the medium.
+
+minUptake = -0.005;
+% The above value (-0.005) reduces growth rate, but it is still far more
+% than is likely in any cancer cell line.
+
 mediumExcIdxs = loadMediumExcIdxs(model);
+modelConstrained = model;
 
-modelConstrainedCOREExc = model;
-for i=1:length(modelConstrainedCOREExc.rxns)
-    if (~isempty(regexp(modelConstrainedCOREExc.rxns{i},'^EX(.)*\(e\)$')))
+
+
+for i = 1:length(modelConstrained.rxns)
+    if (~isempty(regexp(modelConstrained.rxns{i}, '^EX(.)*\(e\)$')))
         if (sum(mediumExcIdxs == i) == 0)
-            modelConstrainedCOREExc.lb(i) = 0;
+            if modelConstrained.lb(i) < minUptake
+                modelConstrained.lb(i) = minUptake;
+            end
         end
     end
 end
+

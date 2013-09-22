@@ -13,17 +13,37 @@ nFields = 13;
 
 [cellLinesArray jainMetsArray coreTable ...
     FVAVminArray FVAVmaxArray] = readJainTable();
+
+% Need to find index of file in coretable
+inputFiSplit = strsplit(inputFI, '/');
+fileName = inputFiSplit{end};
+CLidx = -1;
+for i = 1:length(cellLinesArray)
+    CL = convertExpressionFileName(cellLinesArray{i});
+    empty = isempty(regexp(fileName, ['^' CL]));
+    if ~empty
+        CLidx = i;
+        break;
+    end
+end
+if CLidx <= 0
+    disp('Error: cell line not found.');
+    return;
+end
+
 subsetsToStats = containers.Map;
-% !!! This shouldn't be the mean of the whole Table...
-%coreTable = mean(coreTable);
-[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable);
+[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable(:, CLidx));
 v_solExc = readV_solFile(inputFI);
 sortedV_solExc = v_solExc(sortedCoreTableColIdxs);
-%[sortedCoreTableCol sortedV_solExc]
 sortedFVAVmaxArray = FVAVmaxArray(sortedCoreTableColIdxs);
 sortedFVAVminArray = FVAVminArray(sortedCoreTableColIdxs);
 for i = 1:length(sortedCoreTableColIdxs)
-    statsArray = zeros(nFields,1);
+    %statsCell = zeros(nFields,1);
+    statsCell = containers.Map;
+    statsCell('8') = 0;
+    statsCell('9') = 0;
+    statsCell('10') = 0;
+    statsCell('12') = 0;
 
     uptakeTruePos=0;
     uptakeFalseNeg=0;
@@ -32,11 +52,11 @@ for i = 1:length(sortedCoreTableColIdxs)
     includedIdxs=[];
     for j=1:i
 	if(sortedCoreTableCol(j) > 0 && sortedFVAVmaxArray(j) == 0)
-	    statsArray(12) = statsArray(12) + 1;
+	    statsCell('12') = statsCell('12') + 1;
 	elseif(sortedCoreTableCol(j) < 0 && sortedFVAVmaxArray(j) == 0)
-	    statsArray(12) = statsArray(12) + 1;
+	    statsCell('12') = statsCell('12') + 1;
 	elseif(sortedCoreTableCol(j) > 0)
-	    statsArray(9) = statsArray(9) + 1;
+	    statsCell('9') = statsCell('9') + 1;
 	    includedIdxs(end + 1) = j;
 	    if(sortedV_solExc(j) > 0)
 		releaseTruePos = releaseTruePos + 1;
@@ -44,7 +64,7 @@ for i = 1:length(sortedCoreTableColIdxs)
 		releaseFalseNeg = releaseFalseNeg + 1;
 	    end
 	elseif(sortedCoreTableCol(j) < 0)
-	    statsArray(8) = statsArray(8) + 1;
+	    statsCell('8') = statsCell('8') + 1;
 	    includedIdxs(end + 1) = j;
 	    if(sortedV_solExc(j) < 0)
 		uptakeTruePos = uptakeTruePos + 1;
@@ -52,7 +72,7 @@ for i = 1:length(sortedCoreTableColIdxs)
 		uptakeFalseNeg = uptakeFalseNeg + 1;
 	    end
 	else
-	    statsArray(10) = statsArray(10) + 1;
+	    statsCell('10') = statsCell('10') + 1;
 	    includedIdxs(end + 1) = j;
 	end
     end
@@ -73,40 +93,52 @@ for i = 1:length(sortedCoreTableColIdxs)
         %statsarray(3)=corr(trimmedv_solex,trimmedcoretablecol,'type','Kendall');
         Vest = columnVector(sortedV_solExc(includedIdxs));
         Vexp = columnVector(sortedCoreTableCol(includedIdxs));
-	statsArray(1) = corr(Vest, Vexp, 'type', 'Pearson');
-	statsArray(2) = corr(Vest, Vexp, 'type', 'Spearman');
-	statsArray(3) = corr(Vest, Vexp, 'type', 'Kendall');
-	statsArray(4) = Vest' * Vexp / (norm(Vest) * norm(Vexp));
-	statsArray(5) = mean(Vest - Vexp);
-	statsArray(6) = uptakeTruePos / (uptakeTruePos + uptakeFalseNeg);
-	statsArray(7) = releaseTruePos / (releaseTruePos + releaseFalseNeg);
+	statsCell('Pearson') = corr(Vest, Vexp, 'type', 'Pearson');
+	statsCell('Spearman') = corr(Vest, Vexp, 'type', 'Spearman');
+	statsCell('Kendall') = corr(Vest, Vexp, 'type', 'Kendall');
+	statsCell('CosineSim') = Vest' * Vexp / (norm(Vest) * norm(Vexp));
+	% Changing this to norm to account for cancellation.
+	% statsCell(5) = mean(Vest - Vexp);
+	statsCell('L1Dist') = norm(Vest - Vexp, 1);
+	statsCell('UptakeSensitivity') = uptakeTruePos / ...
+                                          (uptakeTruePos + uptakeFalseNeg);
+	statsCell('ReleaseSensitivity') = releaseTruePos / ... 
+                                          (releaseTruePos + releaseFalseNeg);
     end
-    subsetsToStats(num2str(i))=statsArray;
+    subsetsToStats(num2str(i)) = statsCell;
 end
 
+statKeys = keys(subsetsToStats('1'));
 lengthSubsetsToStats = length(keys(subsetsToStats));
-subsetsToStats('Average') = zeros(13, 1);
+
+subsetsToStats('Average') = subsetsToStats('1');
 subsetsToStats('Min') = subsetsToStats('1');
 subsetsToStats('Max') = subsetsToStats('1');
-numNotNaNArray = zeros(13, 1);
-for j = 1:lengthSubsetsToStats
-    subsetsToStats('Min') = [subsetsToStats('Min') ...
-                             subsetsToStats(num2str(j))];
-    subsetsToStats('Max') = [subsetsToStats('Max') ...
-                             subsetsToStats(num2str(j))];
-
-    jthStatsArray = subsetsToStats(num2str(j));
-    newAverageStatsArray = subsetsToStats('Average');
-    for k = 1:length(jthStatsArray)
-        if ~isnan(jthStatsArray(k))
-	  newAverageStatsArray(k) = newAverageStatsArray(k) + ...
-                                    jthStatsArray(k);
-	  numNotNaNArray(k) = numNotNaNArray(k) + 1;
+nnanCount = 0;
+for i =  1:length(statKeys)
+    avgCell = subsetsToStats('Average');
+    minCell = subsetsToStats('Min');
+    maxCell = subsetsToStats('Max');
+    mysum = 0;
+    mymax = -Inf;
+    mymin = Inf;
+    statsCell = subsetsToStats(num2str(i));
+    mykey = statKeys{i};
+    for j = 1:lengthSubsetsToStats
+        statVal = statsCell(mykey);
+        if ~isnan(statVal)
+            mysum = mysum + statsCell(mykey);
+            mymin = min(mymin, statsCell(mykey));
+            mymax = max(mymax, statsCell(mykey));
+        else
+            nnanCount = nnanCount + 1;
         end
     end
-    subsetsToStats('Average') = newAverageStatsArray;
+    avgCell(mykey) = mysum / (lengthSubsetsToStats - nnanCount);
+    minCell(mykey) = mymin;
+    maxCell(mykey) = mymax;
+    subsetsToStats('Average') = avgCell;
+    subsetsToStats('Min') = minCell;
+    subsetsToStats('Max') = maxCell;
 end
 
-subsetsToStats('Average') = subsetsToStats('Average') ./ numNotNaNArray;
-subsetsToStats('Max') = max(subsetsToStats('Max'), [], 2);
-subsetsToStats('Min') = min(subsetsToStats('Min'), [], 2);
