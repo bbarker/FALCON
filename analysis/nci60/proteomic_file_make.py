@@ -10,19 +10,24 @@
 # as input to FALCON.
 
 # INPUT: (Please edit if necessary)
+DATADIR = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/'
 # Recon 2 gene list 
 rec2genes = '/home/brandon/FBA/models/rec2.genes'
 # CORE to Proteomic NCI-60 cell line name map (NCI60_labels.csv)
-nci60labels = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/NCI60_labels.csv'
+nci60labels = DATADIR + 'NCI60_labels.csv'
 # Entrez ID to IPI ID map file (Entrez_and_IPI_unique.csv)
-geneIDdb = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Entrez_and_IPI_unique.csv'
+entrezIPIdb = DATADIR + 'Entrez_and_IPI_unique.csv'
 # Proteomic expression file (protLFQ.csv or Expanded_IPI_Listing.csv)
-protEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/protLFQ.csv'
+protEXP = DATADIR + 'protLFQ.csv'
 # protEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/prot_iBAQ.csv'
 # Deep Proteomic expression file ( )
-deepProtEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/DeepProtLFQ.csv'
+deepProtEXP = DATADIR + 'DeepProtLFQ.csv'
 # mRNA expression file (Gholami_Table_S8_mRNA.csv)
-mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Table_S8_mRNA.csv'
+mrnaEXP = DATADIR + 'Gholami_Table_S8_mRNA.csv'
+# RNA-Seq Cufflinks (FPKM) file directory
+rnaseqEXP = DATADIR + 'RNASeq'
+# REFSEQ to Entrez (used for RNA-Seq data):
+refseqEntrezDB = DATADIR + 'REFSEQ_to_Entrez.txt'
 
 
 # OUTPUT:
@@ -41,6 +46,9 @@ mrnaEXP = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/Gholami_Tabl
 #
 # Histogram of protein and microarray absolute expression
 # RUNDIR/expression_dists.*
+#
+# Non-normalied version of the above, with RNA-Seq
+# RUNDIR/expression_dists_all.*
 #
 # Histogram of protein and microarray intensities subsequently
 # mapped to zero.
@@ -304,7 +312,7 @@ nci60labelFI.close()
 
 EntrezToIPI = {}
 IPIToEntrez = {}
-entrezIPIFI = open(geneIDdb,'r')    
+entrezIPIFI = open(entrezIPIdb,'r')    
 # no header
 while True:
     line = entrezIPIFI.readline()
@@ -317,6 +325,22 @@ while True:
     EntrezToIPI[colvals[0]] = colvals[1]
     IPIToEntrez[colvals[1]] = colvals[0]
 entrezIPIFI.close()
+
+EntrezToRefseq = {}
+RefseqToEntrez = {}
+entrezRefseqFI = open(refseqEntrezDB, 'r')    
+header = entrezRefseqFI.readline()
+while True:
+    line = entrezRefseqFI.readline()
+    line = line.strip()
+    if len(line) == 0:
+        break
+    colvals = line.split("\t")
+    colvals[0] = colvals[0].strip()
+    colvals[1] = colvals[1].strip()
+    RefseqToEntrez[colvals[0]] = colvals[1]
+    EntrezToRefseq[colvals[1]] = colvals[0]
+entrezRefseqFI.close()
 
 
 #In CPC file with best matching proteins, we have
@@ -403,7 +427,33 @@ while True:
         DPROTD[DPROTDcols[i]][IPI] = cvf    
 IPIdataFI.close()
 
-#Now handle the mRNA data similarly
+
+#Now handle the mRNA (RNA-Seq) data similarly
+#control data is in column 10 (index 9) 
+RSEQD = {}
+RSEQfiles = os.listdir(rnaseqEXP)
+for rseqEXPfile in RSEQfiles:
+    CL = rseqEXPfile.replace('_genes.fpkm_tracking', '')
+    RSEQD[CL] = {}
+    RSEQdataFI = open(rnaseqEXP + '/' + rseqEXPfile, 'r')    
+    header = RSEQdataFI.readline()
+    #read in the data
+    while True:
+        line = RSEQdataFI.readline()
+        line = line.strip()
+        if len(line) == 0:
+            break
+        colvals = line.split("\t")
+        RFSEQ = colvals[0].strip()
+        cv = colvals[9].strip()
+        if cv == "NA" or cv == "":
+            cv = "nan"
+        cvf = float(cv)
+        RSEQD[CL][RFSEQ] = cvf    
+    RSEQdataFI.close()
+
+
+#Now handle the mRNA (microarray) data similarly
 MRNAD = {}
 MRNADcols = {}
 mrnaFI = open(mrnaEXP,'r')
@@ -459,6 +509,24 @@ for cl in MRNAD.keys():
         MRNAD[cl][g] = sum(MRNAD[cl][g])/len(MRNAD[cl][g])
 
 
+
+
+# Plot histograms for different datatypes 
+def flattenExpression(DATA, ndict='IPItoE'):
+    genedict = IPIToEntrez
+    if ndict == 'RtoE':
+        genedict = RefseqToEntrez
+    x = []
+    x_mod = []
+    for cl in DATA.keys():
+        for g in DATA[cl].keys():
+            if DATA[cl][g] == DATA[cl][g]:
+                x.append(DATA[cl][g])
+                if genedict.has_key(g):
+                    ENTREZ = genedict[g]
+                    if modgenes.has_key(ENTREZ):
+                        x_mod.append(DATA[cl][g])
+    return (np.array(x), np.array(x_mod))                        
 
 # Construct correlation between proteomic and deep Proteomic data.
 y_notDeep = []
@@ -606,7 +674,63 @@ for cl in DPROTD.keys():
 # but not the microarray data.
 
 
+## Create an overview histogram of the different expression types ##
+(xM, xM_mod) = flattenExpression(OMICRD)
+(xP, xP_mod) = flattenExpression(OPROTBoth)
+(xR, xR_mod) = flattenExpression(RSEQD, 'RtoE')
 
+RSeqCut = 100.0
+xM = xM[np.nonzero(xM)]
+xR = xR[xR > RSeqCut]
+xP = xP[np.nonzero(xP)]
+xM_mod = xM_mod[np.nonzero(xM_mod)]
+xR_mod = xR_mod[xR_mod > RSeqCut]
+xP_mod = xP_mod[np.nonzero(xP_mod)]
+
+
+xrsqfmt = mpl.ticker.ScalarFormatter()
+xrsqfmt.set_powerlimits((-3, 2))
+xrsqfmt.set_scientific(True)
+
+fig = plt.figure()
+ax1 = fig.add_subplot(231)
+bins = np.linspace(np.min(xM), np.max(xM), 50)
+ax1.hist(xM, bins, alpha=0.5)
+ax2 = fig.add_subplot(232)
+bins = np.linspace(np.min(xR), np.max(xR), 50)
+ax2.hist(xR, bins, alpha=0.5)
+ax2.locator_params(axis = 'x', nbins = 4)
+ax2.xaxis.set_major_formatter(xrsqfmt)
+ax3 = fig.add_subplot(233)
+bins = np.linspace(np.min(xP), np.max(xP), 50)
+ax3.hist(xP, bins, alpha=0.5)
+
+ax4 = fig.add_subplot(234)
+bins = np.linspace(np.min(xM_mod), np.max(xM_mod), 50)
+ax4.hist(xM_mod, bins, alpha=0.5,)
+ax5 = fig.add_subplot(235)
+bins = np.linspace(np.min(xR_mod), np.max(xR_mod), 50)
+ax5.hist(xR_mod, bins, alpha=0.5)
+ax5.locator_params(axis = 'x', nbins = 4)
+ax5.xaxis.set_major_formatter(xrsqfmt)
+ax6 = fig.add_subplot(236)
+bins = np.linspace(np.min(xP_mod), np.max(xP_mod), 50)
+ax6.hist(xP_mod, bins, alpha=0.5)
+
+ax1.set_title('microarray')
+ax2.set_title('RNA-seq (FPKM > ' + str(RSeqCut) + ')')
+ax3.set_title('protein')
+
+ax4.set_xlabel('expression')
+ax5.set_xlabel('expression')
+ax6.set_xlabel('expression')
+
+ax1.set_ylabel('Frequency (all genes)')
+ax4.set_ylabel('Frequency (model genes)')
+fig.tight_layout()
+fig.savefig('expression_dists_all.png', bbox_inches='tight', dpi=300)
+
+###################
         
 # Combine proteomic data and set low intensity
 # values to zero.
@@ -764,19 +888,6 @@ for cl in MRNAD.keys():
             PROTMRNA[cl][g] = m_MtoP*MRNAD[cl][g] + \
             b_MtoP
 
-# Plot histograms for different datatypes 
-def flattenExpression(DATA):
-    x = []
-    x_mod = []
-    for cl in DATA.keys():
-        for g in DATA[cl].keys():
-            if DATA[cl][g] == DATA[cl][g]:
-                x.append(DATA[cl][g])
-                if IPIToEntrez.has_key(g):
-                    ENTREZ = IPIToEntrez[g]
-                    if modgenes.has_key(ENTREZ):
-                        x_mod.append(DATA[cl][g])
-    return (np.array(x), np.array(x_mod))                        
                         
 (xM, xM_mod) = flattenExpression(MRNAD)
 xM = m_MtoP*xM + b_MtoP
@@ -1082,7 +1193,7 @@ def zeroAdjustExpression(mz_pz):
         tissue = tissue.replace(" ","_")    
         tissue = tissue.replace("/","_")
         tissue = tissue.replace("-","_")    
-        for g in LPROTMRNA[clPROT]:
+        for g in LPROTMRNA[clPROT].keys():
             ENTREZ = "UNKNOWN ENTREZ ID"
             if IPIToEntrez.has_key(g):
                 ENTREZ = IPIToEntrez[g]  
@@ -1178,7 +1289,7 @@ def zeroAdjustExpression(mz_pz):
             PoutFI.close()
         MPoutFI.close()   
 
-if True:        
+if False:        
     num_Pint = 50
     num_Mint = 100
     PZeroEnd = np.argmax(Rbott)
@@ -1193,16 +1304,109 @@ if True:
     for i in range(-1, num_Mint):
         mz = -1
         if i >= 0:    
-            mzVAL = np.percentile(Mflat,int(100.0*i/num_Mint))
+            mzVAL = np.percentile(Mflat,100.0*i/num_Mint)
             mz = np.searchsorted(Mflat, mzVAL)
         m_idx.append(mz)
     for j in range(-1, num_Pint):
         pz = -1
         if j >= 0:
-            pzVAL = np.percentile(y_notDeep[0:PZeroEnd+1],int(100.0*j/num_Pint))
+            pzVAL = np.percentile(y_notDeep[0:PZeroEnd+1], 100.0*j/num_Pint)
             pz = np.searchsorted(y_notDeep, pzVAL)                
         p_idx.append(pz)        
     i_by_j = product(m_idx, p_idx)
     pool = multiprocessing.Pool(nthreads)
     pool.map(zeroAdjustExpression, i_by_j)
     pool.close()
+
+
+
+# We can process the RNA-Seq data separately since we can assume
+# for the moment that it is the highest quality datatype.
+
+def zeroAdjustRNASeq(zAdjTup):
+    mz = zAdjTup[0]
+    zero_sub = zAdjTup[1]
+
+    m_zero = Mflat[0]
+    if mz >= 0:    
+        m_zero = Mflat[mz]
+    modRcount = 0
+    LRSEQD = copy.deepcopy(RSEQD)
+    # Zero adjust expression values
+    for cl in LRSEQD.keys():
+        for g in LRSEQD[cl].keys():
+            if LRSEQD[cl][g] < m_zero:
+                LRSEQD[cl][g] = zero_sub
+            else:
+                LRSEQD[cl][g] = LRSEQD[cl][g] - m_zero
+
+
+    # Begin the process of summing isoform data as input to FALCON.
+    thresh_label = str(m_zero)[0:5] + '_' + str(zero_sub)   
+    if not os.path.isdir('nci60rseq_thresh'):
+        if os.path.exists('nci60rseq_thresh'):
+            raise Exception("Specified output directory is a file!")
+        os.mkdir('nci60rseq_thresh')        
+    if not os.path.isdir('nci60rseq_thresh/' + thresh_label):
+        if os.path.exists('nci60rseq_thresh/' + thresh_label):
+            raise Exception("Specified output directory is a file!")
+        os.mkdir('nci60rseq_thresh/' + thresh_label)
+        
+    nCL = len(LRSEQD.keys())
+    ModLRSEQD = {}
+    for CL in LRSEQD.keys():
+        ModLRSEQD[CL] = {}
+        for g in LRSEQD[CL].keys():
+            ENTREZ = "UNKNOWN ENTREZ ID"
+            if RefseqToEntrez.has_key(g):
+                ENTREZ = RefseqToEntrez[g]  
+                if modgenes.has_key(ENTREZ): 
+                    rEXP = LRSEQD[CL][g]
+                    if rEXP == rEXP:
+                        if LRSEQD[CL].has_key(ENTREZ):
+                            ModLRSEQD[CL][ENTREZ].append(rEXP)
+                        else:
+                            ModLRSEQD[CL][ENTREZ] = [rEXP]
+
+    for CL in LRSEQD.keys():
+        RoutFI = open('nci60rseq_thresh/' + thresh_label 
+                       + '/' + CL + '.csv','w')
+        RoutFI.write("gene\tmean\tvar\n")    
+        for g in ModLRSEQD[CL].keys():
+            rEXP = np.array(ModLRSEQD[CL][g])
+            rEXP = rEXP[np.logical_not(np.isnan(rEXP))]
+            if len(rEXP) > 0:
+                rEXP = sum(rEXP)
+                modRcount = modRcount + 1
+            else:
+                rEXP = NaN    
+            rEXP = str(rEXP)
+            outlist = [g, rEXP, "1"]
+            RoutFI.write("\t".join(outlist)+"\n")
+        RoutFI.close()   
+    return modRcount/float(nCL)
+
+if True:        
+    num_Rint = 100
+    R_perc_max = 75.0
+    R_pscale = num_Rint/R_perc_max
+    PZeroEnd = np.argmax(Rbott)
+    r_idx = []
+    (Rflat, Rflat_mod) = flattenExpression(RSEQD)
+    Rflat = sorted(Rflat)
+    for i in range(-1, num_Rint):
+        rz = -1
+        if i >= 0:
+            rzVAL = np.percentile(Rflat,100.0*i/(num_Rint*R_pscale))
+            print([i, 100.0*i/(num_Rint*R_pscale), 
+                   int(100.0*i/(num_Rint*R_pscale)), rzVAL])            
+            rz = np.searchsorted(Rflat, rzVAL)
+            
+        r_idx.append(rz)
+    zvals = [0.0, NaN]
+    zatups = product(r_idx, zvals)
+    pool = multiprocessing.Pool(nthreads)
+    modRcounts = pool.map(zeroAdjustRNASeq, zatups)
+    pool.close()
+    print("Average # of model genes with RNA-Seq data: ")
+    print(modRcounts)
