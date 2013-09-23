@@ -28,6 +28,8 @@ mrnaEXP = DATADIR + 'Gholami_Table_S8_mRNA.csv'
 rnaseqEXP = DATADIR + 'RNASeq'
 # REFSEQ to Entrez (used for RNA-Seq data):
 refseqEntrezDB = DATADIR + 'REFSEQ_to_Entrez.txt'
+# REFSEQ to IPI (used for comparing to RNA-Seq data):
+refseqIPIDB = DATADIR + 'REFSEQ_to_IPI.txt'
 
 
 # OUTPUT:
@@ -89,6 +91,7 @@ nthreads = int(np.floor(multiprocessing.cpu_count()*0.9))
 # cd ~/FBA/models/Analysis/CancerExpression/NCI60/
 # ~/FBA/FALCON/analysis/nci60/proteomic_file_make.py
 
+import re
 import os
 import sys
 import copy
@@ -107,6 +110,15 @@ import pickle
 
 NaN = float("nan")
 
+def cellLineSimple(CL):
+    tissue = CL
+    tissue = tissue.replace("(","_")
+    tissue = tissue.replace(")","_")
+    tissue = tissue.replace(" ","_")    
+    tissue = tissue.replace("/","_")
+    tissue = tissue.replace("-","_")
+    return tissue
+
 def product(*args):
     if not args:
         return iter(((),)) # yield tuple()
@@ -117,7 +129,9 @@ def veccorr(x, y):
     R = np.corrcoef(x,y)
     return R[0,1]
 
-def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos, intercept=True):
+
+def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos, s=0.5, 
+                    intercept=True):
     (m,b) = (NaN,NaN)
     if intercept:
         clf = linear_model.LinearRegression()
@@ -142,7 +156,7 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos, intercept=Tru
     eps_y = (ymax-ymin)/100
     ax.set_title(fig_title, fontsize=10)    
     ax.axis([xmin-eps_x, xmax+eps_x, ymin-eps_y, ymax+eps_y])
-    ax.scatter(x,y,color='blue',s=0.5,edgecolor='none')
+    ax.scatter(x,y,color='blue',s=s,edgecolor='none')
     ax.set_aspect(1./ax.get_data_ratio()) # make axes square
     if len(x_title) > 0:
         ax.set_xlabel(x_title)
@@ -154,32 +168,44 @@ def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos, intercept=Tru
             "x + " + str(b)[0:4], fontsize=8)
     ax.text(txtpos[2], txtpos[3], "r = " + str(R[0][1])[0:4], fontsize=8)
     return (m, b, R[0][1])
+
+class KeyDict(dict):
+    def __missing__(self, key):
+        return key
     
-def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez):
+def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez, ProtToMRNA={}, CLisFileName=False):
+    ProtToMRNA = KeyDict(ProtToMRNA)
     y = []
     x = []
     y_all = []
     x_all = []    
     MPmissed = 0    
     for cl in PROTD.keys():
-        if MRNAD.has_key(cl):
+        clM = cl
+        if CLisFileName:
+            clM = cellLineSimple(cl)
+            clM = re.sub('^[a-zA-Z]+_', '', clM)
+        if MRNAD.has_key(clM):
+            if CLisFileName:
+                print('Found ' + clM)
             for g in PROTD[cl].keys():
-                if MRNAD[cl].has_key(g):
-                    if ((MRNAD[cl][g] == MRNAD[cl][g])
+                gM = ProtToMRNA[g]
+                if MRNAD[clM].has_key(gM):
+                    if ((MRNAD[clM][gM] == MRNAD[clM][gM])
                         and (PROTD[cl][g] == PROTD[cl][g])
                         and PROTD[cl][g] > 0.0):
-                        x_all.append(MRNAD[cl][g])
+                        x_all.append(MRNAD[clM][gM])
                         y_all.append(PROTD[cl][g])
                         if IPIToEntrez.has_key(g):
                             ENTREZ = IPIToEntrez[g]
                             if modgenes.has_key(ENTREZ):
-                                x.append(MRNAD[cl][g])
+                                x.append(MRNAD[clM][gM])
                                 y.append(PROTD[cl][g])
                         else:
                             MPmissed += 1
-        else:
-            raise Exception("mRNA <-> protein cell line " 
-                            + cl + " label mismatch!")
+        # else:
+        #     raise Exception("mRNA <-> protein cell line " 
+        #                     + cl + " label mismatch!")
     # print("Found " + str(len(x)) + 
     #      " (mRNA, Prot) data points for model genes.")
     # print("m-P mismatches: " + str(MPmissed))
@@ -278,6 +304,30 @@ def centerMeshCorrPlot(x, y, m, n, ival):
     ax.set_zlabel("Pearson's r")    
     return (fig, ax)    
 
+# Read in gene dictionaries from DAVID files
+def readDavidDict(dictFileName, header=True):
+    AtoB = {}
+    BtoA = {}
+    DavidFI = open(dictFileName,'r')
+    if header:
+        header = DavidFI.readline()
+    while True:
+        line = DavidFI.readline()
+        line = line.strip()
+        if len(line) == 0:
+            break
+        colvals = line.split("\t")
+        colvals[0] = colvals[0].strip()
+        colvals[1] = colvals[1].strip()
+        AtoB[colvals[0]] = colvals[1]
+        BtoA[colvals[1]] = colvals[0]
+    DavidFI.close()
+    return (AtoB, BtoA)
+
+(EntrezToIPI, IPIToEntrez) = readDavidDict(entrezIPIdb, False)
+(RefseqToEntrez, EntrezToRefseq) = readDavidDict(refseqEntrezDB)
+(RefseqToIPI, IPIToRefseq) = readDavidDict(refseqIPIDB)
+    
 modgenesList = []
 modgenes = {}
 modgenesFI = open(rec2genes,'r')
@@ -309,38 +359,6 @@ while True:
     n60_COREtoPROT[colvals[0]] = colvals[1]
     n60_PROTtoCORE[colvals[1]] = colvals[0]
 nci60labelFI.close()
-
-EntrezToIPI = {}
-IPIToEntrez = {}
-entrezIPIFI = open(entrezIPIdb,'r')    
-# no header
-while True:
-    line = entrezIPIFI.readline()
-    line = line.strip()
-    if len(line) == 0:
-        break
-    colvals = line.split("\t")
-    colvals[0] = colvals[0].strip()
-    colvals[1] = colvals[1].strip()
-    EntrezToIPI[colvals[0]] = colvals[1]
-    IPIToEntrez[colvals[1]] = colvals[0]
-entrezIPIFI.close()
-
-EntrezToRefseq = {}
-RefseqToEntrez = {}
-entrezRefseqFI = open(refseqEntrezDB, 'r')    
-header = entrezRefseqFI.readline()
-while True:
-    line = entrezRefseqFI.readline()
-    line = line.strip()
-    if len(line) == 0:
-        break
-    colvals = line.split("\t")
-    colvals[0] = colvals[0].strip()
-    colvals[1] = colvals[1].strip()
-    RefseqToEntrez[colvals[0]] = colvals[1]
-    EntrezToRefseq[colvals[1]] = colvals[0]
-entrezRefseqFI.close()
 
 
 #In CPC file with best matching proteins, we have
@@ -804,6 +822,37 @@ for cl in DPROTD.keys():
         if DPROTD[cl][g] > 0:
             PROTBoth[cl][g] = DPROTD[cl][g]
 
+############################################
+# Prot vs RNA-Seq and Microarray vs RNA-Seq#
+(x_r, y_r, x_rall, y_rall) = getProt_mRNA_pairs(RSEQD, PROTBoth, 
+                                                IPIToEntrez, 
+                                                ProtToMRNA=IPIToRefseq, 
+                                                CLisFileName=True)
+fig = plt.figure()
+
+# Analayze metabolic gene correlation
+x_r = np.array(x_r)
+y_r = np.array(y_r)
+ax1 = fig.add_subplot(121)
+(m, b, r) = plotScatterCorr(ax1, x_r, y_r, 'Metabolic Genes', 'RNA-Seq FPKM',
+                            'protein intensity', [600, 2.1, 600, 1.9], 
+                            s=3, intercept=False)
+
+# Analyze all (including non-model) gene correlation
+x_rall = np.array(x_rall)
+y_rall = np.array(y_rall)
+ax2 = fig.add_subplot(122)
+(m, b, r) = plotScatterCorr(ax2, x_rall, y_rall, 'All Genes', 'RNA-Seq FPKM',
+                            'protein intensity', [6000, 2.5, 6000, 2.3],
+                            s=3, intercept=False)
+
+fig.tight_layout()
+fig.savefig('RNASeq_protein_correlation.png', bbox_inches='tight',
+            dpi=300)
+
+##########################################
+
+            
 # Construct correlation and mRNA+Prot matrix 
 # y: prot such that: prot AND model AND mRNA
 # x: mRNA such that: prot AND model AND mRNA
@@ -966,13 +1015,6 @@ for clPROT in n60_PROTtoCORE.keys():
     ModMRNAD[clPROT] = {}
     ModPROTBoth[clPROT] = {}
     ModPROTMRNA[clPROT] = {}
-    clCORE = n60_PROTtoCORE[clPROT]
-    tissue = clCORE
-    tissue = tissue.replace("(","_")
-    tissue = tissue.replace(")","_")
-    tissue = tissue.replace(" ","_")    
-    tissue = tissue.replace("/","_")
-    tissue = tissue.replace("-","_")    
     for g in PROTMRNA[clPROT]:
         ENTREZ = "UNKNOWN ENTREZ ID"
         if IPIToEntrez.has_key(g):
@@ -1027,12 +1069,7 @@ DBGIPIEnt.close()
 
 for clPROT in n60_PROTtoCORE.keys():
     clCORE = n60_PROTtoCORE[clPROT]
-    tissue = clCORE
-    tissue = tissue.replace("(","_")
-    tissue = tissue.replace(")","_")
-    tissue = tissue.replace(" ","_")    
-    tissue = tissue.replace("/","_")
-    tissue = tissue.replace("-","_")    
+    tissue = cellLineSimple(clCORE)
     MoutFI = open('nci60mRNA/' + tissue + '.csv','w')
     PoutFI = open('nci60prot/' + tissue + '.csv','w')
     MPoutFI = open('nci60prot_mRNA/' + tissue + '.csv','w')
@@ -1187,12 +1224,7 @@ def zeroAdjustExpression(mz_pz):
         ModLPROTD[clPROT] = {}
         ModLPROTMRNA[clPROT] = {}
         clCORE = n60_PROTtoCORE[clPROT]
-        tissue = clCORE
-        tissue = tissue.replace("(","_")
-        tissue = tissue.replace(")","_")
-        tissue = tissue.replace(" ","_")    
-        tissue = tissue.replace("/","_")
-        tissue = tissue.replace("-","_")    
+        tissue = cellLineSimple(clCORE)
         for g in LPROTMRNA[clPROT].keys():
             ENTREZ = "UNKNOWN ENTREZ ID"
             if IPIToEntrez.has_key(g):
@@ -1230,12 +1262,7 @@ def zeroAdjustExpression(mz_pz):
 
     for clPROT in n60_PROTtoCORE.keys():
         clCORE = n60_PROTtoCORE[clPROT]
-        tissue = clCORE
-        tissue = tissue.replace("(","_")
-        tissue = tissue.replace(")","_")
-        tissue = tissue.replace(" ","_")    
-        tissue = tissue.replace("/","_")
-        tissue = tissue.replace("-","_")
+        tissue = cellLineSimple(clCORE)
         MoutFI = 0
         PoutFI = 0
         if pz == -1:
@@ -1386,7 +1413,7 @@ def zeroAdjustRNASeq(zAdjTup):
         RoutFI.close()   
     return modRcount/float(nCL)
 
-if True:        
+if False:
     num_Rint = 100
     R_perc_max = 75.0
     R_pscale = num_Rint/R_perc_max

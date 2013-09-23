@@ -1,4 +1,4 @@
-function analyzeMultiPerturbation(model, expFileDir)
+function analyzeMultiPerturbation(model, expFileDir, colOrder)
 %
 % Note: model not used yet
 %
@@ -27,6 +27,11 @@ function analyzeMultiPerturbation(model, expFileDir)
 %               gene (entrez gene id), mean (expression value,
 %               and standard deviation (of expression).
 %
+%OPTIONAL INPUTS
+% colOrder   vector used as sort order for 'sortrows',
+%            used in determining the traverasl over the set of
+%            parameters.
+% 
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
 %
@@ -52,7 +57,12 @@ for i = 1:length(pertPaths)
     expSubDir = pertPaths{i};
     paramMat(i,:) = directoryLabelParse(expSubDir,'_');
 end
-[paramsSorted, paramsIdx] = sortrows(paramMat);
+
+if exist('colOrder', 'var')
+    [paramsSorted, paramsIdx] = sortrows(paramMat, colOrder);
+else
+    [paramsSorted, paramsIdx] = sortrows(paramMat);
+end
 
 for i = 1:length(pertPaths)
     ppIdx = paramsIdx(i);
