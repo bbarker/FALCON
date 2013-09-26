@@ -183,8 +183,8 @@ def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez, ProtToMRNA={}, CLisFileName=Fa
     for cl in PROTD.keys():
         clM = cl
         if CLisFileName:
-            clM = cellLineSimple(cl)
-            clM = re.sub('^[a-zA-Z]+_', '', clM)
+            clM = cellLineSimple(n60_PROTtoCORE[cl])
+            # clM = re.sub('^[a-zA-Z]+_', '', clM)
         if MRNAD.has_key(clM):
             if CLisFileName:
                 print('Found ' + clM)
@@ -203,6 +203,8 @@ def getProt_mRNA_pairs(MRNAD, PROTD, IPIToEntrez, ProtToMRNA={}, CLisFileName=Fa
                                 y.append(PROTD[cl][g])
                         else:
                             MPmissed += 1
+        else:
+            print('Not Found ' + clM)                    
         # else:
         #     raise Exception("mRNA <-> protein cell line " 
         #                     + cl + " label mismatch!")
@@ -836,6 +838,10 @@ ax1 = fig.add_subplot(121)
 (m, b, r) = plotScatterCorr(ax1, x_rp, y_rp, 'Metabolic Genes', 'RNA-Seq FPKM',
                             'protein intensity', [600, 2.1, 600, 1.9], 
                             s=3, intercept=False)
+print("metabolic Protein <-> RNA-Seq:")
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_rp, y_rp)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_rp, y_rp)[0]))
+
 # Analyze all (including non-model) gene correlation
 x_rpall = np.array(x_rpall)
 y_rpall = np.array(y_rpall)
@@ -843,6 +849,11 @@ ax2 = fig.add_subplot(122)
 (m, b, r) = plotScatterCorr(ax2, x_rpall, y_rpall, 'All Genes', 'RNA-Seq FPKM',
                             'protein intensity', [6000, 2.5, 6000, 2.3],
                             s=3, intercept=False)
+
+print("all Protein <-> RNA-Seq:")
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_rpall, y_rpall)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_rpall, y_rpall)[0]))
+
 fig.tight_layout()
 fig.savefig('RNASeq_protein_correlation.png', bbox_inches='tight',
             dpi=300)
@@ -861,6 +872,11 @@ ax1 = fig.add_subplot(121)
 (m, b, r) = plotScatterCorr(ax1, x_rm, y_rm, 'Metabolic Genes', 'RNA-Seq FPKM',
                             'microarray intensity', [600, 3.1, 600, 2.9], 
                             s=3, intercept=False)
+print("metabolic microarray <-> RNA-Seq:")
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_rm, y_rm)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_rm, y_rm)[0]))
+
+
 # Analyze all (including non-model) gene correlation
 x_rmall = np.array(x_rmall)
 y_rmall = np.array(y_rmall)
@@ -868,6 +884,10 @@ ax2 = fig.add_subplot(122)
 (m, b, r) = plotScatterCorr(ax2, x_rmall, y_rmall, 'All Genes', 'RNA-Seq FPKM',
                             'microarray intensity', [6000, 3.5, 6000, 3.3],
                             s=3, intercept=False)
+print("all microarray <-> RNA-Seq:")
+print("Spearman's rho: " + str(scipy.stats.stats.spearmanr(x_rmall, y_rmall)[0]))
+print("Kendall's tau: " + str(scipy.stats.stats.kendalltau(x_rmall, y_rmall)[0]))
+
 fig.tight_layout()
 fig.savefig('RNASeq_microarray_correlation.png', bbox_inches='tight',
             dpi=300)
