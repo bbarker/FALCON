@@ -824,30 +824,52 @@ for cl in DPROTD.keys():
 
 ############################################
 # Prot vs RNA-Seq and Microarray vs RNA-Seq#
-(x_r, y_r, x_rall, y_rall) = getProt_mRNA_pairs(RSEQD, PROTBoth, 
+(x_rp, y_rp, x_rpall, y_rpall) = getProt_mRNA_pairs(RSEQD, PROTBoth, 
                                                 IPIToEntrez, 
                                                 ProtToMRNA=IPIToRefseq, 
                                                 CLisFileName=True)
 fig = plt.figure()
-
 # Analayze metabolic gene correlation
-x_r = np.array(x_r)
-y_r = np.array(y_r)
+x_rp = np.array(x_rp)
+y_rp = np.array(y_rp)
 ax1 = fig.add_subplot(121)
-(m, b, r) = plotScatterCorr(ax1, x_r, y_r, 'Metabolic Genes', 'RNA-Seq FPKM',
+(m, b, r) = plotScatterCorr(ax1, x_rp, y_rp, 'Metabolic Genes', 'RNA-Seq FPKM',
                             'protein intensity', [600, 2.1, 600, 1.9], 
                             s=3, intercept=False)
-
 # Analyze all (including non-model) gene correlation
-x_rall = np.array(x_rall)
-y_rall = np.array(y_rall)
+x_rpall = np.array(x_rpall)
+y_rpall = np.array(y_rpall)
 ax2 = fig.add_subplot(122)
-(m, b, r) = plotScatterCorr(ax2, x_rall, y_rall, 'All Genes', 'RNA-Seq FPKM',
+(m, b, r) = plotScatterCorr(ax2, x_rpall, y_rpall, 'All Genes', 'RNA-Seq FPKM',
                             'protein intensity', [6000, 2.5, 6000, 2.3],
                             s=3, intercept=False)
-
 fig.tight_layout()
 fig.savefig('RNASeq_protein_correlation.png', bbox_inches='tight',
+            dpi=300)
+
+## and now with microarray
+(x_rm, y_rm, x_rmall, y_rmall) = getProt_mRNA_pairs(RSEQD, OMICRD, 
+                                                    IPIToEntrez, 
+                                                    ProtToMRNA=IPIToRefseq, 
+                                                    CLisFileName=True)
+
+fig = plt.figure()
+# Analayze metabolic gene correlation
+x_rm = np.array(x_rm)
+y_rm = np.array(y_rm)
+ax1 = fig.add_subplot(121)
+(m, b, r) = plotScatterCorr(ax1, x_rm, y_rm, 'Metabolic Genes', 'RNA-Seq FPKM',
+                            'microarray intensity', [600, 3.1, 600, 2.9], 
+                            s=3, intercept=False)
+# Analyze all (including non-model) gene correlation
+x_rmall = np.array(x_rmall)
+y_rmall = np.array(y_rmall)
+ax2 = fig.add_subplot(122)
+(m, b, r) = plotScatterCorr(ax2, x_rmall, y_rmall, 'All Genes', 'RNA-Seq FPKM',
+                            'microarray intensity', [6000, 3.5, 6000, 3.3],
+                            s=3, intercept=False)
+fig.tight_layout()
+fig.savefig('RNASeq_microarray_correlation.png', bbox_inches='tight',
             dpi=300)
 
 ##########################################
