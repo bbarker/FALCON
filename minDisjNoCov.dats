@@ -108,7 +108,7 @@ exception EmptyList of ()
 exception MapKeyNotFound of ()
 exception TestCase of ()
 
-#define NAN 
+#define NAN 0.0/0.0
 
 
 absviewtype genes
@@ -207,7 +207,7 @@ gDMap_find (mp, k): double = let
       in res end 
     else let 
       prval () = opt_unnone {double} (res) 
-      in ( (* print(k + "not found\n"); $raise MapKeyNotFound;*) ~1.0) end
+      in ( (* print(k + "not found\n"); $raise MapKeyNotFound;*) NAN) end
   end // end of [gDMap_find]
 
 implement
@@ -755,7 +755,7 @@ in case+ inlist of
       val (miss, csum, cvar) = loop(inlist, emap, smap, 0, 0.0, 0.0)
     in  ( double_of_int(num_genes)*csum/(double_of_int((num_genes - miss))), cvar) end  
   | list_nil () => ( $raise EmptyList; (0.0, 0.0))  
-end // end of [list_min]
+end // end of [dlist_sum_var]
 
 
 // Need to split this in to two functions: recursive function to merge 

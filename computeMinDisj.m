@@ -58,7 +58,7 @@ if status ~= 0
   end
 end
 
-%delete(rfname)
+delete(rfname)
 if nargin > 2
   delete(genedata_filename)
 end
@@ -85,7 +85,7 @@ while cidx < nrxns
 end
 
 rxnData = importdata(rfout);
-%delete(rfout)
+delete(rfout)
 %Handle absent newline at last-line issue
 if length(rxnData) == (nrxns-1)
   rxnData(nrxns,:) = nan*ones(1,2);
