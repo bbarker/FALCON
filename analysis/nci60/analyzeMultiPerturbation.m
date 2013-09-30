@@ -51,11 +51,11 @@ maxStasLen = 0;
 numCellLines = 0;
 fluxFileList = {};
 
-nParams = length(directoryLabelParse(pertPaths{1},'_'));
+nParams = length(directoryLabelParse(pertPaths{1}, '_'));
 paramMat = zeros(length(pertPaths), nParams);
 for i = 1:length(pertPaths)
     expSubDir = pertPaths{i};
-    paramMat(i,:) = directoryLabelParse(expSubDir,'_');
+    paramMat(i,:) = directoryLabelParse(expSubDir, '_', '~');
 end
 
 if exist('colOrder', 'var')

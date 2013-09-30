@@ -129,7 +129,6 @@ def veccorr(x, y):
     R = np.corrcoef(x,y)
     return R[0,1]
 
-
 def plotScatterCorr(ax, x, y, fig_title, x_title, y_title, txtpos, s=0.5, 
                     intercept=True):
     (m,b) = (NaN,NaN)
@@ -1182,6 +1181,7 @@ Mflat = sorted(Mflat)
 def zeroAdjustExpression(mz_pz):
     mz = mz_pz[0]
     pz = mz_pz[1]
+    zero_sub = mz_pz[2]    
     p_zero = y_notDeep[0]
     m_zero = Mflat[0]
     if pz >= 0:
@@ -1196,13 +1196,13 @@ def zeroAdjustExpression(mz_pz):
             if LPROTD[cl][g] == 0:
                 LPROTD[cl][g] = NaN
             elif LPROTD[cl][g] < p_zero:
-                LPROTD[cl][g] = 0
+                LPROTD[cl][g] = zero_sub
             else:
-                LPROTD[cl][g] = LPROTD[cl][g] - p_zero    
+                LPROTD[cl][g] = LPROTD[cl][g] - p_zero
     for cl in LMICRD.keys():
         for g in LMICRD[cl].keys():
             if LMICRD[cl][g] < m_zero:
-                LMICRD[cl][g] = 0
+                LMICRD[cl][g] = zero_sub
             else:
                 LMICRD[cl][g] = LMICRD[cl][g] - m_zero
 
@@ -1226,7 +1226,8 @@ def zeroAdjustExpression(mz_pz):
                 LPROTMRNA[cl][g] = m*LMICRD[cl][g]
 
     # Begin the process of summing isoform data as input to FALCON.
-    thresh_label = str(m_zero)[0:5] + "_" + str(p_zero)[0:5] + "_" + str(m)[0:5]    
+    thresh_label = str(m_zero)[0:5] + "_" + str(p_zero)[0:5] + \
+      "_" + str(zero_sub) + "~" + str(m)[0:5]
     if pz == -1:
         if not os.path.isdir('nci60mRNA_thresh'):
             if os.path.exists('nci60mRNA_thresh'):
@@ -1358,7 +1359,7 @@ def zeroAdjustExpression(mz_pz):
             PoutFI.close()
         MPoutFI.close()   
 
-if False:        
+if True:        
     num_Pint = 50
     num_Mint = 100
     PZeroEnd = np.argmax(Rbott)
@@ -1381,10 +1382,11 @@ if False:
         if j >= 0:
             pzVAL = np.percentile(y_notDeep[0:PZeroEnd+1], 100.0*j/num_Pint)
             pz = np.searchsorted(y_notDeep, pzVAL)                
-        p_idx.append(pz)        
-    i_by_j = product(m_idx, p_idx)
+        p_idx.append(pz)
+    zvals = [0.0, NaN]                
+    ijz = product(m_idx, p_idx, zvals)
     pool = multiprocessing.Pool(nthreads)
-    pool.map(zeroAdjustExpression, i_by_j)
+    pool.map(zeroAdjustExpression, ijz)
     pool.close()
 
 

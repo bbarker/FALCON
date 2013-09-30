@@ -1,4 +1,4 @@
-function runMultiPerturbtion(model, expFileDir, CL, envConstrain, addLabel)
+function runMultiPerturbtion(model, expFileDir, CLs, envConstrain, addLabel)
 %
 % Calls runComparisonScript for FALCON for a single cell line,
 % and searches subdirectories for files beloging to this cell line,
@@ -25,8 +25,12 @@ function runMultiPerturbtion(model, expFileDir, CL, envConstrain, addLabel)
 %               gene (entrez gene id), mean (expression value,
 %               and standard deviation (of expression).
 %
-% CL            If nonempty or exists, should be the name
-%               of a single cell-line to run.
+% CLs    If nonempty or exists, should be a cell array
+%        of cell-line names to run. A convenint thing to do:
+%        C = textscanFileName('NCI60_labels.csv', '%s\t%s', ...
+%            'HeaderLines', 1, 'Whitespace', '\t\n');
+%        Then use e.g. C{1}(1:10) for the first 10 CLs.
+%
 %
 %
 %OPTIONAL INPUTS
@@ -43,19 +47,22 @@ function runMultiPerturbtion(model, expFileDir, CL, envConstrain, addLabel)
 % Brandon Barker 09/15/13
 %
 
-%Get a list of subdirectories in the specified directory
-pertPaths = setdiff(strsplit(genpath(expFileDir),':'), {expFileDir});
-pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
-expressionFile = convertExpressionFileName(CL);
+for cidx = 1:length(CLs)
+    CL = CLs{cidx};
+    %Get a list of subdirectories in the specified directory
+    pertPaths = setdiff(strsplit(genpath(expFileDir),':'), {expFileDir});
+    pertPaths = pertPaths(boolean(cellfun(@length, pertPaths)));
+    expressionFile = convertExpressionFileName(CL);
 
-modLabel = '';
-if exist('addLabel', 'var')
-    if length(addLabel) > 0
-	modLabel = addLabel;
+    modLabel = '';
+    if exist('addLabel', 'var')
+	if length(addLabel) > 0
+	    modLabel = addLabel;
+	end
     end
-end
 
-parfor i = 1:length(pertPaths)
-    expSubDir = pertPaths{i};
-    runComparisonScript(model, 'FALCON', expSubDir, envConstrain, CL, modLabel);
+    parfor i = 1:length(pertPaths)
+	expSubDir = pertPaths{i};
+	runComparisonScript(model, 'FALCON', expSubDir, envConstrain, CL, modLabel);
+    end
 end
