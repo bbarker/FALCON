@@ -1,4 +1,9 @@
-function analyzeMultiPerturbation(model, expFileDir, colOrder)
+function analyzeCLPermutations(model, expFileDir, colOrder, paramRange)
+%
+% This script should be called after careful inspection of output
+% from e.g. analyzeMultiPerturbation.m and 
+% analyzeMultiPerturbation_ErrorBars.m, because we need to run
+% such scripts to select a good parameter ***range***. 
 %
 % Note: model not used yet
 %
@@ -82,11 +87,11 @@ end
 
 
 % How many ranked exo metabolites to consider
-metDepth = [2 3 4 5 6 7 8 9 10 11 12 13 14 15]; 
+metDepth = [2 3 4 5 6 10 15]; 
 
 % Which stats to get and their labels.
-statLabel = {'Pearson', 'Spearman', 'Kendall', 'CosineSim', 'L1Dist', ...
-             'Sensitivity', 'UptakeSensitivity', 'ReleaseSensitivity'};
+statLabel = {'Pearson', 'Spearman', 'Kendall', 'CosineSim', ...
+             'L1Dist', 'UptakeSensitivity', 'ReleaseSensitivity'};
 
 % Having this index-based label mechanism is quite unfortunate; need to think
 % of how to make it intrinsic to analyzeV_solFileOneCellLine.m

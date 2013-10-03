@@ -91,7 +91,16 @@ for i = 1:length(celllinesarray)
         [v_solirrev v_solrev] = runFalcon(modelToRun, ...
                                           expressionFileLoc, .1, .01);
     elseif(strcmp(method, 'LMOMA'))
-        [v_solirrev v_solrev] = runLinearMOMA(model, ...
+        rxnValues = [];
+        rxnList = [];
+	for j = 1:length(jainMetsArray)
+	    jthExcIdxs = jainMetsToExcIdxs(jainMetsArray{j});
+            for k = 1:length(jthExcIdxs)
+                rxnList(end + 1) = jthExcIdxs(k);
+                rxnValues(end + 1) = coretable(j, i); 
+            end
+	end
+        [v_solirrev v_solrev] = runLinearMOMAOneShot(model, ...
                                               rxnValues, rxnList);
     elseif(strcmp(method, 'FBA'))
         [v_solirrev v_solrev] = runFBA(model);

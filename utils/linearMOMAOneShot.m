@@ -6,6 +6,9 @@ function [solutionDel,solutionWT] = linearMOMAOneShot(model,WTflux,objMult,fw,gw
 %       linearMOMA(modelWT,modelDel,osenseStr,minFluxFlag,verbFlab)
 %
 %INPUTS
+% fw                regularization weight
+% gw                LMOMA weight
+%
 % modelWT           Wild type model
 % modelDel          Deletion strain model
 %

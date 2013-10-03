@@ -1,7 +1,12 @@
-function subsetsToStats = analyzeV_solFileOneCellLine(inputFI)
+function subsetsToStats = analyzeV_solFileOneCellLine(inputFI, fluxCol)
 %
 % Needs a spot of commenting in the code too
 %
+%
+
+%OPTIONAL INPUTS
+% fluxCol    (1-60) - specifies an alternative CORE flux to compare to,
+%                     primarily for the purpose of statistical analysis
 %
 
 %%%% *** Settings ***
@@ -18,18 +23,24 @@ nFields = 13;
 inputFiSplit = strsplit(inputFI, '/');
 fileName = inputFiSplit{end};
 CLidx = -1;
-for i = 1:length(cellLinesArray)
-    CL = convertExpressionFileName(cellLinesArray{i});
-    empty = isempty(regexp(fileName, ['^' CL]));
-    if ~empty
-        CLidx = i;
-        break;
+if exist('fluxCol', 'var')
+    CLidx = fluxCol;
+else
+    for i = 1:length(cellLinesArray)
+	CL = convertExpressionFileName(cellLinesArray{i});
+	empty = isempty(regexp(fileName, ['^' CL]));
+	if ~empty
+	    CLidx = i;
+	    break;
+	end
     end
 end
 if CLidx <= 0
     disp('Error: cell line not found.');
     return;
 end
+
+
 
 subsetsToStats = containers.Map;
 [sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable(:, CLidx));
@@ -100,6 +111,9 @@ for i = 1:length(sortedCoreTableColIdxs)
 	% Changing this to norm to account for cancellation.
 	% statsCell(5) = mean(Vest - Vexp);
 	statsCell('L1Dist') = norm(Vest - Vexp, 1);
+        statsCell('Sensitivity') = (uptakeTruePos + releaseTruePos) / ...
+                                   (uptakeTruePos + uptakeFalseNeg + ...
+                                   releaseTruePos + releaseFalseNeg);
 	statsCell('UptakeSensitivity') = uptakeTruePos / ...
                                           (uptakeTruePos + uptakeFalseNeg);
 	statsCell('ReleaseSensitivity') = releaseTruePos / ... 
