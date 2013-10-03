@@ -30,7 +30,7 @@ function analyzeMultiPerturbation(model, expFileDir, colOrder)
 %OPTIONAL INPUTS
 % colOrder   vector used as sort order for 'sortrows',
 %            used in determining the traverasl over the set of
-%            parameters.
+%            parameters. 
 % 
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
@@ -51,7 +51,7 @@ maxStasLen = 0;
 numCellLines = 0;
 fluxFileList = {};
 
-nParams = length(directoryLabelParse(pertPaths{1}, '_'));
+nParams = length(directoryLabelParse(pertPaths{1}, '_', '~'));
 paramMat = zeros(length(pertPaths), nParams);
 for i = 1:length(pertPaths)
     expSubDir = pertPaths{i};

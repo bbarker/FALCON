@@ -101,7 +101,11 @@ rxn_exp_sd = rxnData(:,2); %actually var
 % sds 0 -> small
 disp([min(rxn_exp) max(rxn_exp)]);
 disp([min(rxn_exp_sd) max(rxn_exp_sd)]);
-rxn_exp_sd(rxn_exp_sd == 0) = min(rxn_exp_sd(rxn_exp_sd>0))/2;
+if max(rxn_exp_sd) > 0
+    rxn_exp_sd(rxn_exp_sd == 0) = min(rxn_exp_sd(rxn_exp_sd>0))/2;
+else 
+    rxn_exp_sd(rxn_exp_sd == 0) = 1;
+end
 disp(min(rxn_exp_sd));
 
 
