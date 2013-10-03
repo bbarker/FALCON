@@ -97,7 +97,11 @@ for i = 1:length(celllinesarray)
 	    jthExcIdxs = jainMetsToExcIdxs(jainMetsArray{j});
             for k = 1:length(jthExcIdxs)
                 rxnList(end + 1) = jthExcIdxs(k);
-                rxnValues(end + 1) = coretable(j, i); 
+                rxnValues(end + 1) = coretable(j, i);
+                % Everything appears to check out:
+                % disp([celllinesarray{i} '    ' jainMetsArray{j}]);
+		% disp(jthExcIdxs(k));
+		% disp(coretable(j, i));
             end
 	end
         [v_solirrev v_solrev] = runLinearMOMAOneShot(model, ...
