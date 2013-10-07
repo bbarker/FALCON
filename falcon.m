@@ -28,6 +28,9 @@ function [v_sol, corrval, nvar, v_all] = ...
 
 % TODO:
 %
+%  Print the reaction names/compartments that are fixed to be irrev at each
+%  iteration. This may shed some light on why things sometimes go very slow.
+%
 %  Estimate nxmax again for spalloc
 %
 %  Move spalloc allocation out of while loop
@@ -183,7 +186,7 @@ while sum(~m.rev) > nR_old
     else
         cons1 = r_group_cons(r_group(k));
     end
-        if ~isnan(d) %&& s>0 %(assumed)
+        if ~isnan(d) && s>0 %(assumed)
         %First abs constaint:
         N(cons1, nrxns + 1) = -d;  %This is the normalization variable
         N(cons1, k) = 1;  
@@ -201,7 +204,7 @@ while sum(~m.rev) > nR_old
         csense(cons1 + 1) = 'L';
         f(s2 + 1) = - 1/s;
         if k == r_group(k)
-          s1 = s1 + 2;
+            s1 = s1 + 2;
         end
         s2 = s2 + 1;
         end %end of if not nan
