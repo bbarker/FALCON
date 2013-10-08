@@ -68,7 +68,7 @@ end
 %using set functions to get the right size.
 ruleFirstIdx = containers.Map;
 cidx = 0;
-rxn_rule_group = zeros(1,nrxns);
+rxn_rule_group = zeros(nrxns, 1);
 while cidx < nrxns
   cidx = cidx + 1;
   key = strtrim(model.grRules{cidx});
