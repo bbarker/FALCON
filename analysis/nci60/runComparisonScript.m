@@ -89,7 +89,7 @@ for i = 1:length(celllinesarray)
     if(strcmp(method, 'FALCON'))    
         expressionFileLoc = [expFileDir '/' expressionFile '.csv']
         [v_solirrev v_solrev] = runFalcon(modelToRun, ...
-                                          expressionFileLoc, .1, .01);
+                                          expressionFileLoc, .01);
     elseif(strcmp(method, 'LMOMA'))
         rxnValues = [];
         rxnList = [];

@@ -1,9 +1,15 @@
 function [v_sol, corrval, nvar, v_all] = ...
-    falcon(m, r, r_sd, r_group, flux_sum, rc, minFit)
+    falcon(m, r, r_sd, r_group, rc, minFit, FDEBUG)
 %INPUT
 %
-%OPTIONAL INPUTS
 %
+%OPTIONAL INPUTS
+% FDEBUG    prints or writes to files additional information
+%           Important variables to always change when modifying
+%           code to make sure FDEBUG is realistic:
+%           NColLab <- update whenever s2 is extended
+%           NRowLab <- update whenever s1 is extended
+% 
 %OUTPUT
 %
 %
@@ -67,8 +73,23 @@ function [v_sol, corrval, nvar, v_all] = ...
 %
 
 %
-%We assume m is an irreverisble model, and when m.rev(i) == 1, then m.rxn(i+1) is the reverse rxn of m.rxn(i).
+% We assume m is an irreverisble model, and when m.rev(i) == 1, 
+% then m.rxn(i+1) is the reverse rxn of m.rxn(i).
 %
+
+if ~exist('FDEBUG', 'var')
+    FDEBUG = 0;
+end
+
+% flux_sum is used to ensure that in the LFP, we don't obtain
+% a zero flux, as this is unhelpful. To estimate it, we take the
+% smallest non-zero flux bound and take something slightly smaller.
+% The value shouldn't matter (as long as it is strictly positive)
+% since fluxes are scaled in the LFP transform, but this is probably
+% helpful for numeric stability.
+flux_sum = min(m.ub(m.ub > 0)) / 2;
+
+
 nrxns = length(m.rxns);
 nmets = length(m.mets);
 nnnan = r_group(~isnan(r));
@@ -109,12 +130,17 @@ while sum(~m.rev) > nR_old
     % nnnanrev = sum((~isnan(r)) & m.rev) / 2;
     nnnan_nrev = sum((~isnan(r)) & ~m.rev);
     r_group_cons = zeros(1, nrxns);
+    if FDEBUG
+        NColLab = m.rxns;
+        NRowLab = m.mets;
+    end
     % 1. fit to data
 
     %Preallocate matrix and vectors:
-    %Eventually need to test this to see how much i'm off by for 3rd argument
-    %Sparcity estimate may need to be tweaked, check model:
-    N = spalloc(nmets + 1 + 2*nnnan + 1, nrxns + 2 + nnnan_nrev, floor(2.1*nSnz));
+    %  rows:    nmets + LFPunit + model lb/ubs + flux_sum + exp residuals,
+    %  cols:    nrxns + n + z + exp residual vars
+    N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan, ...
+                nrxns + 1 + 1 + nnnan            , floor(2.1*nSnz));
     disp('size N:');
     disp(size(N));
     N(1:nmets, 1:nrxns) = sparse(m.S);
@@ -131,6 +157,10 @@ while sum(~m.rev) > nR_old
     %and the linear fractional variable z (see B&V 4.32).
     N(s1, s2 + 1) = 0; %n
     N(s1, s2 + 2) = 0; %z
+    if FDEBUG
+        NColLab{s2 + 1} = 'n';
+        NColLab{s2 + 2} = 'z';
+    end
     L(s2 + 1) = -inf;
     U(s2 + 1) = inf;
     L(s2 + 2) = 0;
@@ -142,6 +172,9 @@ while sum(~m.rev) > nR_old
     %Add unitary constraint for denominator (see B&V 4.32).
     csense(s1 + 1) = 'E';
     N(s1 + 1, nrxns + 1) = 1;
+    if FDEBUG
+        NRowLab{s1 + 1} = 'LFP unitary';
+    end
     b(s1 + 1) = 1;
     s1 = s1 + 1;
 
@@ -149,7 +182,7 @@ while sum(~m.rev) > nR_old
     %consider adding conditionals here for U or L == 0.
     %since v >= 0 just gives -v =< 0 under CC transform
     for k = 1:nrxns
-    f(k) = -rc; %regularization constant 
+        f(k) = -rc; %regularization constant 
         N(s1 + 1, k) = 1; 
         N(s1 + 1, nrxns + 2) = -U(k);
         b(s1 + 1) = 0; 
@@ -160,18 +193,22 @@ while sum(~m.rev) > nR_old
         csense(s1 + 2) = 'L'; 
         L(k) = -inf; 
         U(k) = inf;
+        if FDEBUG
+            NRowLab{s1 + 1} = [m.rxns{k} ':U'];
+            NRowLab{s1 + 2} = [m.rxns{k} ':L'];
+        end
         s1 = s1 + 2;
     end 
 
     %Require the sum of fluxes to be above a threshold
-    %It is worth noting that these are the
-    %enzymatic fluxes to keep things more appropriately scaled
     for k = 1:length(ecrxns)
-        N(s1+1, ecrxns(k)) = -1;
+        N(s1+1, ecrxns(k)) = 1;
     end
-    N(s1 + 1, nrxns + 2) = flux_sum;
-    b(s1 + 1) = 0; 
-    csense(s1 + 1) = 'L';
+    if FDEBUG
+        NRowLab{s1 + 1} = 'FlxSum';
+    end
+    b(s1 + 1) = flux_sum; 
+    csense(s1 + 1) = 'G';
     s1 = s1+1;
  
     k = 0;
@@ -179,34 +216,40 @@ while sum(~m.rev) > nR_old
         k = k + 1;
         d = r(k);
         s = r_sd(k);
-    cons1 = 0;
-    if k == r_group(k)
-        cons1 = s1 + 1;
-        r_group_cons(k) = cons1;
-    else
-        cons1 = r_group_cons(r_group(k));
-    end
-        if ~isnan(d) && s>0 %(assumed)
-        %First abs constaint:
-        N(cons1, nrxns + 1) = -d;  %This is the normalization variable
-        N(cons1, k) = 1;  
-        N(cons1, s2 + 1) = -1;     %delta variable
-        b(cons1) = 0;
-        %Second abs constaint:
-        N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
-        N(cons1 + 1, k) = -1;  
-        N(cons1 + 1, s2 + 1) = -1;   %delta variable
-        b(cons1 + 1) = 0;
-
-        L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
-        U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
-        csense(cons1)   = 'L';
-        csense(cons1 + 1) = 'L';
-        f(s2 + 1) = - 1/s;
-        if k == r_group(k)
-            s1 = s1 + 2;
-        end
-        s2 = s2 + 1;
+        cons1 = 0;
+	if k == r_group(k)
+	    cons1 = s1 + 1;
+	    r_group_cons(k) = cons1;
+	else
+	    cons1 = r_group_cons(r_group(k));
+	end
+        if ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
+	    if k == r_group(k)
+		s1 = s1 + 2;
+                if k > 1
+		    s2 = s2 + 1;
+                end
+	    end
+	    %First abs constaint:
+	    N(cons1, nrxns + 1) = -d;  %This is the normalization variable
+	    N(cons1, k) = 1;  
+	    N(cons1, s2 + 1) = -1;     %delta variable
+	    b(cons1) = 0;
+	    %Second abs constaint:
+	    N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
+	    N(cons1 + 1, k) = -1;  
+	    N(cons1 + 1, s2 + 1) = -1;  %delta variable
+	    b(cons1 + 1) = 0;
+	    L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
+	    U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
+	    csense(cons1)   = 'L';
+	    csense(cons1 + 1) = 'L';
+	    f(s2 + 1) = - 1/s;
+            if FDEBUG
+                NRowLab{cons1} = ['RG_' num2str(r_group(k))];
+                NRowLab{cons1 + 1} = ['RG_' num2str(r_group(k))];
+                NColLab{s2 + 1} = ['t_' num2str(r_group(k))];
+            end	
         end %end of if not nan
     end %end while k < nrxns
     disp('s1 s2:');
@@ -214,7 +257,13 @@ while sum(~m.rev) > nR_old
 
     disp(['Not Reversible: ' num2str(sum(~m.rev))]);
     t_easy = tic; 
-    [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN); 
+    if FDEBUG
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN, ...
+                                               FDEBUG, NRowLab, NColLab, cnt);
+    else
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN);
+    end
+ 
     toc(t_easy)
     corrval = fOpt;
     disp(fOpt);
@@ -230,18 +279,19 @@ while sum(~m.rev) > nR_old
         nvar = v_orig(nrxns + 1);
         disp('New nvar, zvar is:');
         disp([nvar v(nrxns + 2)]);
-        %Renormalize expression:
-        %r = r*nvar;
-        %r_sd = r_sd*nvar;
-        %else
-        [m.lb m.ub m.rev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, m.rev, nrxns, cnt);
-        disp(v_sol(1:15)');
-        disp([sum(~m.rev) nR_old]);    
+        [m.lb m.ub m.rev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, m.rev, nrxns, cnt, m);
+        if FDEBUG
+            disp('First 15 fluxes:')
+            disp(v_sol(1:15)');
+            disp('Num Irrev, Previous Num Irrev:')
+            disp([sum(~m.rev) nR_old]);
+        end    
     end
 end % end of while sum(~m.rev) > nR_old
 
-
-function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense, vbas, cbas)
+function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense, ...
+                                                vbas, cbas, FDEBUG,        ...
+                                                rowLabels, colLabels, cnt)
 %
 %easyLP
 %
@@ -268,11 +318,16 @@ function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense, vbas,
 %
 %kieran, 20 april 2010
 
+if ~exist('FDEBUG', 'var')
+    FDEBUG = 0;
+end
+
 % matlab can crash if inputs nan
 if any(isnan(f)) || any(any(isnan(a))) || any(isnan(b))...
         || any(isnan(vlb)) || any(isnan(vub)) || any(isnan(csense)) 
     error('nan inputs not allowed');
 end
+
 
 % initialize
 v = zeros(size(vlb));
@@ -280,6 +335,14 @@ v = v(:);
 f = full(f(:));
 vlb = vlb(:);
 vub = vub(:);
+
+%Should perhaps do this after preprocessing below as well:
+if exist('rowLabels', 'var')
+    printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
+                       csense, 0);
+end
+
+
 % remove any tight contstraints as some solvers require volume > 0
 j1 = (vlb ~= vub); 
 j2 = (vlb == vub);
@@ -325,15 +388,22 @@ if conv
     %v = v0;
     fOpt = f0' * v;
     %fOpt = f0' * v0;
-    disp(['Convergent optimum is: ' num2str(solution.obj)]);
-    if isnan(fOpt)
-        disp('Converged, but fOpt still nan!');
+    if FDEBUG
+        disp(['Convergent optimum is: ' num2str(solution.obj)]);
+        if isnan(fOpt)
+            disp('Converged, but fOpt still nan!');
+        end
+	% Print again in case optimization succeeded
+	if exist('rowLabels', 'var')
+	    printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
+			       csense, v);
+	end
     end
 end
 
 
 
-function [iLB iUB irev] = setRxnDirection(vI, iLB, iUB, irev, nrxns, cnt)
+function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, cnt, m)
 % Compute LB/UB for irrev AND rev model, as well as 
 % setting the corresponding rev vectors.
 %
@@ -355,27 +425,17 @@ tol = 1e-9;
 k = 0;
 while k < nrxns 
     k = k + 1;
-    if irev(k)
+    if isRev(k)
 	vSum = vI(k) + vI(k+1);
-	if vI(k) >= tol && (vI(k) - vI(k+1) <= tol)
-	    iLB(k + 1) = 0;
-	    iUB(k + 1) = 0;
-	    irev(k) = 0;
-	    irev(k + 1) = 0;
-
-	    iLB(k) = 0;
-	    iUB(k) = 0;
-	    irev(k) = 0;
-	    irev(k + 1) = 0;      
-	elseif vI(k) / vSum > rthresh
+	if vI(k) / vSum > rthresh
 	    %Forward reaction
 	    %rLB(i) = 0;
 	    iLB(k + 1) = 0;
 	    iUB(k + 1) = 0;
 
 	    %rrev(i) = 0;
-	    irev(k) = 0;
-	    irev(k + 1) = 0;
+	    isRev(k) = 0;
+	    isRev(k + 1) = 0;
 	elseif vI(k + 1) / vSum > rthresh
 	    %Backward reaction
 	    %rUB(i) = 0;
@@ -383,8 +443,52 @@ while k < nrxns
 	    iUB(k) = 0;
 
 	    %rrev(i) = 0;
-	    irev(k) = 0;
-	    irev(k + 1) = 0;      
+	    isRev(k) = 0;
+	    isRev(k + 1) = 0;      
+	end
+	k = k + 1;
+    end
+end
+
+
+function [iLB iUB isRev] = setFBRxnDirection(vI, iLB, iUB, isRev, nrxns, cnt, m)
+% Compute LB/UB for irrev AND rev model, as well as 
+% setting the corresponding rev vectors.
+%
+% Scratch that, just deal with irreversible models
+%
+% For any forward rev reaction in an irrev model, we assume that
+% its corresponding backwards reaction immediately follows it.
+%
+%INPUTS
+% vI        Irreversible flux distribution
+% rev2Irrev      Vector mapping irreversible fluxes to reversible fluxes 
+%               (Generated by convertToIrreversible)
+
+rthresh = 0.5;
+
+%nr_rxns = length(rev2irrev);
+tol = 1e-8;
+
+k = 0;
+while k < nrxns 
+    k = k + 1;
+    if isRev(k)
+	vSum = vI(k) + vI(k+1);
+	if vI(k) >= tol && abs(vI(k) - vI(k+1) <= tol)
+            disp('set rxns to zero:');
+            disp(m.rxns([k k+1]));
+            disp(vI([k k+1]));
+            disp('END set rxns to zero');
+	    iLB(k + 1) = 0;
+	    iUB(k + 1) = 0;
+	    isRev(k) = 0;
+	    isRev(k + 1) = 0;
+
+	    iLB(k) = 0;
+	    iUB(k) = 0;
+	    isRev(k) = 0;
+	    isRev(k + 1) = 0;      
 	end
 	k = k + 1;
     end

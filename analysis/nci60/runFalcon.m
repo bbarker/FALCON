@@ -1,5 +1,5 @@
 function [v_solirrev v_solrev numiterations] = ...
-    runFalcon(model, expressionFile, flux_sum, rc)
+    runFalcon(model, expressionFile, rc)
 %INPUT
 % model (the following fields are required - others can be supplied)
 %   S            Stoichiometric matrix
@@ -12,10 +12,6 @@ function [v_solirrev v_solrev numiterations] = ...
 % expressionFile    Tab-delimited file with a head for the columns:
 %                   gene (entrez gene id), mean (expression value,
 %                   and standard deviation (of expression).
-%
-% flux_sum          Positive value used in the FALCON objective
-%                   to guarantee a non-zero flux vector with 
-%                   1-norm exceeding flux_sum is chosen.
 %
 % rc                regularization constant on fluxes
 %
@@ -33,5 +29,5 @@ function [v_solirrev v_solrev numiterations] = ...
     computeMinDisj(modelIrrev, expressionFile);
 
 v_solirrev = falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
-                    rxn_rule_group, flux_sum, rc, 0);
+                    rxn_rule_group, rc, 0);
 v_solrev = convertIrrevFluxDistribution(model, v_solirrev, matchRev);

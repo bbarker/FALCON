@@ -23,17 +23,21 @@ model.S = [
 
 [nmets, nrxns] = size(model.S);
 
-% Assume all reactions are reversible, unlike in
-% the figure illustration.
-model.lb = -1*ones(nrxns, 1);
-model.ub = ones(nrxns, 1);
-model.rev = ones(nrxns, 1);
-
 model.rxns = {               ...
 'F_1', 'F_2', 'F_3', 'F_4',  ...
 'E_I', 'E_J', 'E_C',         ...
 'B_I', 'B_J', 'B_C'          }';
 model.rxnNames = model.rxns;
+
+% Assume all reactions are reversible with one exception, 
+% unlike in the figure illustration.
+model.lb = -1*ones(nrxns, 1);
+model.ub = ones(nrxns, 1);
+model.rev = ones(nrxns, 1);
+% The exception will define an uptake, 'B_I'
+B_I = find(strcmp(model.rxns, 'B_I'));
+model.rev(B_I) = 0;
+model.lb(B_I) = 0;
 
 % Default objective, flux out through the boundary 
 % (B_c in the figure)

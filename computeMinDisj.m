@@ -39,8 +39,6 @@ if nargin > 2
   end
   genedata_filename = genedata_filename_pert;
 end
-
-
   
 [status, cmdout] = system(['minDisj ', genedata_filename, ' ', rfname, ' > ', rfout]);
 if status ~= 0
