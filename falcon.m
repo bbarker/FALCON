@@ -76,6 +76,8 @@ function [v_sol, corrval, nvar, v_all] = ...
 % We assume m is an irreverisble model, and when m.rev(i) == 1, 
 % then m.rxn(i+1) is the reverse rxn of m.rxn(i).
 %
+t_falcon = tic;
+
 
 if ~exist('FDEBUG', 'var')
     FDEBUG = 0;
@@ -107,10 +109,12 @@ r_sum = sum(r(~isnan(r)));
 r_pri_max = max(r);
 r             = flux_sum * r / r_sum;
 r_sd          = flux_sum * r_sd / r_sum;
-disp('Sum new r:');
-disp(sum(r(~isnan(r))));
-disp('Max r (scaled r) is:');
-disp([r_pri_max max(r)]);
+if FDEBUG
+    disp('Sum new r:');
+    disp(sum(r(~isnan(r))));
+    disp('Max r (scaled r) is:');
+    disp([r_pri_max max(r)]);
+end
 
 %See if this helps to get more irreversible reactions
 solFBA = optimizeCbModel(m, 'max');
@@ -124,6 +128,7 @@ corrval = 0;
 nR_old = 0;
 v_sol = zeros(size(m.rxns));
 cnt = 0;
+conv = 0;
 while sum(~m.rev) > nR_old
     cnt = cnt + 1;
     nR_old = sum(~m.rev); 
@@ -141,12 +146,9 @@ while sum(~m.rev) > nR_old
     %  cols:    nrxns + n + z + exp residual vars
     N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan, ...
                 nrxns + 1 + 1 + nnnan            , floor(2.1*nSnz));
-    disp('size N:');
-    disp(size(N));
     N(1:nmets, 1:nrxns) = sparse(m.S);
     L = m.lb;
     U = m.ub;
-    disp('L init'); disp(size(L));
     f = zeros(size(m.rxns))';
     b = zeros(size(m.mets));
     csense = '';
@@ -217,58 +219,55 @@ while sum(~m.rev) > nR_old
         d = r(k);
         s = r_sd(k);
         cons1 = 0;
-	if k == r_group(k)
-	    cons1 = s1 + 1;
-	    r_group_cons(k) = cons1;
-	else
-	    cons1 = r_group_cons(r_group(k));
-	end
+    if k == r_group(k)
+        cons1 = s1 + 1;
+        r_group_cons(k) = cons1;
+    else
+        cons1 = r_group_cons(r_group(k));
+    end
         if ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
-	    if k == r_group(k)
-		s1 = s1 + 2;
+        if k == r_group(k)
+        s1 = s1 + 2;
                 if k > 1
-		    s2 = s2 + 1;
+            s2 = s2 + 1;
                 end
-	    end
-	    %First abs constaint:
-	    N(cons1, nrxns + 1) = -d;  %This is the normalization variable
-	    N(cons1, k) = 1;  
-	    N(cons1, s2 + 1) = -1;     %delta variable
-	    b(cons1) = 0;
-	    %Second abs constaint:
-	    N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
-	    N(cons1 + 1, k) = -1;  
-	    N(cons1 + 1, s2 + 1) = -1;  %delta variable
-	    b(cons1 + 1) = 0;
-	    L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
-	    U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
-	    csense(cons1)   = 'L';
-	    csense(cons1 + 1) = 'L';
-	    f(s2 + 1) = - 1/s;
+        end
+        %First abs constaint:
+        N(cons1, nrxns + 1) = -d;  %This is the normalization variable
+        N(cons1, k) = 1;  
+        N(cons1, s2 + 1) = -1;     %delta variable
+        b(cons1) = 0;
+        %Second abs constaint:
+        N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
+        N(cons1 + 1, k) = -1;  
+        N(cons1 + 1, s2 + 1) = -1;  %delta variable
+        b(cons1 + 1) = 0;
+        L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
+        U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
+        csense(cons1)   = 'L';
+        csense(cons1 + 1) = 'L';
+        f(s2 + 1) = - 1/s;
             if FDEBUG
                 NRowLab{cons1} = ['RG_' num2str(r_group(k))];
                 NRowLab{cons1 + 1} = ['RG_' num2str(r_group(k))];
                 NColLab{s2 + 1} = ['t_' num2str(r_group(k))];
-            end	
+            end    
         end %end of if not nan
     end %end while k < nrxns
-    disp('s1 s2:');
-    disp([s1 s2]);
 
-    disp(['Not Reversible: ' num2str(sum(~m.rev))]);
-    t_easy = tic; 
     if FDEBUG
+        disp(['Not Reversible: ' num2str(sum(~m.rev))]);
         [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN, ...
                                                FDEBUG, NRowLab, NColLab, cnt);
     else
         [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN);
     end
- 
-    toc(t_easy)
+
     corrval = fOpt;
-    disp(fOpt);
-    disp(v(nrxns + 1));
-    disp(v(nrxns + 2));
+    if FDEBUG
+        disp('fOpt, n, z:');
+        disp([fOpt v(nrxns + 1) v(nrxns + 1)]);
+    end
     if conv
         v_orig = v;
         if v(nrxns + 2) ~= 0
@@ -277,10 +276,10 @@ while sum(~m.rev) > nR_old
         v_sol = v_orig(1:nrxns);
         v_all = [v_all v_sol];
         nvar = v_orig(nrxns + 1);
-        disp('New nvar, zvar is:');
-        disp([nvar v(nrxns + 2)]);
         [m.lb m.ub m.rev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, m.rev, nrxns, cnt, m);
         if FDEBUG
+            disp('New nvar, zvar is:');
+            disp([nvar v(nrxns + 2)]);
             disp('First 15 fluxes:')
             disp(v_sol(1:15)');
             disp('Num Irrev, Previous Num Irrev:')
@@ -288,6 +287,14 @@ while sum(~m.rev) > nR_old
         end    
     end
 end % end of while sum(~m.rev) > nR_old
+
+falconTime = toc(t_falcon);
+if conv
+    disp(['FALCON converged in ' num2str(falconTime) ' seconds']);
+else
+    disp(['FALCON did NOT converge in ' num2str(falconTime) ' seconds']);
+end
+end % of falcon
 
 function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense, ...
                                                 vbas, cbas, FDEBUG,        ...
@@ -358,24 +365,29 @@ f(j2) = [];
 fOpt = nan;
 
 if any(isnan(b))
-    %disp(b);
     error('nan inputs not allowed: something went wrong');
 end
 
 params.method = 1;
 if nargin > 6 && length(vbas) > 0
-  %params.vbasis = zeros(1, length(vlb));
-  %params.vbasis(1:length(vbas)) = vbas;
-  params.vbasis = vbas;
-  params.cbasis = zeros(1, length(b));
-  params.cbasis(1:length(cbas)) = cbas;
+    %params.vbasis = zeros(1, length(vlb));
+    %params.vbasis(1:length(vbas)) = vbas;
+    params.vbasis = vbas;
+    params.cbasis = zeros(1, length(b));
+    params.cbasis(1:length(cbas)) = cbas;
 end
 
+if FDEBUG
+    t_easy = tic; 
+end
 solution = solveCobraLP(...
     struct('A', a, 'b', b, 'c', f, 'lb', vlb, 'ub', vub, ...
     'osense',-1,'csense',csense) , ...
     'GurobiParams',params);
     %'printLevel',1);
+if FDEBUG
+    toc(t_easy)
+end
 
 % define outputs
 conv = solution.stat == 1;
@@ -385,21 +397,20 @@ scbas = []; %scbas = solution.cbasis;
 if conv
     v0 = solution.full;
     v(j1) = v0;
-    %v = v0;
     fOpt = f0' * v;
-    %fOpt = f0' * v0;
     if FDEBUG
         disp(['Convergent optimum is: ' num2str(solution.obj)]);
         if isnan(fOpt)
             disp('Converged, but fOpt still nan!');
         end
-	% Print again in case optimization succeeded
-	if exist('rowLabels', 'var')
-	    printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
-			       csense, v);
-	end
+        % Print again in case optimization succeeded and we can print v
+        if exist('rowLabels', 'var')
+            printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
+                               csense, v);
+        end
     end
 end
+end % of easyLP
 
 
 
@@ -426,30 +437,30 @@ k = 0;
 while k < nrxns 
     k = k + 1;
     if isRev(k)
-	vSum = vI(k) + vI(k+1);
-	if vI(k) / vSum > rthresh
-	    %Forward reaction
-	    %rLB(i) = 0;
-	    iLB(k + 1) = 0;
-	    iUB(k + 1) = 0;
+        vSum = vI(k) + vI(k+1);
+        if vI(k) / vSum > rthresh
+            %Forward reaction
+            %rLB(i) = 0;
+            iLB(k + 1) = 0;
+            iUB(k + 1) = 0;
 
-	    %rrev(i) = 0;
-	    isRev(k) = 0;
-	    isRev(k + 1) = 0;
-	elseif vI(k + 1) / vSum > rthresh
-	    %Backward reaction
-	    %rUB(i) = 0;
-	    iLB(k) = 0;
-	    iUB(k) = 0;
+            %rrev(i) = 0;
+            isRev(k) = 0;
+            isRev(k + 1) = 0;
+        elseif vI(k + 1) / vSum > rthresh
+            %Backward reaction
+            %rUB(i) = 0;
+            iLB(k) = 0;
+            iUB(k) = 0;
 
-	    %rrev(i) = 0;
-	    isRev(k) = 0;
-	    isRev(k + 1) = 0;      
-	end
-	k = k + 1;
+            %rrev(i) = 0;
+            isRev(k) = 0;
+            isRev(k + 1) = 0;      
+        end
+        k = k + 1;
     end
 end
-
+end % of setRxnDirection
 
 function [iLB iUB isRev] = setFBRxnDirection(vI, iLB, iUB, isRev, nrxns, cnt, m)
 % Compute LB/UB for irrev AND rev model, as well as 
@@ -474,22 +485,24 @@ k = 0;
 while k < nrxns 
     k = k + 1;
     if isRev(k)
-	vSum = vI(k) + vI(k+1);
-	if vI(k) >= tol && abs(vI(k) - vI(k+1) <= tol)
-            disp('set rxns to zero:');
-            disp(m.rxns([k k+1]));
-            disp(vI([k k+1]));
-            disp('END set rxns to zero');
-	    iLB(k + 1) = 0;
-	    iUB(k + 1) = 0;
-	    isRev(k) = 0;
-	    isRev(k + 1) = 0;
-
-	    iLB(k) = 0;
-	    iUB(k) = 0;
-	    isRev(k) = 0;
-	    isRev(k + 1) = 0;      
-	end
-	k = k + 1;
+        vSum = vI(k) + vI(k+1);
+        if vI(k) >= tol && abs(vI(k) - vI(k+1) <= tol)
+            if FDEBUG
+                disp('set rxns to zero:');
+                disp(m.rxns([k k+1]));
+                disp(vI([k k+1]));
+                disp('END set rxns to zero');
+            end
+            iLB(k + 1) = 0;
+            iUB(k + 1) = 0;
+            isRev(k) = 0;
+            isRev(k + 1) = 0;
+            iLB(k) = 0;
+            iUB(k) = 0;
+            isRev(k) = 0;
+            isRev(k + 1) = 0;      
+        end
+        k = k + 1;
     end
 end
+end % of setFBRxnDirection

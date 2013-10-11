@@ -1,11 +1,14 @@
-function testFALCON()
+function testFALCON(FDBG)
 % Runs some analysis and/or tests on FALCON,
 % to better understand if the algorithm is 
-% working correctly.
+% working correctly. 
 %
 % For descriptions of individual models see 
 % the appropriate model-generating .m file.
 %
+%INPUT
+% FDBG    Whether or not to turn on extra debugging info while 
+%         running FALCON. This will increase the runtime.
 %
 % TODO: 
 %
@@ -35,6 +38,8 @@ function testFALCON()
 % Test regularization? In the triangle model, it shouldn't have an effect
 % I think.
 
+% Brandon Barker    Oct 10, 2013
+
 %Get directory information
 thisScript = which('testFALCON');
 testDir = fileparts(thisScript);
@@ -62,10 +67,10 @@ for j = (2*i + 1):nrxns
 end
 disp('Check that output from computeMinDisj is as expected:')
 [CMD_rxn_exp, CMD_rxn_exp_sd, CMD_rxn_rule_group] = ...
-    computeMinDisj(mI, [expDir '/InTriangleOut_All_1.csv']);
+    computeMinDisj(mI, [expDir '/InTriangleOut_All_1.csv'], -1, FDBG);
 
 if all(rxn_exp(~isnan(rxn_exp)) == CMD_rxn_exp(~isnan(rxn_exp))) && ...
-   all(rxn_exp(~isnan(CMD_rxn_exp)) == CMD_rxn_exp(~isnan(CMD_rxn_exp)))
+    all(rxn_exp(~isnan(CMD_rxn_exp)) == CMD_rxn_exp(~isnan(CMD_rxn_exp)))
     disp('Test succeeded for computeMinDisj rxn_exp');
 else
     disp('Test FAILED for computeMinDisj rxn_exp');
@@ -84,7 +89,6 @@ else
     disp('Test FAILED for computeMinDisj rxn_rule_group');
 end
 
-FDBG = 1;
 [v_solirrev, corrval, nvar, v_all] =         ...
     falcon(mI, rxn_exp, rxn_exp_sd,          ...
            rxn_rule_group, 0.0, 0, FDBG);
