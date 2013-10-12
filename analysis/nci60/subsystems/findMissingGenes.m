@@ -1,5 +1,5 @@
 %This function finds all the reactions associated with a list of missing genes
-function [geneList rxnList rxnNames]=findMissingGenes(rec2, missingGenes)
+function [geneList rxnList rxnNames rxnSubsys]=findMissingGenes(rec2, missingGenes)
 
 %INPUT
 %rec2 is the human recon 2 model 
@@ -16,6 +16,7 @@ function [geneList rxnList rxnNames]=findMissingGenes(rec2, missingGenes)
 rxnList(1) = 0;  %all the reaction numbers associated with the genes		
 rxnNames{1} = '';  %all the reaction names associated with the genes
 geneList{1} = '';  %list of all the missing genes
+rxnSubsys{1} = ''; %list of subsystem of reactions
 
 %get all genes into a single cell array
 temp{1} = 0;
@@ -80,6 +81,10 @@ for x = 1:length(temp2)
     end
 end
 
+%find associated subsystems
+for x = 1:length(rxnList)
+    rxnSubsys{x} = rec2.subSystems(rxnList);
+end
         
 
         
