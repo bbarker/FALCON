@@ -39,7 +39,11 @@ function testFALCON(FDBG)
 
 
 EXPCON = 1;
-REG = 0;
+REG = 0.1;
+erTol = 1e-9;
+
+numFail = 0;
+numSucc = 0;
 
 %Get directory information
 thisScript = which('testFALCON');
@@ -77,23 +81,29 @@ disp('Check that output from computeMinDisj is as expected:')
 if all(rxn_exp(~isnan(rxn_exp)) == CMD_rxn_exp(~isnan(rxn_exp))) && ...
     all(rxn_exp(~isnan(CMD_rxn_exp)) == CMD_rxn_exp(~isnan(CMD_rxn_exp)))
     disp('Test succeeded for computeMinDisj rxn_exp');
+    numSucc = numSucc + 1;
 else
     disp('Test FAILED for computeMinDisj rxn_exp');
     disp(rxn_exp)
     disp(CMD_rxn_exp)
+    numFail = numFail + 1;
 end
 if all(rxn_exp_sd(~isnan(rxn_exp_sd)) == ...
 CMD_rxn_exp_sd(~isnan(rxn_exp_sd))) && ...
 all(rxn_exp_sd(~isnan(CMD_rxn_exp_sd)) == ...
 CMD_rxn_exp_sd(~isnan(CMD_rxn_exp_sd)))
     disp('Test succeeded for computeMinDisj rxn_exp_sd');
+    numSucc = numSucc + 1;
 else
     disp('Test FAILED for computeMinDisj rxn_exp_sd');
+    numFail = numFail + 1;
 end
 if all(rxn_rule_group == CMD_rxn_rule_group)
     disp('Test succeeded for computeMinDisj rxn_rule_group');
+    numSucc = numSucc + 1;
 else
     disp('Test FAILED for computeMinDisj rxn_rule_group');
+    numFail = numFail + 1;
 end
 
 [v_solirrev, corrval, nvar, v_all] =         ...
@@ -101,12 +111,14 @@ end
            rxn_rule_group, REG, 0, EXPCON, FDBG);
 
 v_solirrev';
-v_solrev = convertIrrevFluxDistribution(m, v_solirrev, matchRev)'
+v_solrev = convertIrrevFluxDistribution(m, v_solirrev, matchRev)';
 
 if (v_solrev(1) > 0) && (v_solrev(2) > 0) && (v_solrev(7) > 0)
     disp('Test succeeded for linear pathway fluxes related to expression.');
+    numSucc = numSucc + 1;
 else
     disp('Test FAILED for linear pathway fluxes related to expression.');
+    numFail = numFail + 1;
 end
 
 % It should be the case (unfortunately for now), that,
@@ -114,8 +126,10 @@ end
 % flux through the cycle.
 if ~all(v_solrev(3:4))
     disp('Test FAILED for non-zero fluxes in a cycle with expression.');
+    numFail = numFail + 1;
 else
     disp('Test succeeded for non-zero fluxes in a cycle with expression.');
+    numSucc = numSucc + 1;
 end
 
 disp(' ');
@@ -132,25 +146,64 @@ rxn_exp_0loop(5:8) = 0;
              rxn_rule_group, REG, 0, EXPCON, FDBG);
 
 v_solirrev_0loop';
-v_solrev_0loop = convertIrrevFluxDistribution(m, v_solirrev_0loop, matchRev)'
+v_solrev_0loop = convertIrrevFluxDistribution(m, v_solirrev_0loop, matchRev)';
 
 % It should be the case that reactions F_3 and F_4 are zero, but not F_2:
 if any(v_solrev_0loop(3:4)) && ~any(v_solrev_0loop(2))
     disp('Test FAILED for zero fluxes in a 0-expression cycle.');
+    numFail = numFail + 1;
 else
     disp('Test succeeded for zero fluxes in a 0-expression cycle.');
+    numSucc = numSucc + 1;
 end
 
 % In branch model, do a series of tests that ensure increasing
 % flux with increasing expression:
 % a <= b <= c <= ...
 
-mBranch = m;
-mBranch.lb(2) = 0;
-mBranch.ub(3:4) = 0;
-mBranch.rev(2:4) = 0;
+%mBranch = m;
+%mBranch.lb(2) = 0;
+%mBranch.ub(3:4) = 0;
+%mBranch.rev(2:4) = 0;
+
+branchMaxExp = 10;
+expInit = 0;
+branchF3F4 = [5 6 7 8];
+branchF2 = [3 4];
 rxn_exp_branch = rxn_exp;
-rxn_exp_branch(2) = 5;
-%for i = 0:10
-%    rxn_exp_branch(3:4) = 
-%end
+rxn_exp_branch(branchF2) = branchMaxExp/2;
+v_solrev_branch = [];
+vF3F4_inc = [];
+for i = expInit:branchMaxExp
+    rxn_exp_branch(branchF3F4) = i;
+    [v_solirrev_branch, corrval, nvar, v_all] =   ...
+          falcon(mI, rxn_exp_branch, rxn_exp_sd,  ...
+                 rxn_rule_group, REG, 0, EXPCON, FDBG);
+    v_solrev_branch_pre = v_solrev_branch;
+    v_solrev_branch = convertIrrevFluxDistribution(m,    ...
+                          v_solirrev_branch, matchRev)';
+    if i > expInit;
+        if all(abs(v_solrev_branch(3:4) - v_solrev_branch_pre(3:4)) < erTol)
+            vF3F4_inc = [vF3F4_inc 0];
+        elseif all(v_solrev_branch(3:4) + erTol > v_solrev_branch_pre(3:4))
+            vF3F4_inc = [vF3F4_inc 1]; 
+        elseif any(v_solrev_branch(3:4) < v_solrev_branch_pre(3:4) + erTol)
+            vF3F4_inc = [vF3F4_inc -1];
+        else
+            vF3F4_inc = [vF3F4_inc nan];
+        end
+    end
+end
+% Now we check that as expression the rough the branch increase
+% flux through the branch increases at least once and never decreases
+if any(vF3F4_inc == 1) && issorted(fliplr(vF3F4_inc)) && ~all(vF3F4_inc == -1)
+    disp('Test succeeded for expression-dependent branching.');
+    numSucc = numSucc + 1;
+else
+    disp('Test FAILED for expression-dependent branching.');
+    numFail = numFail + 1;
+end
+
+disp(' '); disp(' ');
+disp('Number of Failed and Successful tests: ');
+disp([numFail numSucc]);

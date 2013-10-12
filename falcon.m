@@ -98,6 +98,10 @@ end
 flux_sum = min(m.ub(m.ub > 0)) / 2;
 
 
+% Typically required to be >= 0, we can require strict positivity
+% due to having non-affine in our LFP.
+ZMIN = 0.0001;
+
 nrxns = length(m.rxns);
 nmets = length(m.mets);
 rgrp_notnan = r_group(~isnan(r));
@@ -172,7 +176,7 @@ while sum(~m.rev) > nR_old
     end
     L(s2 + 1) = 0;
     U(s2 + 1) = inf;
-    L(s2 + 2) = 0.0001;
+    L(s2 + 2) = ZMIN;
     U(s2 + 2) = inf;
     f(s2 + 1) = 0;
     f(s2 + 2) = 0;
@@ -197,7 +201,7 @@ while sum(~m.rev) > nR_old
         f(k) = -rc; %regularization constant 
         b(s1 + 1) = 0; 
         b(s1 + 2) = 0;
-        if ~EXPCON || isnan(r(k)) || U(k) == 0 % just use default constant
+        if ~EXPCON || isnan(r(k)) || U(k) == 0 % use default constraint
             N(s1 + 1, k) = 1; 
             N(s1 + 2, k) = -1; 
             N(s1 + 1, nrxns + 2) = -U(k);
@@ -291,14 +295,21 @@ if 1
     end
 end
 
-if 0 % Why does this do more poorly?
+% This seems to do more poorly because of how the score can be defined
+% by how well a single reaction matches - certainly it does bad in 
+% the test model, but it needs to be tested on recon 2 to
+% see if it is worth pursuing further. We also have to be careful not
+% to favor longer pathways where a shorter one will do - regularization
+% should help this to some extent, but again the numerics are tricky.
+
+if 0
     revRxns = find(m.rev);
     if numel(revRxns) > 0
         firstRevRxn = revRxns(1);
-        FLsave = m.lb(firstRevRxn);
-        FUsave = m.ub(firstRevRxn);
-        BLsave = m.lb(firstRevRxn + 1);
-        BUsave = m.ub(firstRevRxn + 1);
+        FLsave = L(firstRevRxn);
+        FUsave = U(firstRevRxn);
+        BLsave = L(firstRevRxn + 1);
+        BUsave = U(firstRevRxn + 1);
         m.rev(firstRevRxn) = 0;
         m.rev(firstRevRxn + 1) = 0;
         % Do forward = 0 first:
@@ -317,10 +328,10 @@ if 0 % Why does this do more poorly?
 
     % Do backward = 0:
     if numel(revRxns) > 0
-        m.lb(firstRevRxn) = FLsave;
-        m.ub(firstRevRxn) = FUsave;
-        m.lb(firstRevRxn + 1) = 0;
-        m.ub(firstRevRxn + 1) = 0;
+        L(firstRevRxn) = FLsave;
+        U(firstRevRxn) = FUsave;
+        L(firstRevRxn + 1) = 0;
+        U(firstRevRxn + 1) = 0;
     end
     if FDEBUG
         disp(['Not Reversible: ' num2str(sum(~m.rev))]);
@@ -331,9 +342,13 @@ if 0 % Why does this do more poorly?
         [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN);
     end
-    m.lb(firstRevRxn + 1) = BLsave;
-    m.ub(firstRevRxn + 1) = BUsave;
-    if fOpt_f > fOpt_b
+    L(firstRevRxn + 1) = BLsave;
+    U(firstRevRxn + 1) = BUsave;
+    irrev_nz_f = sum(v_f(find(~m.rev)) ~= 0)
+    irrev_nz_b = sum(v_b(find(~m.rev)) ~= 0)
+    nNZE_f = countNonZeroEq(v_f, m.rev, nrxns)
+    nNZE_b = countNonZeroEq(v_b, m.rev, nrxns)
+    if (fOpt_f / irrev_nz_f > fOpt_b / irrev_nz_b)
         [v, fOpt, conv, vbasN, cbasN] = deal(v_f, fOpt_f, conv_f, vbasN_f, cbasN_f);
         m.lb(firstRevRxn + 1) = 0;
         m.ub(firstRevRxn + 1) = 0;        
@@ -342,7 +357,7 @@ if 0 % Why does this do more poorly?
         m.lb(firstRevRxn) = 0;
         m.ub(firstRevRxn) = 0;
     end
-end % of if 0
+end % of if 1/0
 
    
     corrval = fOpt;
