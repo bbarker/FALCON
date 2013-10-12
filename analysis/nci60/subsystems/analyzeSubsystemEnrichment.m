@@ -1,7 +1,7 @@
 %Takes a particular subsystem in human recon 2 and converts Entrez gene ids
 %to IPI ids. Looks at quantified protein and mRNA amounts in data set
 %for the IPI ids.One potential flaw, and/or statements in gene rules 
-function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals]=analyzeSubsystemEnrichment(converter, data, subsys, rec2, includeZero)
+function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals totGenes]=analyzeSubsystemEnrichment(converter, data, subsys, rec2, includeZero)
 
 %INPUT
 %converter is a (1x2) cell array with Entrez ids in {1,1} and the corresponding IPI ids in {1,2} (output of getConverter)
@@ -18,6 +18,7 @@ function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals]=analyze
 %the model for the subsystem missing an protein intensity
 %residual is vector containing the absolute value of the difference between
 %MRNA and protein intensites
+%totGenes is the total number of genes for the subsystem
 %Narayanan Sadagopan, September 2013
 
 residuals(1) = 0; %difference between protein and mRNA intensity values
@@ -28,6 +29,7 @@ missingGenesProtein{1} = '0';  %genes in model that don't have an protein intens
 allGenes(1) = 50; %all genes in model for the subsystem
 foundGenesMRNA(1) = 3000;  %genes that have mRNA intensity
 foundGenesProtein(1) = 3000;  %genes that have protein intensity
+totGenes=0; %total number of genes for subsystem
 
 count = 1;  %indexing for mRNA genes
 count2 = 1;  %indexing for protein genes
@@ -108,9 +110,11 @@ end
 
 pMRNA = length(unique(foundGenesMRNA)) / length(unique(allGenes));
 pProtein = length(unique(foundGenesProtein)) / length(unique(allGenes));
+totGenes=length(unique(allGenes));
 if (allGenes(1) == 50) %to prevent nan values
     pMRNA = 0;
     pProtein = 0;
+    totGenes=0;
 end
 if (foundGenesMRNA(1) == 3000) %correction for foundGenesMRNA declaration
     pMRNA = 0;
