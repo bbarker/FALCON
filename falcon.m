@@ -1,5 +1,5 @@
 function [v_sol, corrval, nvar, v_all] = ...
-    falcon(m, r, r_sd, r_group, rc, minFit, FDEBUG)
+    falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG)
 %INPUT
 %
 %
@@ -33,6 +33,9 @@ function [v_sol, corrval, nvar, v_all] = ...
 % 7) Removed repeated calls to size, which can add up to more than a second
 
 % TODO:
+%
+%  Move a lot of stuff out of the while loop: this should be possible now that
+%  we are using an irreversible model.
 %
 %  Print the reaction names/compartments that are fixed to be irrev at each
 %  iteration. This may shed some light on why things sometimes go very slow.
@@ -76,11 +79,14 @@ function [v_sol, corrval, nvar, v_all] = ...
 % We assume m is an irreverisble model, and when m.rev(i) == 1, 
 % then m.rxn(i+1) is the reverse rxn of m.rxn(i).
 %
-t_falcon = tic;
 
+t_falcon = tic;
 
 if ~exist('FDEBUG', 'var')
     FDEBUG = 0;
+end
+if ~exist('EXPCON', 'var')
+    EXPCON = 1;
 end
 
 % flux_sum is used to ensure that in the LFP, we don't obtain
@@ -94,8 +100,7 @@ flux_sum = min(m.ub(m.ub > 0)) / 2;
 
 nrxns = length(m.rxns);
 nmets = length(m.mets);
-nnnan = r_group(~isnan(r));
-nnnan = length(intersect(nnnan, nnnan));
+rgrp_notnan = r_group(~isnan(r));
 vbasN = [];
 cbasN = [];
 vbasS = [];
@@ -129,11 +134,13 @@ nR_old = 0;
 v_sol = zeros(size(m.rxns));
 cnt = 0;
 conv = 0;
+nvar = nan;
 while sum(~m.rev) > nR_old
     cnt = cnt + 1;
     nR_old = sum(~m.rev); 
     % nnnanrev = sum((~isnan(r)) & m.rev) / 2;
-    nnnan_nrev = sum((~isnan(r)) & ~m.rev);
+    nnan_irr = r_group(~isnan(r) & ~m.rev);
+    nnnan_irr = length(intersect(nnan_irr, nnan_irr));
     r_group_cons = zeros(1, nrxns);
     if FDEBUG
         NColLab = m.rxns;
@@ -144,8 +151,8 @@ while sum(~m.rev) > nR_old
     %Preallocate matrix and vectors:
     %  rows:    nmets + LFPunit + model lb/ubs + flux_sum + exp residuals,
     %  cols:    nrxns + n + z + exp residual vars
-    N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan, ...
-                nrxns + 1 + 1 + nnnan            , floor(2.1*nSnz));
+    N = spalloc(nmets + 1       + 2*nrxns      + 1        + nnnan_irr, ...
+                nrxns + 1 + 1 + nnnan_irr            , floor(2.1*nSnz));
     N(1:nmets, 1:nrxns) = sparse(m.S);
     L = m.lb;
     U = m.ub;
@@ -163,9 +170,9 @@ while sum(~m.rev) > nR_old
         NColLab{s2 + 1} = 'n';
         NColLab{s2 + 2} = 'z';
     end
-    L(s2 + 1) = -inf;
+    L(s2 + 1) = 0;
     U(s2 + 1) = inf;
-    L(s2 + 2) = 0;
+    L(s2 + 2) = 0.0001;
     U(s2 + 2) = inf;
     f(s2 + 1) = 0;
     f(s2 + 2) = 0;
@@ -183,18 +190,31 @@ while sum(~m.rev) > nR_old
     %Add in transformed L,U constrains (B&V 4.32).
     %consider adding conditionals here for U or L == 0.
     %since v >= 0 just gives -v =< 0 under CC transform
+    %When using scaled expression to constrain vmax, use that
+    %instead - this should be exclusive from medium-based
+    %bounds. If not, may need to reconsider the scheme.
     for k = 1:nrxns
         f(k) = -rc; %regularization constant 
-        N(s1 + 1, k) = 1; 
-        N(s1 + 1, nrxns + 2) = -U(k);
         b(s1 + 1) = 0; 
-        csense(s1 + 1) = 'L';
-        N(s1 + 2, k) = -1; 
-        N(s1 + 2, nrxns + 2) = L(k);
-        b(s1 + 2) = 0; 
-        csense(s1 + 2) = 'L'; 
-        L(k) = -inf; 
+        b(s1 + 2) = 0;
+        if ~EXPCON || isnan(r(k)) || U(k) == 0 % just use default constant
+            N(s1 + 1, k) = 1; 
+            N(s1 + 2, k) = -1; 
+            N(s1 + 1, nrxns + 2) = -U(k);
+            N(s1 + 2, nrxns + 2) = L(k);
+        else % use expression constraint
+            N(s1 + 1, k) = 1; 
+            N(s1 + 2, k) = 1; 
+            N(s1 + 1, nrxns + 1) = -r(k);
+            N(s1 + 2, nrxns + 1) = -r(k);
+        end
+        L(k) = 0;
         U(k) = inf;
+        if m.ub(k) == 0
+            U(k) = 0;
+        end
+        csense(s1 + 1) = 'L';
+        csense(s1 + 2) = 'L'; 
         if FDEBUG
             NRowLab{s1 + 1} = [m.rxns{k} ':U'];
             NRowLab{s1 + 2} = [m.rxns{k} ':L'];
@@ -204,13 +224,15 @@ while sum(~m.rev) > nR_old
 
     %Require the sum of fluxes to be above a threshold
     for k = 1:length(ecrxns)
-        N(s1+1, ecrxns(k)) = 1;
+        N(s1+1, ecrxns(k)) = -1;
     end
     if FDEBUG
         NRowLab{s1 + 1} = 'FlxSum';
     end
-    b(s1 + 1) = flux_sum; 
-    csense(s1 + 1) = 'G';
+    N(s1 + 1, nrxns + 2) = flux_sum;
+    %b(s1 + 1) = flux_sum;
+    b(s1 + 1) = 0; 
+    csense(s1 + 1) = 'L';
     s1 = s1+1;
  
     k = 0;
@@ -225,12 +247,12 @@ while sum(~m.rev) > nR_old
     else
         cons1 = r_group_cons(r_group(k));
     end
-        if ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
+    if ~m.rev(k) && ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
         if k == r_group(k)
-        s1 = s1 + 2;
-                if k > 1
-            s2 = s2 + 1;
-                end
+            s1 = s1 + 2;
+            if k > 1
+                s2 = s2 + 1;
+            end
         end
         %First abs constaint:
         N(cons1, nrxns + 1) = -d;  %This is the normalization variable
@@ -255,14 +277,74 @@ while sum(~m.rev) > nR_old
         end %end of if not nan
     end %end while k < nrxns
 
+
+
+if 1
     if FDEBUG
         disp(['Not Reversible: ' num2str(sum(~m.rev))]);
-        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN, ...
-                                               FDEBUG, NRowLab, NColLab, cnt);
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
+                                                  csense, vbasN, cbasN, ...
+                                                  FDEBUG, NRowLab, NColLab, cnt);
     else
-        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, csense, vbasN, cbasN);
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
+                                                  csense, vbasN, cbasN);
+    end
+end
+
+if 0 % Why does this do more poorly?
+    revRxns = find(m.rev);
+    if numel(revRxns) > 0
+        firstRevRxn = revRxns(1);
+        FLsave = m.lb(firstRevRxn);
+        FUsave = m.ub(firstRevRxn);
+        BLsave = m.lb(firstRevRxn + 1);
+        BUsave = m.ub(firstRevRxn + 1);
+        m.rev(firstRevRxn) = 0;
+        m.rev(firstRevRxn + 1) = 0;
+        % Do forward = 0 first:
+        m.lb(firstRevRxn) = 0;
+        m.ub(firstRevRxn) = 0;
+    end
+    if FDEBUG
+        disp(['Not Reversible: ' num2str(sum(~m.rev))]);
+        [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
+                                                  csense, vbasN, cbasN, ...
+                                                  FDEBUG, NRowLab, NColLab, cnt);
+    else
+        [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
+                                                  csense, vbasN, cbasN);
     end
 
+    % Do backward = 0:
+    if numel(revRxns) > 0
+        m.lb(firstRevRxn) = FLsave;
+        m.ub(firstRevRxn) = FUsave;
+        m.lb(firstRevRxn + 1) = 0;
+        m.ub(firstRevRxn + 1) = 0;
+    end
+    if FDEBUG
+        disp(['Not Reversible: ' num2str(sum(~m.rev))]);
+        [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
+                                                  csense, vbasN, cbasN, ...
+                                                  FDEBUG, NRowLab, NColLab, cnt);
+    else
+        [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
+                                                  csense, vbasN, cbasN);
+    end
+    m.lb(firstRevRxn + 1) = BLsave;
+    m.ub(firstRevRxn + 1) = BUsave;
+    if fOpt_f > fOpt_b
+        [v, fOpt, conv, vbasN, cbasN] = deal(v_f, fOpt_f, conv_f, vbasN_f, cbasN_f);
+        m.lb(firstRevRxn + 1) = 0;
+        m.ub(firstRevRxn + 1) = 0;        
+    else
+        [v, fOpt, conv, vbasN, cbasN] = deal(v_b, fOpt_b, conv_b, vbasN_b, cbasN_b);
+        m.lb(firstRevRxn) = 0;
+        m.ub(firstRevRxn) = 0;
+    end
+end % of if 0
+
+   
     corrval = fOpt;
     if FDEBUG
         disp('fOpt, n, z:');
@@ -349,7 +431,6 @@ if exist('rowLabels', 'var')
                        csense, 0);
 end
 
-
 % remove any tight contstraints as some solvers require volume > 0
 j1 = (vlb ~= vub); 
 j2 = (vlb == vub);
@@ -404,9 +485,10 @@ if conv
             disp('Converged, but fOpt still nan!');
         end
         % Print again in case optimization succeeded and we can print v
+        colLabels(j2) = [];
         if exist('rowLabels', 'var')
-            printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
-                               csense, v);
+            printFalconProblem(rowLabels, colLabels, cnt + 0.1, a, b, vlb, vub, f, ...
+                               csense, v(j1));
         end
     end
 end
@@ -486,7 +568,7 @@ while k < nrxns
     k = k + 1;
     if isRev(k)
         vSum = vI(k) + vI(k+1);
-        if vI(k) >= tol && abs(vI(k) - vI(k+1) <= tol)
+        if (vI(k) >= tol) && (vI(k) - vI(k+1) <= tol)
             if FDEBUG
                 disp('set rxns to zero:');
                 disp(m.rxns([k k+1]));
@@ -506,3 +588,19 @@ while k < nrxns
     end
 end
 end % of setFBRxnDirection
+
+
+function nNZE = countNonZeroEq(vI, isRev, nrxns)
+tol = 1e-8;
+k = 0;
+nNZE = 0;
+while k < nrxns 
+    k = k + 1;
+    if isRev(k)
+        if (vI(k) >= tol) && (vI(k) - vI(k+1) <= tol)
+            nNZE = nNZE + 1;
+        end
+        k = k + 1;
+    end
+end
+end % of countNonZeroEq

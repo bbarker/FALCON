@@ -34,10 +34,10 @@ model.rxnNames = model.rxns;
 model.lb = -1*ones(nrxns, 1);
 model.ub = ones(nrxns, 1);
 model.rev = ones(nrxns, 1);
-% The exception will define an uptake, 'B_I'
-B_I = find(strcmp(model.rxns, 'B_I'));
-model.rev(B_I) = 0;
-model.lb(B_I) = 0;
+% The exception will define an uptake, 'E_I'
+E_I = find(strcmp(model.rxns, 'E_I'));
+model.rev(E_I) = 0;
+model.lb(E_I) = 0;
 
 % Default objective, flux out through the boundary 
 % (B_c in the figure)

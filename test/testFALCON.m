@@ -22,12 +22,9 @@ function testFALCON(FDBG)
 % a combination of thermodynamics and inuition/heuristic -- see reviewed
 % paper.
 %
-%
-% !!! Why are many rxns non-zero bounds being converted to zero by 
-% convertIrrevFluxDistribution? This could give rise to SERIOUS analysis
-% issues in the analysis pipeline.
-%
 % Modify InTriangleOut to be a branch mode (just a couple of lines)
+%
+% Add in some expression tests for computeMinDisj/mindisj
 %
 % Test reaction groups somehow
 %
@@ -39,6 +36,10 @@ function testFALCON(FDBG)
 % I think.
 
 % Brandon Barker    Oct 10, 2013
+
+
+EXPCON = 1;
+REG = 0;
 
 %Get directory information
 thisScript = which('testFALCON');
@@ -62,9 +63,13 @@ for i = 1:ngenes
     rxn_exp_sd(2*i - 1) = 1;
     rxn_exp_sd(2*i) = 1;
 end
-for j = (2*i + 1):nrxns
+% Last one is irreversible:
+rxn_exp(2*i) = nan;
+rxn_exp_sd(2*i) = nan;
+for j = (2*i):nrxns
     rxn_rule_group(j) = j;
 end
+
 disp('Check that output from computeMinDisj is as expected:')
 [CMD_rxn_exp, CMD_rxn_exp_sd, CMD_rxn_rule_group] = ...
     computeMinDisj(mI, [expDir '/InTriangleOut_All_1.csv'], -1, FDBG);
@@ -74,6 +79,8 @@ if all(rxn_exp(~isnan(rxn_exp)) == CMD_rxn_exp(~isnan(rxn_exp))) && ...
     disp('Test succeeded for computeMinDisj rxn_exp');
 else
     disp('Test FAILED for computeMinDisj rxn_exp');
+    disp(rxn_exp)
+    disp(CMD_rxn_exp)
 end
 if all(rxn_exp_sd(~isnan(rxn_exp_sd)) == ...
 CMD_rxn_exp_sd(~isnan(rxn_exp_sd))) && ...
@@ -91,10 +98,25 @@ end
 
 [v_solirrev, corrval, nvar, v_all] =         ...
     falcon(mI, rxn_exp, rxn_exp_sd,          ...
-           rxn_rule_group, 0.0, 0, FDBG);
+           rxn_rule_group, REG, 0, EXPCON, FDBG);
 
 v_solirrev';
-v_solrev = convertIrrevFluxDistribution(m, v_solirrev, matchRev)';
+v_solrev = convertIrrevFluxDistribution(m, v_solirrev, matchRev)'
+
+if (v_solrev(1) > 0) && (v_solrev(2) > 0) && (v_solrev(7) > 0)
+    disp('Test succeeded for linear pathway fluxes related to expression.');
+else
+    disp('Test FAILED for linear pathway fluxes related to expression.');
+end
+
+% It should be the case (unfortunately for now), that,
+% given no conflicting demands, expression on a futile cycle will cause
+% flux through the cycle.
+if ~all(v_solrev(3:4))
+    disp('Test FAILED for non-zero fluxes in a cycle with expression.');
+else
+    disp('Test succeeded for non-zero fluxes in a cycle with expression.');
+end
 
 disp(' ');
 disp(' ');
@@ -107,12 +129,28 @@ rxn_exp_0loop(5:8) = 0;
 
 [v_solirrev_0loop, corrval, nvar, v_all] =   ...
       falcon(mI, rxn_exp_0loop, rxn_exp_sd,  ...
-             rxn_rule_group, 0.0, 0, FDBG);
+             rxn_rule_group, REG, 0, EXPCON, FDBG);
 
 v_solirrev_0loop';
-v_solrev_0loop = convertIrrevFluxDistribution(m, v_solirrev_0loop, matchRev)';
+v_solrev_0loop = convertIrrevFluxDistribution(m, v_solirrev_0loop, matchRev)'
 
+% It should be the case that reactions F_3 and F_4 are zero, but not F_2:
+if any(v_solrev_0loop(3:4)) && ~any(v_solrev_0loop(2))
+    disp('Test FAILED for zero fluxes in a 0-expression cycle.');
+else
+    disp('Test succeeded for zero fluxes in a 0-expression cycle.');
+end
 
 % In branch model, do a series of tests that ensure increasing
 % flux with increasing expression:
 % a <= b <= c <= ...
+
+mBranch = m;
+mBranch.lb(2) = 0;
+mBranch.ub(3:4) = 0;
+mBranch.rev(2:4) = 0;
+rxn_exp_branch = rxn_exp;
+rxn_exp_branch(2) = 5;
+%for i = 0:10
+%    rxn_exp_branch(3:4) = 
+%end
