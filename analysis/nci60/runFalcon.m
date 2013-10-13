@@ -1,5 +1,5 @@
 function [v_solirrev v_solrev numiterations] = ...
-    runFalcon(model, expressionFile, rc)
+    runFalcon(model, expressionFile, rc, EXPCON, FDEBUG)
 %INPUT
 % model (the following fields are required - others can be supplied)
 %   S            Stoichiometric matrix
@@ -15,6 +15,8 @@ function [v_solirrev v_solrev numiterations] = ...
 %
 % rc                regularization constant on fluxes
 %
+% EXPCON            Flag to specify whether to use expression constraints.
+%
 %OUTPUT
 % v_solirrev    irreversible flux vector
 %
@@ -24,10 +26,14 @@ function [v_solirrev v_solrev numiterations] = ...
 % Yiping Wang    09/08/13
 % Brandon Barker 09/15/2013  Now calls convertIrrevFluxDistribution
 
+if ~exist('FDEBUG', 'var')
+    FDEBUG = false;
+end
+
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
     computeMinDisj(modelIrrev, expressionFile);
 
 v_solirrev = falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
-                    rxn_rule_group, rc, 0);
+                    rxn_rule_group, rc, 0, EXPCON, FDEBUG);
 v_solrev = convertIrrevFluxDistribution(model, v_solirrev, matchRev);

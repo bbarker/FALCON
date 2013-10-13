@@ -83,10 +83,10 @@ function [v_sol, corrval, nvar, v_all] = ...
 t_falcon = tic;
 
 if ~exist('FDEBUG', 'var')
-    FDEBUG = 0;
+    FDEBUG = false;
 end
 if ~exist('EXPCON', 'var')
-    EXPCON = 1;
+    EXPCON = true;
 end
 
 % flux_sum is used to ensure that in the LFP, we don't obtain
@@ -96,7 +96,9 @@ end
 % since fluxes are scaled in the LFP transform, but this is probably
 % helpful for numeric stability.
 flux_sum = min(m.ub(m.ub > 0)) / 2;
-
+if FDEBUG
+    flux_sum
+end
 
 % Typically required to be >= 0, we can require strict positivity
 % due to having non-affine in our LFP.
@@ -155,8 +157,13 @@ while sum(~m.rev) > nR_old
     %Preallocate matrix and vectors:
     %  rows:    nmets + LFPunit + model lb/ubs + flux_sum + exp residuals,
     %  cols:    nrxns + n + z + exp residual vars
-    N = spalloc(nmets + 1       + 2*nrxns      + 1        + nnnan_irr, ...
+    N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan_irr, ...
                 nrxns + 1 + 1 + nnnan_irr            , floor(2.1*nSnz));
+    if FDEBUG
+        sz_N = size(N)
+    end
+    sz_N = size(N);
+
     N(1:nmets, 1:nrxns) = sparse(m.S);
     L = m.lb;
     U = m.ub;
@@ -240,39 +247,46 @@ while sum(~m.rev) > nR_old
     s1 = s1+1;
  
     k = 0;
+    r_group_visited(1:nrxns) = false;
+    first_r_group_visited = -1;
     while k < nrxns
         k = k + 1;
         d = r(k);
         s = r_sd(k);
         cons1 = 0;
-    if k == r_group(k)
-        cons1 = s1 + 1;
-        r_group_cons(k) = cons1;
-    else
-        cons1 = r_group_cons(r_group(k));
-    end
-    if ~m.rev(k) && ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
-        if k == r_group(k)
-            s1 = s1 + 2;
-            if k > 1
-                s2 = s2 + 1;
-            end
+        if ~r_group_visited(r_group(k))
+            cons1 = s1 + 1;
+            r_group_cons(r_group(k)) = cons1;
+        else
+            cons1 = r_group_cons(r_group(k));
         end
-        %First abs constaint:
-        N(cons1, nrxns + 1) = -d;  %This is the normalization variable
-        N(cons1, k) = 1;  
-        N(cons1, s2 + 1) = -1;     %delta variable
-        b(cons1) = 0;
-        %Second abs constaint:
-        N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
-        N(cons1 + 1, k) = -1;  
-        N(cons1 + 1, s2 + 1) = -1;  %delta variable
-        b(cons1 + 1) = 0;
-        L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
-        U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
-        csense(cons1)   = 'L';
-        csense(cons1 + 1) = 'L';
-        f(s2 + 1) = - 1/s;
+        if ~m.rev(k) && ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
+            if first_r_group_visited <= 0
+                first_r_group_visited = r_group(k);
+            end
+            if ~r_group_visited(r_group(k))
+                r_group_visited(r_group(k)) = true;
+                s1 = s1 + 2;
+                if r_group(k) ~= first_r_group_visited
+                    s2 = s2 + 1;
+                end
+            end
+            %disp([k size(N,2) numel(NColLab) size(N,1) numel(b)])
+            %First abs constaint:
+            N(cons1, nrxns + 1) = -d;  %This is the normalization variable
+            N(cons1, k) = 1;  
+            N(cons1, s2 + 1) = -1;     %delta variable
+            b(cons1) = 0;
+            %Second abs constaint:
+            N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
+            N(cons1 + 1, k) = -1;  
+            N(cons1 + 1, s2 + 1) = -1;  %delta variable
+            b(cons1 + 1) = 0;
+            L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
+            U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
+            csense(cons1)   = 'L';
+            csense(cons1 + 1) = 'L';
+            f(s2 + 1) = - 1/s;
             if FDEBUG
                 NRowLab{cons1} = ['RG_' num2str(r_group(k))];
                 NRowLab{cons1 + 1} = ['RG_' num2str(r_group(k))];
@@ -281,7 +295,9 @@ while sum(~m.rev) > nR_old
         end %end of if not nan
     end %end while k < nrxns
 
-
+if ~all(sz_N == size(N)) || sz_N(1) ~= numel(b) || sz_N(2) ~= numel(L)
+    disp('WARNING: mismatch in estimated and actual dimension detected!!!');
+end
 
 if 1
     if FDEBUG
@@ -387,9 +403,11 @@ end % end of while sum(~m.rev) > nR_old
 
 falconTime = toc(t_falcon);
 if conv
-    disp(['FALCON converged in ' num2str(falconTime) ' seconds']);
+    disp(['FALCON converged in ' num2str(falconTime) ' seconds and ' ...
+           num2str(cnt) ' iterations.']);
 else
-    disp(['FALCON did NOT converge in ' num2str(falconTime) ' seconds']);
+    disp(['FALCON did NOT converge in ' num2str(falconTime) ...
+          ' seconds and ' num2str(cnt) ' iterations.']);
 end
 end % of falcon
 
@@ -440,7 +458,7 @@ f = full(f(:));
 vlb = vlb(:);
 vub = vub(:);
 
-%Should perhaps do this after preprocessing below as well:
+% Do this after optimization below as well.
 if exist('rowLabels', 'var')
     printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
                        csense, 0);

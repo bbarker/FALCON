@@ -9,29 +9,50 @@ function printFalconProblem(rowLabels, colLabels, cnt, A, b, lb, ub, f, ...
 nOutCols = ncols + 1 + 2;           %+2 for each additional column,
 nOutRows = nrows + 8;               %so as to include space
 outCell = cell(nOutRows, nOutCols);
-outCell{1, 1} = '';
-
-for i = 1:nrows
-    for j = 1:ncols
-        if A(i,j) ~= 0
-            outCell{i+1, j+1} = num2str(A(i, j));
-        else
-            outCell{i+1, j+1} = '';
-        end
-    end
+%[outCell{:,:}] = deal('');
+len_lb = numel(lb);
+len_b = numel(b);
+if len_lb ~= ncols
+    disp('!!!!!Mismatch in column length.')
+end
+if len_b ~= nrows
+    disp('!!!!!Mismatch in row length.')
 end
 
-%disp(size(outCell))
-%disp(size(A))
-%disp(size(lb))
-%disp(size(colLabels))
-%disp(ncols)
-%disp(nrows)
+%
+ncols = min(len_lb, ncols);
+%
+
+[I, J, nzAij] = find(A);
+length_nzAij = numel(nzAij);
+for Aidx = 1:length_nzAij
+    i = I(Aidx);
+    j = J(Aidx);
+    Aij = nzAij(Aidx);
+    outCell{i+1, j+1} = Aij;
+end
+
+%for i = 1:nrows
+%    for j = 1:ncols
+%        if A(i,j) ~= 0
+%            outCell{i+1, j+1} = A(i, j);
+%        else
+%            outCell{i+1, j+1} = '';
+%        end
+%    end
+%end
+
+sz_outCell = size(outCell)
+sz_A = size(A)
+sz_lb = size(lb)
+sz_b = size(b)
+sz_colLabels = size(colLabels)
 %disp(colLabels)
 
 for i = 1:ncols
     outCell{1, i+1} = colLabels{i};
 end
+
 outCell{1, ncols + 1 + 1} = 'csens';
 outCell{1, ncols + 1 + 2} = 'b';
 for i = 1:nrows
@@ -63,6 +84,8 @@ for i = 1:nrows
     outCell{i+1, 1} = rowLabels{i};
 end
 
+% cell2csv seems extremely slow for doing this for large files.
+% consider using fprintf directly.
 cell2csv(['FalconProblem' num2str(cnt) '.csv'], outCell, ',', 2000);
 end % of printFalconProblem
 
@@ -76,4 +99,5 @@ elseif achar == 'G'
     reln = '>=';
 end
 end % of csensePrint
+
 
