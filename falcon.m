@@ -158,7 +158,7 @@ while sum(~m.rev) > nR_old
     %  rows:    nmets + LFPunit + model lb/ubs + flux_sum + exp residuals,
     %  cols:    nrxns + n + z + exp residual vars
     N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan_irr, ...
-                nrxns + 1 + 1 + nnnan_irr            , floor(2.1*nSnz));
+                nrxns + 1 + 1 + nnnan_irr            , floor(2.3*nSnz));
     if FDEBUG
         sz_N = size(N)
     end

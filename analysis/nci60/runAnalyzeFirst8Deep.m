@@ -1,4 +1,4 @@
-function runAnalyzeFirst8Deep(model, analysisOnly, allCL)
+function runAnalyzeFirst8Deep(model, analysisOnly, allCL, EXPCON)
 % A simple script to run 8 of 9 (since 8 is easy to do in parallel)
 % of the cell lines for which we have "deep protoeomic data". Can
 % optionally run and analyze all cell lines.
@@ -21,10 +21,17 @@ function runAnalyzeFirst8Deep(model, analysisOnly, allCL)
 %                  pipeline changes at all).
 %
 % allCL            If true, will run all available cell lines.
+%
+% EXPCON         Whether to use expression constraints.  
+%                Default is true.
 
 %
 envConstrain = 'Medium_MaxMinSign';
 %
+
+if ~exist('EXPCON', 'var')
+    EXPCON = true;
+end
 
 protThreshDir = 'nci60prot_thresh';
 micrThreshDir = 'nci60mRNA_thresh';
@@ -44,6 +51,10 @@ if ~exist('analysisOnly', 'var')
     analysisOnly = false;
 end
 
+if ~EXPCON
+    analysisLabel = [analysisLabel '_noEXPCON'];
+end
+
 % In case other constraints are added later
 consString = '';
 if exist('envConstrain', 'var')
@@ -54,8 +65,8 @@ end
 
 % Run Simulations
 if ~analysisOnly
-    runMultiPerturbtion(model, protThreshDir, CLs, envConstrain, analysisLabel);
-    runMultiPerturbtion(model, micrThreshDir, CLs, envConstrain, analysisLabel);
+    runMultiPerturbtion(model, protThreshDir, CLs, envConstrain, analysisLabel, EXPCON);
+    runMultiPerturbtion(model, micrThreshDir, CLs, envConstrain, analysisLabel, EXPCON);
 end
 falconProtOutDir = ['FALCON_' analysisLabel '_simresults_' consString protThreshDir '/'];
 falconMicrOutDir = ['FALCON_' analysisLabel '_simresults_' consString micrThreshDir '/'];
