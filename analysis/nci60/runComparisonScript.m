@@ -1,4 +1,5 @@
-function runComparisonScript(model, method, expFileDir, envConstrain, CL, addLabel)
+function runComparisonScript(model, method, expFileDir, envConstrain, ...
+    CL, addLabel, EXPCON)
 %INPUT
 % model   (reversible form; the following fields are required)
 %   S            Stoichiometric matrix
@@ -29,10 +30,14 @@ function runComparisonScript(model, method, expFileDir, envConstrain, CL, addLab
 %                medium-based CoRe-based, or both.
 %
 % CL             If nonempty or exists, should be the name
-%                of a single cell-line to run.
+%                of a single cell-line to run, as found in
+%                the CoRe table.
 %
 % addLabel       Label for any changes made to the model 
 %                to be used in naming the output directory.
+%
+% EXPCON         Whether to use expression constraints.  
+%                Default is true.
 %
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
@@ -52,6 +57,9 @@ if exist('CL', 'var')
   celllinesarray = celllinesarray(clIdx);
 end
 
+if ~exist('EXPCON', 'var')
+  EXPCON = true;
+end
 
 for i = 1:length(celllinesarray)  
     consString = '';
@@ -89,7 +97,7 @@ for i = 1:length(celllinesarray)
     if(strcmp(method, 'FALCON'))    
         expressionFileLoc = [expFileDir '/' expressionFile '.csv']
         [v_solirrev v_solrev] = runFalcon(modelToRun, ...
-                                          expressionFileLoc, .01);
+                                          expressionFileLoc, .01, EXPCON);
     elseif(strcmp(method, 'LMOMA'))
         rxnValues = [];
         rxnList = [];

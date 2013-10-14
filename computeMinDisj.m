@@ -4,7 +4,7 @@ function [rxn_exp,rxn_exp_sd,rxn_rule_group] = ...
 % minDisj needs to be in $PATH (system path)
 
 if ~exist('FDEBUG', 'var')
-    FDEBUG = 0;
+    FDEBUG = false;
 end
 if ~exist('sigma', 'var')
     sigma = 0;

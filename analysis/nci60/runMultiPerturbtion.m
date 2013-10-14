@@ -1,4 +1,4 @@
-function runMultiPerturbtion(model, expFileDir, CLs, envConstrain, addLabel)
+function runMultiPerturbtion(model, expFileDir, CLs, envConstrain, addLabel, EXPCON)
 %
 % Calls runComparisonScript for FALCON for a single cell line,
 % and searches subdirectories for files beloging to this cell line,
@@ -41,11 +41,18 @@ function runMultiPerturbtion(model, expFileDir, CLs, envConstrain, addLabel)
 % addLabel       Label for any changes made to the model 
 %                to be used in naming the output directory.
 %
+% EXPCON         Whether to use expression constraints.  
+%                Default is true.
+%
 %OUTPUT      a file in 'outputDir' (defined below) for each
 %            cell line.
 %
 % Brandon Barker 09/15/13
 %
+
+if ~exist('EXPCON', 'var')
+    EXPCON = true;
+end
 
 for cidx = 1:length(CLs)
     CL = CLs{cidx};
@@ -63,6 +70,7 @@ for cidx = 1:length(CLs)
 
     parfor i = 1:length(pertPaths)
 	expSubDir = pertPaths{i};
-	runComparisonScript(model, 'FALCON', expSubDir, envConstrain, CL, modLabel);
+	runComparisonScript(model, 'FALCON', expSubDir, envConstrain, ... 
+            CL, modLabel, EXPCON);
     end
 end
