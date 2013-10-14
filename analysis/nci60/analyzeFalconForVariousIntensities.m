@@ -9,14 +9,14 @@ function dist = analyzeFalconForVariousIntensities (recMod, fileName, rc, intens
     %fileName is the tissue file to analyzed (ex. '786_O.csv')
     %rc is regularization constant on fluxes
     %intenst is a vector containing all gene intensities to be analyzed
-    %rxnOfInt is the number of the rxn where fluxes will be measured
+    %rxnOfInt is a vector of up to 3 rxn numbers
     %printFile is the name of the file where the graph will be printed (.jpg)
 %OUTPUTS
     %dist is an array containing 2 columns. 1st column is the gene 
     %intensity and the 2nd column is the reaction flux. 
 %Narayanan Sadagopan 10/12/13
 
-dist = zeros(length(intenst),2);
+dist = zeros(length(intenst),length(rxnOfInt)+1);
 count = 1;
 
 %create temporary file
@@ -30,27 +30,64 @@ dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
 dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter','\t','precision',10);
 fclose(fileID);
 
-%modify gene intensity and run Falcon
-for x = 1:length(intenst)
+if (length(rxnOfInt)==1)
+    %modify gene intensity and run Falcon
+    for x = 1:length(intenst)
 
-    %make change and rewrite file
-    C{1,2}(1) = intenst(x); 
-    dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
-    dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter','\t','precision',10);
-    
-    %run Falcon
-    [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc);
-    dist(count,1) = intenst(x);
-    dist(count,2) = vRev(rxnOfInt);
-    count = count + 1;
-    
+        %make change and rewrite file
+        C{1,2}(1) = intenst(x); 
+        dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+        dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter','\t','precision',10);
+
+        %run Falcon
+        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc);
+        dist(count,1) = intenst(x);
+        dist(count,2) = vRev(rxnOfInt(1));
+        count = count + 1;
+    end
+elseif (length(rxnOfInt)==2)
+    for x = 1:length(intenst)
+        C{1,2}(1) = intenst(x); 
+        dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+        dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter','\t','precision',10);
+        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc);
+        dist(count,1) = intenst(x);
+        dist(count,2) = vRev(rxnOfInt(1));
+        dist(count,3) = vRev(rxnOfInt(2));
+        count = count + 1;
+    end
+else
+    for x = 1:length(intenst)
+        C{1,2}(1) = intenst(x); 
+        dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+        dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter','\t','precision',10);
+        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc);
+        dist(count,1) = intenst(x);
+        dist(count,2) = vRev(rxnOfInt(1));
+        dist(count,3) = vRev(rxnOfInt(2));
+        dist(count,4) = vRev(rxnOfInt(3));
+        count = count + 1;
+    end
 end
 
 delete('tempFileForAnalyzeFalcon.csv');
 
 %plot
 figure;
+hold all
 plot(dist(:,1),dist(:,2),'b-o');
+legend(sprintf('reaction %d', rxnOfInt(1)),'Location','NorthEastOutside');
+if (length(rxnOfInt)==2)
+    plot(dist(:,1),dist(:,3),'g-o');
+    legend(sprintf('reaction %d', rxnOfInt(1)),sprintf('reaction %d', ...
+        rxnOfInt(2)),'Location','NorthEastOutside');
+end
+if (length(rxnOfInt)==3)
+    plot(dist(:,1),dist(:,4),'r-o');
+    legend(sprintf('reaction %d', rxnOfInt(1)),sprintf('reaction %d', ...
+        rxnOfInt(2)),sprintf('reaction %d', rxnOfInt(3)),'Location', ...
+        'NorthEastOutside');
+end
 title('Flux vs Intensity');
 xlabel(sprintf('intensity of the gene %d', C{1,1}(1)));
 ylabel(sprintf('flux for reaction %d', rxnOfInt));

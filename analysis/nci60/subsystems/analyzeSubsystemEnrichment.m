@@ -1,10 +1,9 @@
-%Takes a particular subsystem in human recon 2 and converts Entrez gene ids
-%to IPI ids. Looks at quantified protein and mRNA amounts in data set
-%for the IPI ids.One potential flaw, and/or statements in gene rules 
-function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals totGenes]=analyzeSubsystemEnrichment(converter, data, subsys, rec2, includeZero)
+%Takes a particular subsystem in human recon 2. Looks at quantified 
+%protein and mRNA amounts in data set based on Entrez Ids. 
+%One potential flaw, and/or statements in gene rules 
+function [pMRNA pProtein missingGenesMRNA missingGenesProtein totGenes]=analyzeSubsystemEnrichment(data, subsys, rec2, includeZero)
 
 %INPUT
-%converter is a (1x2) cell array with Entrez ids in {1,1} and the corresponding IPI ids in {1,2} (output of getConverter)
 %data is the output of readModelExpression
 %subsys is a human recon 2 subsystem
 %rec2 is the human recon 2 model
@@ -16,12 +15,9 @@ function [pMRNA pProtein missingGenesMRNA missingGenesProtein residuals totGenes
 %model for the subsystem missing an MRNA intensity
 %missingGenesProtein a cell array containing the Entrez id of all genes in 
 %the model for the subsystem missing an protein intensity
-%residual is vector containing the absolute value of the difference between
-%MRNA and protein intensites
 %totGenes is the total number of genes for the subsystem
 %Narayanan Sadagopan, September 2013
 
-residuals(1) = 0; %difference between protein and mRNA intensity values
 pMRNA = 0;  %genes in paper with mRNA intensity/possible genes for that subsystem
 pProtein = 0;  %genes in paper with protein intensity/possible genes for that subsystem
 missingGenesMRNA{1} = '0';  %genes in model that don't have an mRNA intensity
@@ -46,51 +42,31 @@ for x = 1:7440
                 count4 = count4 + 1;    						
                 truth3 = 0; %to check for gene's presence in mRNA
                 truth4 = 0; %to check for gene's presence in protein   
-                for y = 1:length(converter{1,1})
-                    if (strcmp(converter{1,1}(y),rec2.genes(b)))
-                        for a = 1:length(data{1,2})
-                            if (includeZero)
-                                truth = 0; %to check for mRNA intensity for residual calc
-                                truth2 = 0; %to check for protein intensity for residual calc   
-                                if (strcmp(converter{1,2}{y}, data{1,2}{a}))
-                                    if (data{1,5}(a) == data{1,5}(a))  %removes any NaN values
-                                        truth = 1;
-                                        truth3 = 1;
-                                        foundGenesMRNA(count) = b;
-                                        count = count + 1;
-                                    end
-                                    if (data{1,6}(a) == data{1,6}(a))  %removes any NaN values
-                                        truth2 = 1;
-                                        truth4 = 1;
-                                        foundGenesProtein(count2) = b;
-                                        count2 = count2 + 1;
-                                    end
-                                end
-                                if (truth&&truth2)
-                                    residuals(count3) = abs(data{1,5}(a) - data{1,6}(a));
-                                    count3 = count3 + 1;
-                                end
-                            else
-                                truth = 0; %to check for mRNA intensity for residual calc
-                                truth2 = 0; %to check for protein intensity for residual calc   
-                                if (strcmp(converter{1,2}{y}, data{1,2}{a}))
-                                    if (data{1,5}(a) == data{1,5}(a) && data{1,5}(a)~=0)  %removes any NaN values
-                                        truth = 1;
-                                        truth3 = 1;
-                                        foundGenesMRNA(count) = b;
-                                        count = count + 1;
-                                    end
-                                    if (data{1,6}(a) == data{1,6}(a) && data{1,6}(a)~=0)  %removes any NaN values
-                                        truth2 = 1;
-                                        truth4 = 1;
-                                        foundGenesProtein(count2) = b;
-                                        count2 = count2 + 1;
-                                    end
-                                end
-                                if (truth&&truth2)
-                                    residuals(count3) = abs(data{1,5}(a) - data{1,6}(a));
-                                    count3 = count3 + 1;
-                                end
+                for a = 1:length(data{1,1})
+                    if (includeZero) 
+                        if (strcmp(rec2.genes{b}, data{1,1}{a}))
+                            if (data{1,5}(a) == data{1,5}(a))  %removes any NaN values
+                                truth3 = 1;
+                                foundGenesMRNA(count) = b;
+                                count = count + 1;
+                            end
+                            if (data{1,6}(a) == data{1,6}(a))  %removes any NaN values
+                                truth4 = 1;
+                                foundGenesProtein(count2) = b;
+                                count2 = count2 + 1;
+                            end
+                        end
+                    else 
+                        if (strcmp(rec2.genes{b}, data{1,1}{a}))
+                            if (data{1,5}(a) == data{1,5}(a) && data{1,5}(a)~=0)  %removes any NaN values
+                                truth3 = 1;
+                                foundGenesMRNA(count) = b;
+                                count = count + 1;
+                            end
+                            if (data{1,6}(a) == data{1,6}(a) && data{1,6}(a)~=0)  %removes any NaN values
+                                truth4 = 1;
+                                foundGenesProtein(count2) = b;
+                                count2 = count2 + 1;
                             end
                         end
                     end
@@ -122,4 +98,3 @@ end
 if (foundGenesProtein(1) == 3000) %correction for foundGenesProtein declaration
     pProtein = 0;
 end
-
