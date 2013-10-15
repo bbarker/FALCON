@@ -1,0 +1,7 @@
+The analysis performed in this directory is based on the comparative analysis
+found in the 2012 Lee et al. paper:
+
+Improving metabolic flux predictions using absolute gene expression data
+
+Data files and the original code can be found with the paper at:
+http://www.biomedcentral.com/1752-0509/6/73

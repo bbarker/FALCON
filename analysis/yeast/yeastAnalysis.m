@@ -8,26 +8,10 @@ function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
 
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
+%Whether to use new complexation method in Lee method
+useMinDisj = true
 
-% FALCON
-if find(strcmp(methodList, 'FALCON'))
-    disp('Running FALCON ...');
-    %[rxn_exp,rxn_exp_sd,rxn_missing_gene] = geneToRxn(model, genedata_filename);
-
-    [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
-    [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
-        computeMinDisj(modelIrrev, genedata_filename);
-    tic;
-    %Need to separate transcript data loading
-    [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
-        rxn_exp, rxn_exp_sd, rxn_rule_group, 0.0, 0, true);
-    v_falcon = convertIrrevFluxDistribution(model, v_falconIrr, matchRev);
-    timing.falcon = toc;
-else
-    v_falcon = zeros(length(model.lb), 1);
-    timing.falcon = 0;
-end
-
+[modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
 % load transcript data
 genedata	= importdata(genedata_filename);
@@ -37,7 +21,32 @@ gene_exp	= genedata.data(:,1);
 gene_exp_sd	= genedata.data(:,2);
 
 % map gene weighting to reaction weighting
-[rxn_exp,rxn_exp_sd] = geneToReaction(model,genenames,gene_exp,gene_exp_sd);
+[rxn_exp, rxn_exp_sd] = geneToReaction(model,genenames,gene_exp,gene_exp_sd);
+[rxn_exp_md, rxn_exp_sd_md, rxn_rule_group] = ... 
+    computeMinDisj(modelIrrev, genedata_filename);
+
+
+% FALCON
+if find(strcmp(methodList, 'FALCON'))
+    disp('Running FALCON ...');
+    %[rxn_exp, rxn_exp_sd, rxn_missing_gene] = geneToRxn(model, genedata_filename);
+
+    tic;
+    %Need to separate transcript data loading
+    if 1 % need to modify to use old expression values
+        [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
+            rxn_exp_md, rxn_exp_sd_md, rxn_rule_group, 0.0, 0, true);
+    else
+        [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
+            rxn_exp, rxn_exp_sd, rxn_rule_group, 0.0, 0, true);
+    end
+    v_falcon = convertIrrevFluxDistribution(model, v_falconIrr, matchRev);
+    timing.falcon = toc;
+else
+    v_falcon = zeros(length(model.lb), 1);
+    timing.falcon = 0;
+end
+
 % sds 0 -> small
 rxn_exp_sd(rxn_exp_sd == 0) = min(rxn_exp_sd(rxn_exp_sd>0))/2;
 
@@ -53,13 +62,21 @@ if find(strcmp(methodList, 'eMoMA'))
     % Gene expression constraint FBA
     disp('Running eMoMA (original) ...');
     tic;
-    v_gene_exp      = dataToFlux(model,rxn_exp,rxn_exp_sd);
+    if useMinDisj
+        v_gene_exp = dataToFlux(model, rxn_exp_md, rxn_exp_sd_md);
+    else
+        v_gene_exp = dataToFlux(model, rxn_exp, rxn_exp_sd);
+    end
     timing.gene_exp=toc;
 
     % fixed expression method
     disp('Running eMoMA (exp fix) ...');
     tic;
-    v_fix      = dataToFluxFix(model,rxn_exp,rxn_exp_sd);
+    if useMinDisj
+        v_fix = dataToFluxFix(model, rxn_exp_md, rxn_exp_sd_md);
+    else
+        v_fix = dataToFluxFix(model, rxn_exp, rxn_exp_sd);
+    end
     timing.fix = toc;
 else
     v_gene_exp = zeros(length(model.lb), 1);
