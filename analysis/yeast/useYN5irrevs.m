@@ -9,6 +9,7 @@ for i = 1:length(yn5.rxns)
         idxIn7 = find(strcmp(ynNew.rxnNames, rxn));
         if idxIn7
             ynOut.rev(idxIn7) = 0;
+            disp(ynOut.rxnNames(idxIn7));
             if yn5.lb(i) == 0
                 ynOut.lb(idxIn7) = 0;
             end

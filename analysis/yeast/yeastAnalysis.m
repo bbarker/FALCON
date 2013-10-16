@@ -10,7 +10,9 @@ allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
 %Whether to use new complexation method in Lee method
 useMinDisj = true
-
+expCon = true
+minFit = 0.0
+regC = 0.1
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
 % load transcript data
@@ -21,44 +23,62 @@ gene_exp	= genedata.data(:,1);
 gene_exp_sd	= genedata.data(:,2);
 
 % map gene weighting to reaction weighting
-[rxn_exp, rxn_exp_sd] = geneToReaction(model,genenames,gene_exp,gene_exp_sd);
 [rxn_exp_md, rxn_exp_sd_md, rxn_rule_group] = ... 
     computeMinDisj(modelIrrev, genedata_filename);
-
 
 % FALCON
 if find(strcmp(methodList, 'FALCON'))
     disp('Running FALCON ...');
     %[rxn_exp, rxn_exp_sd, rxn_missing_gene] = geneToRxn(model, genedata_filename);
 
+    [rxn_exp_irr, rxn_exp_sd_irr] = geneToReaction(modelIrrev, genenames, ...
+        gene_exp, gene_exp_sd);
+    % sds 0 -> small
+    rxn_exp_sd_irr(rxn_exp_sd_irr == 0) = min(rxn_exp_sd_irr(rxn_exp_sd_irr>0))/2;
+    %First compare the number of nans and zeros in both data typs.
+    gte_nan = sum(isnan(rxn_exp_irr))
+    mdj_nan = sum(isnan(rxn_exp_md))
+    gte_0 = sum(rxn_exp_irr == 0)
+    mdj_0 = sum(rxn_exp_md == 0)
+    rxnRuleCell = cell(length(model.rxns) + 1, 3);
+    rxnRuleCell{1,1} = 'Rule';
+    rxnRuleCell{1,2} = 'geneToRxn';
+    rxnRuleCell{1,3} = 'minDisj';
+    for i = 1:length(model.rxns)
+        rxnRuleCell{i + 1, 1} = modelIrrev.grRules{i};
+        rxnRuleCell{i + 1, 2} = num2str(rxn_exp_irr(i));
+        rxnRuleCell{i + 1, 3} = num2str(rxn_exp_md(i));
+    end
+    cell2csv(['ComplexExpressionCompare.csv'], rxnRuleCell, ',', 2000);
+
     tic;
     %Need to separate transcript data loading
-    if 1 % need to modify to use old expression values
+    if useMinDisj % need to modify to use old expression values
         [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
-            rxn_exp_md, rxn_exp_sd_md, rxn_rule_group, 0.0, 0, true);
+            rxn_exp_md, rxn_exp_sd_md, rxn_rule_group, regC, minFit, expCon);
     else
         [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
-            rxn_exp, rxn_exp_sd, rxn_rule_group, 0.0, 0, true);
+            rxn_exp_irr, rxn_exp_sd_irr, rxn_rule_group, regC, minFit, expCon);
     end
     v_falcon = convertIrrevFluxDistribution(model, v_falconIrr, matchRev);
     timing.falcon = toc;
+    save([genedata_filename '_falcon_flux.mat'], 'v_falcon');
 else
     v_falcon = zeros(length(model.lb), 1);
     timing.falcon = 0;
 end
 
-% sds 0 -> small
-rxn_exp_sd(rxn_exp_sd == 0) = min(rxn_exp_sd(rxn_exp_sd>0))/2;
-
-
-% scale by uptake reaction
-uptake              = find(strcmp(gene_to_scale,model.rxnNames));
-rxn_exp_sd          = rxn_exp_sd/rxn_exp(uptake);
-rxn_exp             = rxn_exp/rxn_exp(uptake);
-model.lb(uptake)	= 1;
-model.ub(uptake)	= 1;
 
 if find(strcmp(methodList, 'eMoMA'))
+    [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
+        gene_exp, gene_exp_sd);
+    % scale by uptake reaction
+    uptake              = find(strcmp(gene_to_scale,model.rxnNames));
+    rxn_exp_sd          = rxn_exp_sd/rxn_exp(uptake);
+    rxn_exp             = rxn_exp/rxn_exp(uptake);
+
+    model.lb(uptake)	= 1;
+    model.ub(uptake)	= 1;
     % Gene expression constraint FBA
     disp('Running eMoMA (original) ...');
     tic;
@@ -68,7 +88,7 @@ if find(strcmp(methodList, 'eMoMA'))
         v_gene_exp = dataToFlux(model, rxn_exp, rxn_exp_sd);
     end
     timing.gene_exp=toc;
-
+    save([genedata_filename '_gene_exp_flux.mat'], 'v_gene_exp');
     % fixed expression method
     disp('Running eMoMA (exp fix) ...');
     tic;
@@ -78,6 +98,7 @@ if find(strcmp(methodList, 'eMoMA'))
         v_fix = dataToFluxFix(model, rxn_exp, rxn_exp_sd);
     end
     timing.fix = toc;
+    save([genedata_filename '_fix_flux.mat'], 'v_fix');
 else
     v_gene_exp = zeros(length(model.lb), 1);
     timing.gene_exp = 0;
@@ -102,6 +123,7 @@ if find(strcmp(methodList, 'GIMME'))
     tic;
     v_gimme         = gimme(model, rxn_exp);
     timing.gimme = toc;
+    save([genedata_filename '_gimme_flux.mat'], 'v_gimme');
 else
     v_gimme = zeros(length(model.lb), 1);
     timing.gimme = 0;
@@ -113,6 +135,7 @@ if find(strcmp(methodList, 'Shlomi'))
     tic;
     v_shlomi    	= shlomi(model, rxn_exp);
     timing.shlomi = toc;
+    save([genedata_filename '_shlomi_flux.mat'], 'v_shlomi');
 else
     v_shlomi = zeros(length(model.lb), 1);
     timing.shlomi = 0;
@@ -142,7 +165,10 @@ for k = 1:size(experimental_fluxes.textdata,1)
     p_shlomi(k)     	= flux*abs(v_shlomi(j));
     p_fix(k)     	= flux*abs(v_fix(j));
     p_falcon(k)     	= flux*abs(v_falcon(j));
+    % reaction_name{k}
+    % v_falcon(j)
 end
+
 
 % remove small entries
 p_gene_exp(abs(p_gene_exp)<1e-6)            = 0;
@@ -151,7 +177,6 @@ p_gimme(abs(p_gimme)<1e-6)                  = 0;
 p_shlomi(abs(p_shlomi)<1e-6)                = 0;
 p_fix(abs(p_fix)<1e-6)                = 0;
 p_falcon(abs(p_falcon)<1e-6)                = 0;
-
 
 % find best fit from standard FBA solution
 % ... overkill for this problem, but reuses existing method

@@ -67,9 +67,12 @@ for i = 1:ngenes
     rxn_exp_sd(2*i - 1) = 1;
     rxn_exp_sd(2*i) = 1;
 end
+
 % Last one is irreversible:
 rxn_exp(2*i) = nan;
 rxn_exp_sd(2*i) = nan;
+rxn_exp_sd(isnan(rxn_exp_sd)) = min(rxn_exp_sd(rxn_exp_sd>0))/2;
+
 for j = (2*i):nrxns
     rxn_rule_group(j) = j;
 end
@@ -96,6 +99,7 @@ CMD_rxn_exp_sd(~isnan(CMD_rxn_exp_sd)))
     numSucc = numSucc + 1;
 else
     disp('Test FAILED for computeMinDisj rxn_exp_sd');
+    disp(rxn_exp_sd); disp(CMD_rxn_exp_sd);
     numFail = numFail + 1;
 end
 if all(rxn_rule_group == CMD_rxn_rule_group)

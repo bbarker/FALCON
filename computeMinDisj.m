@@ -118,9 +118,10 @@ if FDEBUG
     disp([min(rxn_exp_sd) max(rxn_exp_sd)]);
 end
 if max(rxn_exp_sd) > 0
-    rxn_exp_sd(rxn_exp_sd == 0) = min(rxn_exp_sd(rxn_exp_sd>0))/2;
+    rxn_exp_sd(rxn_exp_sd == 0 | (rxn_exp_sd ~= rxn_exp_sd)) = ...
+         min(rxn_exp_sd(rxn_exp_sd>0))/2;
 else 
-    rxn_exp_sd(rxn_exp_sd == 0) = 1;
+    rxn_exp_sd(rxn_exp_sd == 0 | (rxn_exp_sd ~= rxn_exp_sd)) = 1;
 end
 if FDEBUG
     disp('New min rxn_exp_sd');

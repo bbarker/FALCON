@@ -128,8 +128,8 @@ if FDEBUG
 end
 
 %See if this helps to get more irreversible reactions
-solFBA = optimizeCbModel(m, 'max');
-fOpt = solFBA.f;
+%solFBA = optimizeCbModel(m, 'max');
+%fOpt = solFBA.f;
 m.lb(m.c == 1) = minFit;
 
 rxnhasgene = (sum(m.rxnGeneMat')~=0);
