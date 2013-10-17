@@ -1,5 +1,7 @@
 function [v_sol, corrval, nvar, v_all] = ...
     falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG)
+
+TESTING = false
 %INPUT
 %
 %
@@ -100,6 +102,7 @@ if FDEBUG
     flux_sum
 end
 
+
 % Typically required to be >= 0, we can require strict positivity
 % due to having non-affine in our LFP.
 ZMIN = 0.0001;
@@ -127,20 +130,29 @@ if FDEBUG
     disp([r_pri_max max(r)]);
 end
 
+expZtol = 2*flux_sum/nrxns
+r_med = median(r)
+r_min = min(r(r>0))
+
+
 %See if this helps to get more irreversible reactions
 %solFBA = optimizeCbModel(m, 'max');
 %fOpt = solFBA.f;
+fOpt = 0;
+v_orig = zeros(nrxns, 1);
 m.lb(m.c == 1) = minFit;
 
 rxnhasgene = (sum(m.rxnGeneMat')~=0);
 
 %rev = false(size(m.rxns));
-corrval = 0;
+corrval = nan;
 nR_old = 0;
 v_sol = zeros(size(m.rxns));
 cnt = 0;
 conv = 0;
 nvar = nan;
+fUpdate = 0;
+rGrpsUsed = 0;
 while sum(~m.rev) > nR_old
     cnt = cnt + 1;
     nR_old = sum(~m.rev); 
@@ -155,9 +167,9 @@ while sum(~m.rev) > nR_old
     % 1. fit to data
 
     %Preallocate matrix and vectors:
-    %  rows:    nmets + LFPunit + model lb/ubs + flux_sum + exp residuals,
+    %  rows:    nmets + LFPunit + model lb/ubs + flux_sum + exp residuals + f_pre,
     %  cols:    nrxns + n + z + exp residual vars
-    N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan_irr, ...
+    N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan_irr   + 1, ...
                 nrxns + 1 + 1 + nnnan_irr            , floor(2.3*nSnz));
     if FDEBUG
         sz_N = size(N)
@@ -237,22 +249,35 @@ while sum(~m.rev) > nR_old
     for k = 1:length(ecrxns)
         N(s1+1, ecrxns(k)) = -1;
     end
-    if FDEBUG
-        NRowLab{s1 + 1} = 'FlxSum';
-    end
     N(s1 + 1, nrxns + 2) = flux_sum;
     %b(s1 + 1) = flux_sum;
     b(s1 + 1) = 0; 
     csense(s1 + 1) = 'L';
-    s1 = s1+1;
- 
+    if FDEBUG
+        NRowLab{s1 + 1} = 'FlxSum';
+    end
+    s1 = s1 + 1;
+   
+    % Add a constraint on the objective value, used
+    % below in: while k < nrxns
+    objPriorRow = s1 + 1;
+    csense(objPriorRow) = 'L';
+    b(objPriorRow) = 0;
+    if FDEBUG
+        NRowLab{s1 + 1} = 'ObjPrior';
+    end
+    s1 = s1 + 1;
+
     k = 0;
     r_group_visited(1:nrxns) = false;
     first_r_group_visited = -1;
+    rGrpsPrev = rGrpsUsed;
+    rGrpsUsed = 0;
     while k < nrxns
         k = k + 1;
         d = r(k);
         s = r_sd(k);
+        objDenom = max(d, expZtol) * s;
         cons1 = 0;
         if ~r_group_visited(r_group(k))
             cons1 = s1 + 1;
@@ -267,6 +292,7 @@ while sum(~m.rev) > nR_old
             if ~r_group_visited(r_group(k))
                 r_group_visited(r_group(k)) = true;
                 s1 = s1 + 2;
+                rGrpsUsed = rGrpsUsed + 1; 
                 if r_group(k) ~= first_r_group_visited
                     s2 = s2 + 1;
                 end
@@ -286,14 +312,24 @@ while sum(~m.rev) > nR_old
             U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
             csense(cons1)   = 'L';
             csense(cons1 + 1) = 'L';
-            f(s2 + 1) = - 1/s;
+            f(s2 + 1) = - 1 / objDenom;
+            fUpdate = fUpdate - abs(v_orig(k) - d)/objDenom;
             if FDEBUG
                 NRowLab{cons1} = ['RG_' num2str(r_group(k))];
                 NRowLab{cons1 + 1} = ['RG_' num2str(r_group(k))];
                 NColLab{s2 + 1} = ['t_' num2str(r_group(k))];
             end    
+            % Require the objective value to remain stable.
+            if TESTING && cnt > 1 && abs(corrval) > 0
+                N(objPriorRow, s2 + 1) = 1/objDenom;
+            end
+
         end %end of if not nan
     end %end while k < nrxns
+    
+    if TESTING && cnt > 1 && abs(corrval) > 0
+        N(objPriorRow, nrxns + 2) = rGrpsUsed*(corrval / rGrpsPrev);
+    end
 
 if ~all(sz_N == size(N)) || sz_N(1) ~= numel(b) || sz_N(2) ~= numel(L)
     disp('WARNING: mismatch in estimated and actual dimension detected!!!');
@@ -376,7 +412,6 @@ if 0
 end % of if 1/0
 
    
-    corrval = fOpt;
     if FDEBUG
         disp('fOpt, n, z:');
         disp([fOpt v(nrxns + 1) v(nrxns + 1)]);
@@ -385,6 +420,7 @@ end % of if 1/0
         v_orig = v;
         if v(nrxns + 2) ~= 0
             v_orig = v / v(nrxns + 2); %Transform to original
+            corrval = fOpt / v(nrxns + 2)
         end
         v_sol = v_orig(1:nrxns);
         v_all = [v_all v_sol];
@@ -511,7 +547,7 @@ scbas = []; %scbas = solution.cbasis;
 if conv
     v0 = solution.full;
     v(j1) = v0;
-    fOpt = f0' * v;
+    fOpt = f0' * v
     if FDEBUG
         disp(['Convergent optimum is: ' num2str(solution.obj)]);
         if isnan(fOpt)

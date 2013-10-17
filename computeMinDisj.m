@@ -10,6 +10,8 @@ if ~exist('sigma', 'var')
     sigma = 0;
 end
 
+ztol = 1e-4;
+
 mdesc = strrep(model.description, ' ', '_');
 rfid = num2str(randint(1,1,10e40));
 rfname = [genedata_filename, '_', mdesc, rfid];
@@ -117,11 +119,11 @@ if FDEBUG
     disp([min(rxn_exp) max(rxn_exp)]);
     disp([min(rxn_exp_sd) max(rxn_exp_sd)]);
 end
-if max(rxn_exp_sd) > 0
-    rxn_exp_sd(rxn_exp_sd == 0 | (rxn_exp_sd ~= rxn_exp_sd)) = ...
-         min(rxn_exp_sd(rxn_exp_sd>0))/2;
+if max(rxn_exp_sd) > ztol
+    rxn_exp_sd(rxn_exp_sd < ztol | isnan(rxn_exp_sd)) = ...
+         min(rxn_exp_sd(rxn_exp_sd >= ztol))/2;
 else 
-    rxn_exp_sd(rxn_exp_sd == 0 | (rxn_exp_sd ~= rxn_exp_sd)) = 1;
+    rxn_exp_sd(rxn_exp_sd == 0 | isnan(rxn_exp_sd)) = 1;
 end
 if FDEBUG
     disp('New min rxn_exp_sd');

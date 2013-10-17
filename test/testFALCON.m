@@ -39,7 +39,7 @@ function testFALCON(FDBG)
 
 
 EXPCON = 1;
-REG = 0.1;
+REG = 0;
 erTol = 1e-9;
 
 numFail = 0;

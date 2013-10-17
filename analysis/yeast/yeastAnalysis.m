@@ -12,7 +12,7 @@ allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 useMinDisj = true
 expCon = true
 minFit = 0.0
-regC = 0.1
+regC = 0
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
 % load transcript data
