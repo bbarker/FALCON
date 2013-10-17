@@ -73,7 +73,7 @@ else
         dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
         dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
 	     '\t','precision',10);
-        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EPCON, 0);
+        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
         dist(count,3) = vRev(rxnOfInt(2));
@@ -93,8 +93,8 @@ if (length(rxnOfInt)==2)
     plot(dist(:,1),dist(:,3),'g-o');
     legend(sprintf('reaction %d', rxnOfInt(1)),sprintf('reaction %d', ...
         rxnOfInt(2)),'Location','NorthEastOutside');
-end
-if (length(rxnOfInt)==3)
+elseif (length(rxnOfInt)==3)
+    plot(dist(:,1),dist(:,3),'g-o');
     plot(dist(:,1),dist(:,4),'r-o');
     legend(sprintf('reaction %d', rxnOfInt(1)),sprintf('reaction %d', ...
         rxnOfInt(2)),sprintf('reaction %d', rxnOfInt(3)),'Location', ...
@@ -102,7 +102,7 @@ if (length(rxnOfInt)==3)
 end
 title('Flux vs Intensity');
 xlabel(sprintf('intensity of the gene %d', C{1,1}(1)));
-ylabel(sprintf('flux for reaction %d', rxnOfInt));
+ylabel('flux');
 grid on;
 print('-dpng',printFile);
 close(figure);
