@@ -43,7 +43,8 @@ end
 
 
 subsetsToStats = containers.Map;
-[sortedCoreTableCol sortedCoreTableColIdxs] = sort(coreTable(:, CLidx));
+[sortedCoreTableCol sortedCoreTableColIdxs] = sort(abs(coreTable(:, CLidx)), 1, 'descend');
+sortedCoreTableCol = coreTable(sortedCoreTableColIdxs, CLidx);
 v_solExc = readV_solFile(inputFI);
 sortedV_solExc = v_solExc(sortedCoreTableColIdxs);
 sortedFVAVmaxArray = FVAVmaxArray(sortedCoreTableColIdxs);

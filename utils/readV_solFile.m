@@ -4,10 +4,6 @@ function [v_solex v_solrev v_solirrev]=readV_solFile(fluxFileLoc)
     v_solex=[];v_solrev=[];v_solirrev=[];
     flagexfluxes=0;flagrevfluxes=0;flagirrevfluxes=0;
     while line~=-1
-        if(flagexfluxes)
-            startindex=regexp(line,'(\-|\d|\.)+$');
-            v_solex=[v_solex; str2num(line(startindex:length(line)))];
-        end
         if(~isempty(regexp(line,'v_sol')))
  	    if(~isempty(regexp(line,'v_solex')))
                 flagexfluxes=1;flagrevfluxes=0;flagirrevfluxes=0;
