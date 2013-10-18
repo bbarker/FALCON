@@ -58,7 +58,7 @@ if exist('CL', 'var')
 end
 
 if ~exist('EXPCON', 'var')
-  EXPCON = true;
+    EXPCON = true;
 end
 
 for i = 1:length(celllinesarray)  
@@ -113,7 +113,7 @@ for i = 1:length(celllinesarray)
             end
 	end
         [v_solirrev v_solrev] = runLinearMOMAOneShot(model, ...
-                                              rxnValues, rxnList);
+                                    rxnValues, rxnList);
     elseif(strcmp(method, 'FBA'))
         [v_solirrev v_solrev] = runFBA(model);
     else

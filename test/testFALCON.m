@@ -165,11 +165,6 @@ end
 % flux with increasing expression:
 % a <= b <= c <= ...
 
-%mBranch = m;
-%mBranch.lb(2) = 0;
-%mBranch.ub(3:4) = 0;
-%mBranch.rev(2:4) = 0;
-
 branchMaxExp = 10;
 expInit = 0;
 branchF3F4 = [5 6 7 8];

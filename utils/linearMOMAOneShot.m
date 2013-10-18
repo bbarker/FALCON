@@ -1,4 +1,5 @@
-function [solutionDel,solutionWT] = linearMOMAOneShot(model,WTflux,objMult,fw,gw,rvec,rxnList,allowLoops)
+function [solutionDel, solutionWT] = linearMOMAOneShot(model, WTflux, objMult, ...
+                                         fw, gw, rvec, rxnList, allowLoops)
 %linearMOMA Performs a linear version of the MOMA (minimization of
 %metabolic adjustment) approach 
 %
@@ -8,6 +9,8 @@ function [solutionDel,solutionWT] = linearMOMAOneShot(model,WTflux,objMult,fw,gw
 %INPUTS
 % fw                regularization weight
 % gw                LMOMA weight
+% rvec              Perturbation weights for FBA objectives: 
+%                   model.c(1:nRxns) += rvec
 %
 % modelWT           Wild type model
 % modelDel          Deletion strain model
@@ -88,8 +91,8 @@ end
     %not efficient, but simple:
     if nargin > 6
       LPproblem2.c(2*nRxns+1:end) = zeros(nRxns,1);
-      for i=1:length(rxnList)
-        LPproblem2.c(2*nRxns+rxnList(i)) = gw;
+      for i = 1:length(rxnList)
+        LPproblem2.c(2*nRxns + rxnList(i)) = gw;
       end
     end
     %biomass/growth correction:
