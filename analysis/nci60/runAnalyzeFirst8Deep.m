@@ -38,11 +38,13 @@ micrThreshDir = 'nci60mRNA_thresh';
 
 analysisLabel = '8DCLs';
 CLs = {'MCF7', 'U251', 'COLO 205', 'CCRF-CEM', 'M14', 'NCI-H460', ...
-       'OVAR_SKOV3', 'PROSTATE_PC3'};
+       'SK-OV-3', 'PC-3'};
 
 if ~exist('allCL', 'var')
     allCL = false;
-else
+end
+
+if allCL
     analysisLabel = 'AllCLs';
     % !!! need to load CLs from NCI60_labels.csv
 end

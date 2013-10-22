@@ -53,8 +53,10 @@ jainMetsToExcIdxs = loadJainMetsToExcIdxs(jainMetsArray, model);
 
 %In case we only want to run a single cell line:
 if exist('CL', 'var')
-  clIdx = find(strcmp(celllinesarray, CL));
-  celllinesarray = celllinesarray(clIdx);
+    if length(CL) > 0
+        clIdx = find(strcmp(celllinesarray, CL));
+        celllinesarray = celllinesarray(clIdx);
+    end
 end
 
 if ~exist('EXPCON', 'var')
@@ -105,7 +107,9 @@ for i = 1:length(celllinesarray)
 	    jthExcIdxs = jainMetsToExcIdxs(jainMetsArray{j});
             for k = 1:length(jthExcIdxs)
                 rxnList(end + 1) = jthExcIdxs(k);
-                rxnValues(end + 1) = coretable(j, i);
+                % Assume the maximum value (usually glucose) is always attainable
+                % at unity:
+                rxnValues(end + 1) = coretable(j, i) / max(coretable(:, i));
                 % Everything appears to check out:
                 % disp([celllinesarray{i} '    ' jainMetsArray{j}]);
 		% disp(jthExcIdxs(k));

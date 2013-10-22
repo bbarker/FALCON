@@ -1,4 +1,4 @@
-function [v_solex v_solrev v_solirrev]=readV_solFile(fluxFileLoc)
+function [v_solex v_solrev v_solirrev] = readV_solFile(fluxFileLoc)
     inputFI = fopen(fluxFileLoc);
     line=fgetl(inputFI);
     v_solex=[];v_solrev=[];v_solirrev=[];

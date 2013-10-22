@@ -277,7 +277,8 @@ while sum(~m.rev) > nR_old
         k = k + 1;
         d = r(k);
         s = r_sd(k);
-        objDenom = max(d, expZtol) * s;
+        %objDenom = max(d, expZtol) * s;
+        objDenom = s;
         cons1 = 0;
         if ~r_group_visited(r_group(k))
             cons1 = s1 + 1;
