@@ -1,5 +1,6 @@
-%For a particular subystem, looks at all the metabolites.
-%Finds total # of reactions in model containing each metabolite.
+%For a particular subystem, looks at all the reactions.
+%For each reaction, looks at the products. Then the function
+%finds total # of reactions in model who's reactants are that product.
 %Splits the # of reactions per metabolite into 4 regions and plots
 %a pie chart. 
 function dist = metOverlap (rec2, subsys, pieName)
@@ -22,9 +23,11 @@ countVeryLarge = 0;
 %their metabolites participate in
 for y = 1:length(rec2.rxns)
     if (strcmp(rec2.subSystems{y},subsys))
-        temp = find(rec2.S(:,y));
+        %looks only at product metabolites
+        temp = find(rec2.S(:,y)==1); 
         for x = 1:length(temp)
-            dist(count) = length (find(rec2.S(temp(x),:)));
+            %looks for when those metabolites are reactants of other rxns
+            dist(count) = length (find(rec2.S(temp(x),:)==-1)); 
             count = count + 1;
         end
     end
