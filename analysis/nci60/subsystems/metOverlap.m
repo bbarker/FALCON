@@ -2,12 +2,12 @@
 %For each reaction, looks at the products. Then the function
 %finds total # of reactions in model who's reactants are that product.
 %Splits the # of reactions per metabolite into 4 regions and plots
-%a pie chart. 
-function dist = metOverlap (rec2, subsys, pieName)
+%a bar graph. 
+function dist = metOverlap (rec2, subsys, name)
 %INPUTS
 % rec2 is the human recon 2 model
 % subsys is a human recon 2 subsystem
-% pieName is the name of the file to save the pie chart
+% name is the name of the file to save the bar graph
 %OUTPUTS
 % dist is a vector containing the number of reactions that have each 
 %metabolite
@@ -33,29 +33,25 @@ for y = 1:length(rec2.rxns)
     end
 end
 
-%create regions for chart
+%create groups for bar graph
 for x = 1:length(dist)
-    if (dist(x)<=5)
+    if (dist(x)<=1)
         countSmall = countSmall + 1;
-    elseif (dist(x)>5 && dist(x)<=15)
+    elseif (dist(x)>1 && dist(x)<=5)
         countMedium = countMedium + 1;
-    elseif (dist(x)>15 && dist(x)<=50)
+    elseif (dist(x)>5 && dist(x)<=15)
         countLarge = countLarge + 1;
     else
         countVeryLarge = countVeryLarge + 1;
     end
 end
 
-%make pie chart
-pieDist = [countSmall countMedium countLarge countVeryLarge];
-labels = {'<=5 rxns ';'6-15  ';'16-50  ';'>50  '};
+%make bar graph
 figure;
-h = pie(pieDist);
-hText = findobj(h,'Type','text');
-percentValues = get(hText,'String');
-customStrings = strcat(labels,percentValues);
-set (hText,{'String'},customStrings);
-title(sprintf('Percentage of the metabolites in %s in different # of reactions',subsys));
-print('-dpng', pieName);
+bar([countSmall countMedium countLarge countVeryLarge]);
+labels={'<=1 rxns','1<rxns<=5','5<rxns<=15','>15 rxns'};
+set(gca,'XTick',1:4,'XTickLabel',labels);
+title(subsys);
+print('-dpng', name);
 close;
             
