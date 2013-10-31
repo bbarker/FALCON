@@ -2,6 +2,11 @@ function [v_sol, corrval, nvar, v_all] = ...
     falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG)
 
 TESTING = false
+
+% If true, allow S*v >= 0 instead of S*v == 0.
+MASSPROD = false
+
+
 %INPUT
 %
 %
@@ -182,7 +187,11 @@ while sum(~m.rev) > nR_old
     f = zeros(size(m.rxns))';
     b = zeros(size(m.mets));
     csense = '';
-    csense(1:length(b)) = 'E';
+    if MASSPROD
+        csense(1:length(b)) = 'G';
+    else
+        csense(1:length(b)) = 'E';
+    end
 
     s1 = nmets; s2 = nrxns;
     %Add a column for the normalization variable

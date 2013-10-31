@@ -30,8 +30,9 @@ nci60filenames = cellfun(@convertExpressionFileName, cellLinesArray, ...
 
 % Get PDH and PDC indices in rev model.
 PDH = find(strcmp(model.rxnNames, 'pyruvate dehydrogenase'));
-LDH = find(strcmp(model.rxnNames, ...
-          'L-Lactate dehydrogenase, cytosolic/mitochondrial'));
+LDH = find(strcmp(model.rxnNames, 'L-lactate dehydrogenase'))
+%LDH = find(strcmp(model.rxnNames, ...
+%          'L-Lactate dehydrogenase, cytosolic/mitochondrial'));
 
 LACcore = find(strcmp(jainMetsArray, 'lac_D/lac_L'));
 
@@ -43,7 +44,7 @@ for i = 1:numCellLines
         fFileBase = strrep(fluxFileList{i}, 'out', '')
     end
     disp([V_solrev(i, LDH)  V_solrev(i, PDH) coreTable(LACcore, coreIdx)])
-    pyrRatioPDH_PDC(i) = V_solrev(i, LDH) / V_solrev(i, PDH);
+    pyrRatioPDH_PDC(i) = sum(V_solrev(i, LDH)) / sum(V_solrev(i, PDH));
     %pyrRatioPDH_PDC
 end
 

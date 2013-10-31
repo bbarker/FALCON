@@ -10,7 +10,7 @@ allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
 %Whether to use new complexation method in Lee method
 useMinDisj = true
-expCon = true
+expCon = false
 minFit = 0.0
 regC = 0
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
