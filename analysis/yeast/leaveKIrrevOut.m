@@ -42,20 +42,24 @@ corrOutFi = fopen(['leaveKOut_maxK_' num2str(maxK)], 'w');
 %and value equal to the correlation.
 
 corrMap = containers.Map();
+% Do 'WT' simulation (all K irrevs included):
+corrMap('') = yeastResults(modelAll, {'FALCON'}, experiment, false);
 for k = 1:maxK
     nCk = nchoosek(N, k);
     ksets = zeros(nCk, k);
     ksets(1, :) = [1:k];
     ksetsCorr = zeros(1, nCk);
-    parfor i = 2:nCk
-        ksets(i, :) = ksets(i - 1, :);
-        ksets(i, k) = ksets(i, k) + 1; % necessary?
+    %Can we parallelize with ksets?
+    for i = 2:nCk
+        tmpVec = ksets(i - 1, :);
+        %ksets(i, :) = ksets(i - 1, :);
+        tmpVec(k) = tmpVec(k) + 1; % necessary?
         cc = k;
         % First backtrack to the appropriate index and value
         while cc > 1
-            if ksets(i, cc) > N + cc - k
+            if tmpVec(cc) > N + cc - k
                 cc = cc - 1;
-                ksets(i, cc) = ksets(i, cc) + 1;
+                tmpVec(cc) = tmpVec(cc) + 1;
                 continue;
             else
                 break;
@@ -64,17 +68,25 @@ for k = 1:maxK
         % Now continue counting up in the vector
         while cc < k
             cc = cc + 1;
-            ksets(i, cc) = ksets(i, cc - 1) + 1;
+            tmpVec(cc) = tmpVec(cc - 1) + 1;
         end
-
+        ksets(i, :) = tmpVec;
+    end
+    parfor i = 1:nCk
         %
         %Run simulation and get correlation.
         %
-        [modelKout, ~] = useYN5irrevs(modelOld, model, ksets(i, :));
+        [modelKout, ~] = useYN5irrevs(modelOld, model, tmpVec);
         corrCurr = yeastResults(modelKout, {'FALCON'}, experiment, false);
         ksetsCorr(i) = corrCurr;
+        %ksetsCorr(i) = rand() %filler        
     end
-    for i = 2:nCk
+
+    %Debugging purposes:
+    dlmwrite(['ksets' num2str(k) '.csv'], ksets);
+    %dlmwrite(['ksets' num2str(k) '.csv'], boundChanges.LBOldIdx(ksets));
+
+    for i = 1:nCk
         corrCurr = ksetsCorr(i);
         ksetiStr = num2str(ksets(i, :));
         corrMap(ksetiStr) = corrCurr;
@@ -98,6 +110,4 @@ for k = 1:maxK
 
     end % while i <= nCk
     
-    %Debugging purposes:
-    %dlmwrite(['ksets' num2str(k) '.csv'], boundChanges.LBOldIdx(ksets));
 end
