@@ -61,7 +61,8 @@ for k = 1:maxK
         %
         %Run simulation and get correlation.
         %
-        [modelKout, ~] = useYN5irrevs(modelOld, model, tmpVec);
+        leaveOut = boundChanges.LBOldIdx(ksets(i, :));
+        [modelKout, ~] = useYN5irrevs(modelOld, model, leaveOut);
         corrCurr = yeastResults(modelKout, {'FALCON'}, experiment, false);
         ksetsCorr(i) = corrCurr;
         %ksetsCorr(i) = rand() %filler        
