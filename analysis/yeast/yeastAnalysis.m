@@ -9,10 +9,10 @@ function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
 %Whether to use new complexation method in Lee method
-useMinDisj = true
-expCon = false
-minFit = 0.0
-regC = 0
+useMinDisj = true;
+expCon = false;
+minFit = 0.0;
+regC = 0;
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
 % load transcript data
@@ -36,10 +36,10 @@ if find(strcmp(methodList, 'FALCON'))
     % sds 0 -> small
     rxn_exp_sd_irr(rxn_exp_sd_irr == 0) = min(rxn_exp_sd_irr(rxn_exp_sd_irr>0))/2;
     %First compare the number of nans and zeros in both data typs.
-    gte_nan = sum(isnan(rxn_exp_irr))
-    mdj_nan = sum(isnan(rxn_exp_md))
-    gte_0 = sum(rxn_exp_irr == 0)
-    mdj_0 = sum(rxn_exp_md == 0)
+    %gte_nan = sum(isnan(rxn_exp_irr))
+    %mdj_nan = sum(isnan(rxn_exp_md))
+    %gte_0 = sum(rxn_exp_irr == 0)
+    %mdj_0 = sum(rxn_exp_md == 0)
     rxnRuleCell = cell(length(model.rxns) + 1, 3);
     rxnRuleCell{1,1} = 'Rule';
     rxnRuleCell{1,2} = 'geneToRxn';

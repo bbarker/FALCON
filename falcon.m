@@ -1,10 +1,10 @@
 function [v_sol, corrval, nvar, v_all] = ...
     falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG)
 
-TESTING = false
+TESTING = false;
 
 % If true, allow S*v >= 0 instead of S*v == 0.
-MASSPROD = false
+MASSPROD = false;
 
 
 %INPUT
@@ -135,10 +135,13 @@ if FDEBUG
     disp([r_pri_max max(r)]);
 end
 
-expZtol = 2*flux_sum/nrxns
-r_med = median(r)
-r_min = min(r(r>0))
-
+if TESTING
+    expZtol = 2*flux_sum/nrxns
+end
+if FDEBUG
+    r_med = median(r)
+    r_min = min(r(r>0))
+end
 
 %See if this helps to get more irreversible reactions
 %solFBA = optimizeCbModel(m, 'max');
@@ -430,7 +433,7 @@ end % of if 1/0
         v_orig = v;
         if v(nrxns + 2) ~= 0
             v_orig = v / v(nrxns + 2); %Transform to original
-            corrval = fOpt / v(nrxns + 2)
+            corrval = fOpt / v(nrxns + 2);
         end
         v_sol = v_orig(1:nrxns);
         v_all = [v_all v_sol];
@@ -557,7 +560,7 @@ scbas = []; %scbas = solution.cbasis;
 if conv
     v0 = solution.full;
     v(j1) = v0;
-    fOpt = f0' * v
+    fOpt = f0' * v;
     if FDEBUG
         disp(['Convergent optimum is: ' num2str(solution.obj)]);
         if isnan(fOpt)

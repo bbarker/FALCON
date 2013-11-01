@@ -9,25 +9,7 @@ N = length(boundChanges.LBOldIdx);
 maxK = min(maxK, length(boundChanges.LBOldIdx));
 corrOutFi = fopen([num2str(experiment) 'leaveKOut_maxK_' num2str(maxK)], 'w');
 
-%We need to record which rxns are removed to check for trend
-%in correlations.
-
-%But how do we analyze it? This is sort of like looking for 
-%epistasis, where correlation is the fitness. 
-
-%Another way is to assign to each rxn the pair (k, corr) when
-%corr drops below a certain level, so that it can be easily plotted.
-%But this ignores epistasis: (a,b,c) might given some plotted value for
-% c even if (a,b,c) ~= (a,b). So we would need to further check this.
-
-%But at this point, a recursive epistasis function is starting to make
-% more sense. If the correlation drop is greater than 1%, record it, along
-%with comma-separated list of old rxn indices and the new rxn index:
-% r1,r2,r3:r4 \t corrVal - prevCorrVal \t corrVal \t prevCorrVal
-
-%The downside to this is that it is more computation: all permutations
-%instead of n choose k. Instead do n choose k
-
+%We use the following output format for each line, where ri are reactions:
 % r1,r2,r3 \t corrVal - prevCorrVal \t corrVal \t prevCorrVal
 
 %To plot, x-axis: k, y-axis: corr diff, label: ??

@@ -19,7 +19,7 @@ for i = 1:length(yn5.rxns)
         if idxIn7
             idxIn7Prev = union(idxIn7Prev, idxIn7);
             ynOut.rev(idxIn7) = 0;
-            disp(ynOut.rxnNames(idxIn7));
+            %disp(ynOut.rxnNames(idxIn7));
             if yn5.lb(i) == 0
                 for i7i = 1:length(idxIn7)
                     i7 = idxIn7(i7i);
@@ -41,7 +41,8 @@ for i = 1:length(yn5.rxns)
                 end
             end
         else
-            disp(['Could not find ' rxn]);
+            1;
+            %disp(['Could not find ' rxn]);
         end
     end
 end
