@@ -51,7 +51,7 @@ function runMultiPerturbtion(model, expFileDir, CLs, envConstrain, addLabel, EXP
 %
 
 if ~exist('EXPCON', 'var')
-    EXPCON = true;
+    EXPCON = false;
 end
 
 for cidx = 1:length(CLs)

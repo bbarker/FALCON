@@ -30,7 +30,7 @@ envConstrain = 'Medium_MaxMinSign';
 %
 
 if ~exist('EXPCON', 'var')
-    EXPCON = true;
+    EXPCON = false;
 end
 
 protThreshDir = 'nci60prot_thresh';

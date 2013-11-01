@@ -1,6 +1,6 @@
 function leaveKIrrevOut(model, modelOld, maxK, experiment)
 
-corrDiffThresh = 0.03;
+corrDiffThresh = 0.1;
 [modelAll, boundChanges] = useYN5irrevs(modelOld, model);
 
 %We know that only lb's change.
@@ -88,8 +88,9 @@ for k = 1:maxK
                 priorCorr = corrMap(pvecStr);
             end
         end
+        rxnIdxsStr = num2str(boundChanges.LBOldIdx(ksets(i, :)));
         if maxCorrDiff > corrDiffThresh
-            fprintf(corrOutFi, '%s\t%g\t%g\t%g\n', ksetiStr, ... 
+            fprintf(corrOutFi, '%s\t%g\t%g\t%g\n', rxnIdxsStr, ... 
                     maxCorrDiff, corrCurr, priorCorr);
         end
         i = i + 1;

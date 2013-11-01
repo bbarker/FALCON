@@ -96,13 +96,23 @@ if ~exist('EXPCON', 'var')
     EXPCON = true;
 end
 
+nrxns = length(m.rxns);
+nmets = length(m.mets);
+notnan_r = ~isnan(r);
 % flux_sum is used to ensure that in the LFP, we don't obtain
 % a zero flux, as this is unhelpful. To estimate it, we take the
-% smallest non-zero flux bound and take something slightly smaller.
-% The value shouldn't matter (as long as it is strictly positive)
+% smallest non-zero flux bound and multiply that by the number of
+% irreversible reactions with expression data. In principle,
+% the value shouldn't matter (as long as it is strictly positive)
 % since fluxes are scaled in the LFP transform, but this is probably
-% helpful for numeric stability.
-flux_sum = min(m.ub(m.ub > 0)) / 2;
+% helpful for numeric stability. However, too large values will be 
+% infeasible or may introduce spurious fluxes just for the sake
+% of fulfulling this requirement. Too small values eventually
+% cause convergence problems at later iterations: I am not sure
+% if this is a numerical problem or something else. For now
+% this seems to be a good approximation:
+minUB = min(m.ub(m.ub > 0));
+flux_sum = sum(~m.rev & notnan_r)*minUB;
 if FDEBUG
     flux_sum
 end
@@ -112,9 +122,7 @@ end
 % due to having non-affine in our LFP.
 ZMIN = 0.0001;
 
-nrxns = length(m.rxns);
-nmets = length(m.mets);
-rgrp_notnan = r_group(~isnan(r));
+rgrp_notnan = r_group(notnan_r);
 vbasN = [];
 cbasN = [];
 vbasS = [];
@@ -124,13 +132,13 @@ ngroups = union(r_group, 1);
 v_all = [];
 
 ecrxns = find(any(m.rxnGeneMat, 2));
-r_sum = sum(r(~isnan(r)));
+r_sum = sum(r(notnan_r));
 r_pri_max = max(r);
 r             = flux_sum * r / r_sum;
 r_sd          = flux_sum * r_sd / r_sum;
 if FDEBUG
     disp('Sum new r:');
-    disp(sum(r(~isnan(r))));
+    disp(sum(r(notnan_r)));
     disp('Max r (scaled r) is:');
     disp([r_pri_max max(r)]);
 end
@@ -164,9 +172,13 @@ rGrpsUsed = 0;
 while sum(~m.rev) > nR_old
     cnt = cnt + 1;
     nR_old = sum(~m.rev); 
-    % nnnanrev = sum((~isnan(r)) & m.rev) / 2;
-    nnan_irr = r_group(~isnan(r) & ~m.rev);
+    % nnnanrev = sum((notnan_r) & m.rev) / 2;
+    nnan_irr = r_group(notnan_r & ~m.rev);
     nnnan_irr = length(intersect(nnan_irr, nnan_irr));
+    % Used for an alternative problem that incorporates
+    % reversible reactions.
+    %nnan_all = r_group(notnan_r);
+    %nnnan_all = length(intersect(nnan_all, nnan_all));
     r_group_cons = zeros(1, nrxns);
     if FDEBUG
         NColLab = m.rxns;
@@ -261,6 +273,7 @@ while sum(~m.rev) > nR_old
     for k = 1:length(ecrxns)
         N(s1+1, ecrxns(k)) = -1;
     end
+    flux_sum = sum(~m.rev & notnan_r)*minUB;
     N(s1 + 1, nrxns + 2) = flux_sum;
     %b(s1 + 1) = flux_sum;
     b(s1 + 1) = 0; 
@@ -321,11 +334,11 @@ while sum(~m.rev) > nR_old
             N(cons1 + 1, k) = -1;  
             N(cons1 + 1, s2 + 1) = -1;  %delta variable
             b(cons1 + 1) = 0;
-            L(s2 + 1) = 0;      % this can be left as 0 in the CC transform 
-            U(s2 + 1) = inf;    % because it is just the same has having -delta <= 0
+                    f(s2 + 1) = - 1 / objDenom;
+                    L(s2 + 1) = 0;      % this can be left as 0 in the CC transform; 
+                    U(s2 + 1) = inf;    % it is just the same has having -delta <= 0
             csense(cons1)   = 'L';
             csense(cons1 + 1) = 'L';
-            f(s2 + 1) = - 1 / objDenom;
             fUpdate = fUpdate - abs(v_orig(k) - d)/objDenom;
             if FDEBUG
                 NRowLab{cons1} = ['RG_' num2str(r_group(k))];

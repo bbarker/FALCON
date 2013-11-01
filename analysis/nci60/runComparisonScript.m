@@ -60,7 +60,7 @@ if exist('CL', 'var')
 end
 
 if ~exist('EXPCON', 'var')
-    EXPCON = true;
+    EXPCON = false;
 end
 
 for i = 1:length(celllinesarray)  
