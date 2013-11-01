@@ -1,13 +1,12 @@
-function dist = analyzeFalconForVariousIntensities (recMod, fileName, rc, intenst, rxnOfInt, printFile)
-% This function looks at the change in flux for a reaction when the 
-% gene intensity value varies using Falcon. For this function to work,
-% the gene of interest who's intensity values are being changed MUST BE
-% THE FIRST GENE in the file after the header
+function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnOfInt, printFile)
+% This function looks at the change in flux for a reaction(s) when the 
+% gene intensity value varies using Falcon. 
 
 %INPUTS
 %
 % recMod is the reversible human recon 2 model
 % fileName is the tissue file to analyzed (ex. '786_O.csv')
+% gene is the number of the gene of interest
 % rc is regularization constant on fluxes
 % intenst is a vector containing all gene intensities to be analyzed
 % rxnOfInt is a vector containing up to 3 reaction numbers
@@ -20,12 +19,10 @@ function dist = analyzeFalconForVariousIntensities (recMod, fileName, rc, intens
 % Narayanan Sadagopan 10/12/13
 
 
-%
 EXPCON = true;
-%
-
 dist = zeros(length(intenst),length(rxnOfInt)+1);
 count = 1;
+ind = 0;
 
 %create temporary file
 fileID=fopen(fileName,'r');
@@ -39,15 +36,28 @@ dlmwrite('tempFileForAnalyzeFalcon.csv', C, '-append', 'delimiter', ...
          '\t', 'precision', 10);
 fclose(fileID);
 
+%find gene of interest
+for x = 1:length(C{1,1})
+    if (gene==C{1,1}(x))
+        ind = x;
+        break;
+    end
+end
+ 
+if (ind==0)
+    disp('Gene not in model');
+    return;
+end
+
 if (length(rxnOfInt)==1)
     %modify gene intensity and run Falcon
     for x = 1:length(intenst)
 
         %make change and rewrite file
-        C{1,2}(1) = intenst(x); 
+        C{1,2}(ind) = intenst(x); 
         dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
         dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
-	     '\t','precision',10);
+             '\t','precision',10);
 
         %run Falcon
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
@@ -57,10 +67,10 @@ if (length(rxnOfInt)==1)
     end
 elseif (length(rxnOfInt)==2)
     for x = 1:length(intenst)
-        C{1,2}(1) = intenst(x); 
+        C{1,2}(ind) = intenst(x); 
         dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
         dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
-	     '\t','precision',10);
+             '\t','precision',10);
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
@@ -69,10 +79,10 @@ elseif (length(rxnOfInt)==2)
     end
 else
     for x = 1:length(intenst)
-        C{1,2}(1) = intenst(x); 
+        C{1,2}(ind) = intenst(x); 
         dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
         dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
-	     '\t','precision',10);
+             '\t','precision',10);
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
@@ -101,7 +111,7 @@ elseif (length(rxnOfInt)==3)
         'NorthEastOutside');
 end
 title('Flux vs Intensity');
-xlabel(sprintf('intensity of the gene %d', C{1,1}(1)));
+xlabel(sprintf('intensity of the gene with Entrez ID %d', ind));
 ylabel('flux');
 grid on;
 print('-dpng',printFile);
