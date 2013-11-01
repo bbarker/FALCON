@@ -1,5 +1,4 @@
-function [gMap, sMap] = expressionMapMake(model, expFile)
-% WARNING: untested with NaN values
+function [getGeneExp, getGeneVar] = expressionMapMake(model, expFile)
 
 % This function simply returns a Map container with
 % keys == gene names
@@ -12,8 +11,33 @@ gene_exp	= genedata.data(:,1);
 gene_exp_sd	= genedata.data(:,2);
 
 gMap = containers.Map();
-sMap = containers.Map();
+vMap = containers.Map();
 for i = 1:length(genenames)
     gMap(genenames{i}) = gene_exp(i);
-    sMap(genenames{i}) = gene_exp_sd(i);
+    vMap(genenames{i}) = gene_exp_sd(i);
 end
+gMap('nan') = nan;
+gMap('NaN') = nan;
+gMap('NAN') = nan;
+vMap('nan') = nan;
+vMap('NaN') = nan;
+vMap('NAN') = nan;
+
+function gV = makeGetGeneVal(aMap)
+    function exp = getGeneVal(key)
+        if aMap.isKey(key) 
+            exp = aMap(key); 
+        else 
+            exp = nan;
+        end
+    end
+    gV = @getGeneVal;
+end % of makeGetGeneVal
+
+getGeneExp = makeGetGeneVal(gMap);
+getGeneVar = makeGetGeneVal(vMap);
+
+end % of expressionMapMake
+
+
+

@@ -45,11 +45,14 @@ corrMap = containers.Map();
 % Do 'WT' simulation (all K irrevs included):
 corrMap('') = yeastResults(modelAll, {'FALCON'}, experiment, false);
 for k = 1:maxK
+    % The idea is that we start off with an initial ordered
+    % vector and continue to the next ordered vector as we
+    % go down the matrix, e.g., 1 2 3, 1 2 4, ... . This
+    % creates all ordered sets of a given size k.
     nCk = nchoosek(N, k);
     ksets = zeros(nCk, k);
     ksets(1, :) = [1:k];
     ksetsCorr = zeros(1, nCk);
-    %Can we parallelize with ksets?
     for i = 2:nCk
         tmpVec = ksets(i - 1, :);
         %ksets(i, :) = ksets(i - 1, :);
