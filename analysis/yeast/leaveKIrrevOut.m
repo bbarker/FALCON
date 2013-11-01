@@ -7,7 +7,7 @@ corrDiffThresh = 0.03;
 
 N = length(boundChanges.LBOldIdx);
 maxK = min(maxK, length(boundChanges.LBOldIdx));
-corrOutFi = fopen(['leaveKOut_maxK_' num2str(maxK)], 'w');
+corrOutFi = fopen([num2str(experiment) 'leaveKOut_maxK_' num2str(maxK)], 'w');
 
 %We need to record which rxns are removed to check for trend
 %in correlations.
