@@ -1359,7 +1359,7 @@ def zeroAdjustExpression(mz_pz):
             PoutFI.close()
         MPoutFI.close()   
 
-if True:        
+if False:        
     num_Pint = 50
     num_Mint = 100
     PZeroEnd = np.argmax(Rbott)
@@ -1399,6 +1399,8 @@ def zeroAdjustRNASeq(zAdjTup):
     zero_sub = zAdjTup[1]
 
     m_zero = Mflat[0]
+    if mz == -10:
+        m_zero = 0 
     if mz >= 0:    
         m_zero = Mflat[mz]
     modRcount = 0
@@ -1457,12 +1459,12 @@ def zeroAdjustRNASeq(zAdjTup):
         RoutFI.close()   
     return modRcount/float(nCL)
 
-if False:
+if True:
     num_Rint = 100
     R_perc_max = 75.0
     R_pscale = num_Rint/R_perc_max
     PZeroEnd = np.argmax(Rbott)
-    r_idx = []
+    r_idx = [-10]
     (Rflat, Rflat_mod) = flattenExpression(RSEQD)
     Rflat = sorted(Rflat)
     for i in range(-1, num_Rint):
