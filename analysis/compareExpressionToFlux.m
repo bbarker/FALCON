@@ -28,12 +28,56 @@ v_solirrev = falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
                     rxn_rule_group, 0.01, 0, EXPCON, FDEBUG);
 v_solrev = convertIrrevFluxDistribution(model, v_solirrev, matchRev);
 
+function sumout = mysum(x)
+    if numel(x) == 0
+        sumout = nan;
+    else
+        sumout = sum(x);
+    end
+end
+
+function minout = mymin(x)
+    if numel(x) == 0
+        minout = nan;
+    else
+        minout = min(x);
+    end
+end
+
+function maxout = mymax(x)
+    if numel(x) == 0
+        maxout = nan;
+    else
+        maxout = max(x);
+    end
+end
+
+[rxn_exp_mean, rxn_exp_sd_mean] = computeSimpleECexpression(...
+    model, expFile, @mean, @mean);
+
+[rxn_exp_sum, rxn_exp_sd_sum] = computeSimpleECexpression(...
+    model, expFile, @mysum, @mysum);
+
+[rxn_exp_min, rxn_exp_sd_min] = computeSimpleECexpression(...
+    model, expFile, @mymin, @mymin);
+
+[rxn_exp_max, rxn_exp_sd_max] = computeSimpleECexpression(...
+    model, expFile, @mymax, @mymax);
+
+[rxn_exp_median, rxn_exp_sd_median] = computeSimpleECexpression(...
+    model, expFile, @median, @median);
+
 corrType = 'Pearson';
 mycorr = @(X)(corr(X, 'type', corrType));
 
-X = [abs(v_solrev) rxn_exp_rev];
+X = [abs(v_solrev) rxn_exp_rev rxn_exp_sum rxn_exp_mean rxn_exp_median ...
+     rxn_exp_min rxn_exp_max];
 
 nnanRows = find(~isnan(sum(X')));
 X = X(nnanRows, :);
 
+sz_X = size(X)
+
 corrMat = mycorr(X);
+
+end

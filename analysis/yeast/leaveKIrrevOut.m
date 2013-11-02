@@ -1,6 +1,6 @@
 function leaveKIrrevOut(model, modelOld, maxK, experiment)
 
-corrDiffThresh = 0.1;
+corrDiffThresh = 0.05;
 [modelAll, boundChanges] = useYN5irrevs(modelOld, model);
 
 %We know that only lb's change.
