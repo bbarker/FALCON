@@ -26,6 +26,7 @@ corrOutFi = fopen([num2str(experiment) 'leaveKOut_maxK_' num2str(maxK)], 'w');
 corrMap = containers.Map();
 % Do 'WT' simulation (all K irrevs included):
 corrMap('') = yeastResults(modelAll, {'FALCON'}, experiment, false);
+WTfit = corrMap('');
 for k = 1:maxK
     % The idea is that we start off with an initial ordered
     % vector and continue to the next ordered vector as we
@@ -77,24 +78,48 @@ for k = 1:maxK
         ksetiStr = num2str(ksets(i, :));
         corrMap(ksetiStr) = corrCurr;
         % Compare current correlation to 'ancestral' correlations
-        maxCorrDiff = -inf;
-        priorCorr = -inf;
-        for rIdx = 1:k
-            priorVec = ksets(i, :);
-            priorVec(rIdx) = [];
-            pvecStr = num2str(priorVec);
-            if corrMap(pvecStr) - corrCurr > maxCorrDiff
-                maxCorrDiff = corrMap(pvecStr) - corrCurr;
-                priorCorr = corrMap(pvecStr);
+        mut1Corr = -inf;
+        mut2Corr = -inf;
+        % not interested in 0 = self or 2^k-1 = WT
+        if k > 1
+            for psetIdx = 1:(2^k - 2)
+                mut1RxnIdxs = ksets(i, :);
+                mut2RxnIdxs = ksets(i, :);
+                mut1SetIdxs = dec2bin(psetIdx, k);
+                % One's complement:
+                mut2SetIdxs = dec2bin(2^k - 1 - psetIdx, k);
+                mut1RxnIdxs = mut1RxnIdxs(boolean(str2numvec(mut1SetIdxs)));
+                mut2RxnIdxs = mut2RxnIdxs(boolean(str2numvec(mut2SetIdxs)));
+                mut1Str = num2str(mut1RxnIdxs);
+                mut2Str = num2str(mut2RxnIdxs);
+                mut1Corr = corrMap(mut1Str);
+                mut2Corr = corrMap(mut2Str);
+                % If the negative epistasis is greater than a certain level:
+                nEpistasis = mut1Corr * mut2Corr / (WTfit^2) ...
+                             - corrCurr/WTfit;
+                mut1RxnStr = num2str(boundChanges.LBOldIdx(mut1RxnIdxs));
+                mut2RxnStr = num2str(boundChanges.LBOldIdx(mut2RxnIdxs));
+                rxnIdxsStr = num2str(boundChanges.LBOldIdx(ksets(i, :)));
+                if nEpistasis > corrDiffThresh
+                    fprintf(corrOutFi, '%s\t%g\t%g\t%g\t%s\t%g\t%s\n', ...
+                        rxnIdxsStr, nEpistasis, corrCurr, ...
+                        mut1Corr, mut1RxnStr, mut2Corr, mut2RxnStr);
+                end
+            end
+        else % separate case for single mutants
+            for rIdx = 1:k
+                corrCurr = ksetsCorr(i);
+                ksetiStr = num2str(ksets(i, :));
+                corrMap(ksetiStr) = corrCurr;
+                fitDiff = 1 - corrCurr/WTfit;
+                rxnIdxsStr = num2str(boundChanges.LBOldIdx(ksets(i, :)));
+                if fitDiff > corrDiffThresh
+                    fprintf(corrOutFi, '%s\t%g\t%g\t%g\t%s\t%g\t%s\n', ...
+                        rxnIdxsStr, fitDiff, corrCurr, ...
+                        WTfit, '', WTfit, '');
+                end
             end
         end
-        rxnIdxsStr = num2str(boundChanges.LBOldIdx(ksets(i, :)));
-        if maxCorrDiff > corrDiffThresh
-            fprintf(corrOutFi, '%s\t%g\t%g\t%g\n', rxnIdxsStr, ... 
-                    maxCorrDiff, corrCurr, priorCorr);
-        end
         i = i + 1;
-
     end % while i <= nCk
-    
 end
