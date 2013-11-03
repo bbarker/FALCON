@@ -1,14 +1,22 @@
-function [getGeneExp, getGeneVar] = expressionMapMake(model, expFile)
+function [getGeneExp, getGeneVar] = expressionMapMake(expFile)
 
 % This function simply returns a Map container with
 % keys == gene names
 % values == expression levels
 
-genedata	= importdata(expFile);
-genenames	= genedata.textdata(:, 1);
-genenames(1)= [];
-gene_exp	= genedata.data(:,1);
-gene_exp_sd	= genedata.data(:,2);
+genedata         = importdata(expFile);
+[ndrows, ndcols] = size(genedata.data);
+if ndcols == 2
+    genenames	= genedata.textdata(:, 1);
+    genenames(1)= [];
+    gene_exp	= genedata.data(:,1);
+    gene_exp_sd	= genedata.data(:,2);
+elseif ndcols == 3
+    genenames	= cellfun(@num2str, ...
+        columnVector(num2cell(genedata.data(:, 1))), 'UniformOutput', false);
+    gene_exp	= genedata.data(:,2);
+    gene_exp_sd	= genedata.data(:,3);
+end
 
 gMap = containers.Map();
 vMap = containers.Map();

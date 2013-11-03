@@ -22,7 +22,7 @@ function [rxn_exp, rxn_exp_sd] = ...
 %Note, this implementation is currently quite slow, but that is ok as we 
 %are only intending on using this for some minimal testing purposes.
 
-[getGeneExp, getGeneVar] = expressionMapMake(model, genedata_filename);
+[getGeneExp, getGeneVar] = expressionMapMake(genedata_filename);
 
 nrxns = length(model.rxns);
 rxn_exp = zeros(nrxns, 1);

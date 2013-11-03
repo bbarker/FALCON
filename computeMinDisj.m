@@ -31,24 +31,26 @@ if sigma > 0
     [ndrows, ndcols] = size(genedata.data);
     randVec = lognrnd(-sigma^2/2,sigma,ndrows,1);
     if ndcols == 2
-    %mede = median(genedata.data(~isnan(genedata.data(:,1)),1));
-    %randVec = simpleTruncatedNorm(sigma, 0, inf, ndrows, mede);
-    pert_vec = genedata.data(:,1) .* randVec;
-    %cell2csv on textdata after perturbing first data column
-    genedata.textdata(2:end,2) = cellfun(@num2str, num2cell(pert_vec), 'UniformOutput', false);
-    genedata.textdata(2:end,3) = cellfun(@num2str, num2cell(genedata.data(:,2)), 'UniformOutput', false);
-    cell2csv(genedata_filename_pert, genedata.textdata(1,:), '\t', 2000);
-    dlmwrite(genedata_filename_pert, genedata.data, '-append', 'delimiter', '\t', 'precision', 15);
+        %mede = median(genedata.data(~isnan(genedata.data(:,1)),1));
+        %randVec = simpleTruncatedNorm(sigma, 0, inf, ndrows, mede);
+        pert_vec = genedata.data(:,1) .* randVec;
+        %cell2csv on textdata after perturbing first data column
+        genedata.textdata(2:end,2) = cellfun(@num2str, ...
+            num2cell(pert_vec), 'UniformOutput', false);
+        genedata.textdata(2:end,3) = cellfun(@num2str, ...
+            num2cell(genedata.data(:,2)), 'UniformOutput', false);
+        cell2csv(genedata_filename_pert, genedata.textdata, '\t', 2000);
     elseif ndcols == 3
-    %mede = median(genedata.data(~isnan(genedata.data(:,2)),2))
-    %randVec = simpleTruncatedNorm(sigma, 0, inf, ndrows, mede);
-    %randVec = randVec(:);
-    genedata.data(:,2) = genedata.data(:,2) .* randVec; 
-    cell2csv(genedata_filename_pert, genedata.textdata(1,:), '\t', 2000);
-    dlmwrite(genedata_filename_pert, genedata.data, '-append', 'delimiter', '\t', 'precision', 15);
+        %mede = median(genedata.data(~isnan(genedata.data(:,2)),2))
+        %randVec = simpleTruncatedNorm(sigma, 0, inf, ndrows, mede);
+        %randVec = randVec(:);
+        genedata.data(:,2) = genedata.data(:,2) .* randVec; 
+        cell2csv(genedata_filename_pert, genedata.textdata(1,:), '\t', 2000);
+        dlmwrite(genedata_filename_pert, genedata.data, '-append', 'delimiter', ...
+            '\t', 'precision', 15);
     else
-    disp('Problem reading gene expression file.');
-    return;
+        disp('Problem reading gene expression file.');
+        return;
     end
     genedata_filename = genedata_filename_pert;
 end

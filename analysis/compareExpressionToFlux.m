@@ -73,6 +73,8 @@ mycorr = @(X)(corr(X, 'type', corrType));
 X = [abs(v_solrev) rxn_exp_rev rxn_exp_sum rxn_exp_mean rxn_exp_median ...
      rxn_exp_min rxn_exp_max];
 
+save('Xcompare.mat', 'X');
+
 nnanRows = find(~isnan(sum(X')));
 X = X(nnanRows, :);
 
