@@ -64,11 +64,13 @@ if exist('experimental_fluxes_filename', 'var')
     for k = 1:size(experimental_fluxes.textdata,1)
         j = find(strcmp(reaction_name{k},model.rxnNames));
         experimental(k)     = experimental_fluxes.data(k,1);
-        p_falcon(k)         = flux*abs(v_falconRef(j));
+        p_falcon(k)         = flux*v_falconRef(j);
     end
     experimental = columnVector(experimental);
-    falc_sz = size(p_falcon)
-    exp_sz = size(experimental)
+
+    % Kieran said the signs from the Lee paper flux data matched
+    % the signs predicted by the method:
+    experimental = sign(p_falcon) .* experimental
 
     pCorrRef  = pCorr(p_falcon, experimental)
     kCorrRef  = kCorr(p_falcon, experimental)
