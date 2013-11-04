@@ -1,6 +1,11 @@
-function [sigmaOut, PcorrV, ScorrV, KcorrV, PcorrE, ScorrE, KcorrE, PcorrEV, ScorrEV, KcorrEV, ...
-	  Vactive, VdeltaSign, VOnOff, VnormDiff, EnormDiff] = expressionNoise(model, expFile, sigmaVec, reps)
-rxnScale = {'pyruvate kinase'}
+function [sigmaVec, PcorrV, ScorrV, KcorrV, PcorrE, ScorrE, KcorrE, ...
+          PcorrEV, ScorrEV, KcorrEV, Vactive, VdeltaSign, VOnOff,   ...
+          VnormDiff, EnormDiff, TimeRec] =                          ...
+          expressionNoise(model, expFile, sigMax, reps)
+
+regC   = 0;
+minFit = 0;
+expCon = 0;
 
 % Things to track:
 %1: Correlation between e and e_perturbed
@@ -17,85 +22,92 @@ rxnScale = {'pyruvate kinase'}
 % Confidence intervals? see jason's email
 % Fix to work with Lung data
 
+sigmaVec = sigMax * rand(1, reps);
+
 nSigmas = length(sigmaVec);
-sigmaOut = zeros(1, nSigmas*reps); 
-PcorrV = zeros(1, nSigmas*reps);
-ScorrV = zeros(1, nSigmas*reps);
-KcorrV = zeros(1, nSigmas*reps);
-PcorrE = zeros(1, nSigmas*reps);
-ScorrE = zeros(1, nSigmas*reps);
-KcorrE = zeros(1, nSigmas*reps);
-PcorrEV = zeros(1, nSigmas*reps);
-ScorrEV = zeros(1, nSigmas*reps);
-KcorrEV = zeros(1, nSigmas*reps);
-Vactive = zeros(1, nSigmas*reps);
-VdeltaSign = zeros(1, nSigmas*reps);
-VOnOff  = zeros(1, nSigmas*reps);
-VnormDiff  = zeros(1, nSigmas*reps);
-EnormDiff  = zeros(1, nSigmas*reps);
-
-
-
-%Add a check (especially for initial flux) to skip if flux is zero and generate a new randomization
-%Also, report an error (count)
-
-nSims = nSigmas*reps;
-
+PcorrV = zeros(1, reps);
+ScorrV = zeros(1, reps);
+KcorrV = zeros(1, reps);
+PcorrE = zeros(1, reps);
+ScorrE = zeros(1, reps);
+KcorrE = zeros(1, reps);
+PcorrEV = zeros(1, reps);
+ScorrEV = zeros(1, reps);
+KcorrEV = zeros(1, reps);
+Vactive = zeros(1, reps);
+VdeltaSign = zeros(1, reps);
+VOnOff  = zeros(1, reps);
+VnormDiff  = zeros(1, reps);
+EnormDiff  = zeros(1, reps);
+TimeRec    = zeros(1, reps);
 
 %Make irreversible model
-[modelIrrev,matchRev,rev2irrev,irrev2rev] = convertToIrreversible(model);
+[modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 nIrxns = length(modelIrrev.rxns);
-[rxn_exp,rxn_exp_sd,rxn_rule_group] = computeMinDisj(modelIrrev, expFile);
+[rxn_exp, rxn_exp_sd, rxn_rule_group] = computeMinDisj(modelIrrev, expFile);
+
 %errMat = zeros(nSigmas, reps, nIrxns);
 %parfor i = 1:nSigmas
 %  errMat(i,:,:) = reshape(simpleTruncatedNorm(sigmaVec(i), 0, inf, reps*nIrxns, 1), reps, nIrxns);
 %end
 
+
 %Now compute initial flux:
-[v, corrval, nvar] = eMOMA6(modelIrrev,rxn_exp,rxn_exp_sd,rxn_rule_group,rxnScale,0,{1});
-vrev = convertIrrevFluxDistribution(v,matchRev);
+[v, corrval] = falcon(modelIrrev, rxn_exp, rxn_exp_sd, rxn_rule_group, ...
+                      regC, minFit, expCon);
+if norm(v,1) < 1e-7
+    disp('Error, initial flux prediction failed.');
+    return;
+end
+
+vrev = convertIrrevFluxDistribution(model, v, matchRev);
 
 % = simpleTruncatedNorm(sigma, a, b, , mu)
 Zthresh = 1e-6;
 
 vrevSign = signThresh(vrev, Zthresh);
 
-parfor ij = 1:nSims
-  ijp = ij-1;  % ijp in [0, 99]
-  sigmaIdx = mod(ijp,nSigmas) + 1;
-  rep = floor(ijp/nSigmas) + 1;   
-  [rxn_exp_p,~,~] = computeMinDisj(modelIrrev, expFile,  sigmaVec(sigmaIdx));
-  [rxn_exp_rev_p,~,~] = computeMinDisj(model, expFile,  sigmaVec(sigmaIdx));
+parfor i = 1:reps
+    [rxn_exp_p, ~, ~] = computeMinDisj(modelIrrev, expFile,  sigmaVec(i));
+    [rxn_exp_rev_p, ~, ~] = computeMinDisj(model, expFile,  sigmaVec(i));
 
-  %It seems there is a small difference in the number of pertubed nans from time to time, so
-  %we need to check for the common not-nans. However, it is not clear to me why the perturbation
-  %can cause this, so it should be checked further.
-  e_not_nan = boolean((~isnan(rxn_exp_p)) .* (~isnan(rxn_exp)));
-  disp('rxn_exp sizes');
-  disp([sigmaVec(sigmaIdx) length(rxn_exp) sum(isnan(rxn_exp)) length(rxn_exp_p) sum(isnan(rxn_exp_p))]);
-  PcorrE(ij) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Pearson');
-  ScorrE(ij) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Spearman'); 
-  KcorrE(ij) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Kendall');
-  EnormDiff(ij) = norm(rxn_exp(~isnan(rxn_exp)) - rxn_exp_p(~isnan(rxn_exp_p)), 1);
-  sigmaOut(ij) = sigmaVec(sigmaIdx);
+    %It seems there is a small difference in the number of pertubed nans from time to time, so
+    %we need to check for the common not-nans. However, it is not clear to me why the perturbation
+    %can cause this, so it should be checked further.
+    e_not_nan = boolean((~isnan(rxn_exp_p)) .* (~isnan(rxn_exp)));
+    PcorrE(i) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Pearson');
+    ScorrE(i) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Spearman'); 
+    KcorrE(i) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Kendall');
+    EnormDiff(i) = norm(rxn_exp(~isnan(rxn_exp)) - rxn_exp_p(~isnan(rxn_exp_p)), 1);
 
-  [v_p, corrval_p, nvar_p] = eMOMA6(modelIrrev,rxn_exp_p,rxn_exp_sd,rxn_rule_group,rxnScale,0,{1});
-  vrev_p = convertIrrevFluxDistribution(v_p,matchRev);
-  PcorrV(ij) = corr(vrev(:), vrev_p(:), 'type', 'Pearson');
-  ScorrV(ij) = corr(vrev(:), vrev_p(:), 'type', 'Spearman'); 
-  KcorrV(ij) = corr(vrev(:), vrev_p(:), 'type', 'Kendall');
-  %disp('size rxn_exp_p:');
-  %disp(size(rxn_exp_p));
-  %disp('size vrev_p:');
-  %disp(size(vrev_p));
-  PcorrEV(ij) = corr(rxn_exp_rev_p(~isnan(rxn_exp_rev_p)), abs(vrev_p(~isnan(rxn_exp_rev_p))), 'type', 'Pearson');
-  ScorrEV(ij) = corr(rxn_exp_rev_p(~isnan(rxn_exp_rev_p)), abs(vrev_p(~isnan(rxn_exp_rev_p))), 'type', 'Spearman'); 
-  KcorrEV(ij) = corr(rxn_exp_rev_p(~isnan(rxn_exp_rev_p)), abs(vrev_p(~isnan(rxn_exp_rev_p))), 'type', 'Kendall');
-  Vactive(ij) = sum(abs(vrev_p)>Zthresh);
-  vrevSign_p = signThresh(vrev_p, Zthresh);
-  VdeltaSign(ij) = sum(vrevSign_p .* vrevSign < 0);
-  VOnOff(ij) = sum((abs(vrevSign_p) + abs(vrevSign)) == 1);
+    trec = tic();
+    [v_p, corrval_p] = falcon(modelIrrev, rxn_exp_p, rxn_exp_sd, rxn_rule_group, ...
+                              regC, minFit, expCon);
+    TimeRec(i) = toc(trec);
+    vrev_p = convertIrrevFluxDistribution(model, v_p, matchRev);
+    PcorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Pearson');
+    ScorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Spearman'); 
+    KcorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Kendall');
+
+    PcorrEV(i) = corr(rxn_exp_rev_p(~isnan(rxn_exp_rev_p)), ...
+        abs(vrev_p(~isnan(rxn_exp_rev_p))), 'type', 'Pearson');
+    ScorrEV(i) = corr(rxn_exp_rev_p(~isnan(rxn_exp_rev_p)), ...
+        abs(vrev_p(~isnan(rxn_exp_rev_p))), 'type', 'Spearman'); 
+    KcorrEV(i) = corr(rxn_exp_rev_p(~isnan(rxn_exp_rev_p)), ...
+        abs(vrev_p(~isnan(rxn_exp_rev_p))), 'type', 'Kendall');
+    Vactive(i) = sum(abs(vrev_p)>Zthresh);
+    vrevSign_p = signThresh(vrev_p, Zthresh);
+    VdeltaSign(i) = sum(vrevSign_p .* vrevSign < 0);
+    VOnOff(i) = sum((abs(vrevSign_p) + abs(vrevSign)) == 1);
 end
 
+finishTime = strrep(strrep(num2str(clock()), ' ', ''), '.', '');
+modName = strrep(strrep(strrep(strrep(num2str(model.description), ' ', ''), ...
+          '.', ''), 'xml', ''), '_', '');
+[pathstr, expName, ext] = fileparts(expFile);
 
+save(['pertData_' modName '_' expName '_' finishTime '.mat'], 'sigmaVec',   ...
+     'PcorrV', 'ScorrV', 'KcorrV', 'PcorrE', 'ScorrE', 'KcorrE', 'PcorrEV', ... 
+     'ScorrEV', 'KcorrEV', 'Vactive', 'VdeltaSign', 'VOnOff', 'VnormDiff',  ...
+     'EnormDiff', 'TimeRec');  
 

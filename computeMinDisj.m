@@ -1,4 +1,4 @@
-function [rxn_exp,rxn_exp_sd,rxn_rule_group] = ...
+function [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
     computeMinDisj(model, genedata_filename, sigma, FDEBUG)
 % Requires the cell2csv package (for now; need to change to FIFOs)
 % minDisj needs to be in $PATH (system path)
@@ -26,8 +26,8 @@ end
 %Perturb the expression vector
 if sigma > 0
     gfr_fid = num2str(randint(1,1,10e40));
-    genedata_filename_pert = [genedata_filename, '_', gfr_fid]
-    genedata = importdata(genedata_filename, '\t')  
+    genedata_filename_pert = [genedata_filename, '_', gfr_fid];
+    genedata = importdata(genedata_filename, '\t');
     [ndrows, ndcols] = size(genedata.data);
     randVec = lognrnd(-sigma^2/2,sigma,ndrows,1);
     if ndcols == 2
@@ -72,10 +72,10 @@ if status ~= 0
 end
 
 if FDEBUG == 0
-    delete(rfname)
+    delete(rfname);
 end
 if sigma > 0 && FDEBUG == 0
-    delete(genedata_filename)
+    delete(genedata_filename);
 end
 
 %create rxn_rule_group
