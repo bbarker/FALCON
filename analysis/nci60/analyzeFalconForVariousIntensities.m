@@ -26,19 +26,27 @@ ind = 0;
 
 %create temporary file
 fileID=fopen(fileName,'r');
-c1 = textscan(fileID, '%s %s %s',1);
-C = textscan(fileID, '%f %f %f');
+c1 = textscan(fileID, '%s\t%s\t%s\n',1);
+C = textscan(fileID, '%s\t%s\t%s\n');
 hdr = {'gene', 'mean', 'var'}; 
 txt=sprintf('%s\t', hdr{:});
 txt(end) = '';
-dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
-dlmwrite('tempFileForAnalyzeFalcon.csv', C, '-append', 'delimiter', ...
-         '\t', 'precision', 10);
+sz_txt = size(c1)
+sz_C = size(C)
+sz_C = size( C{1,2})
+sz_C = size( C{1, 3})
+%Cadj = {C{1}; C{2}; C{3}};
+%sz_C = size(Cadj)
+
+cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
+%dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+%dlmwrite('tempFileForAnalyzeFalcon.csv', C, '-append', 'delimiter', ...
+%         '\t', 'precision', 10);
 fclose(fileID);
 
 %find gene of interest
 for x = 1:length(C{1,1})
-    if (gene==C{1,1}(x))
+    if strcmp(gene, C{1,1}(x))
         ind = x;
         break;
     end
@@ -54,10 +62,11 @@ if (length(rxnOfInt)==1)
     for x = 1:length(intenst)
 
         %make change and rewrite file
-        C{1,2}(ind) = intenst(x); 
-        dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
-        dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
-             '\t','precision',10);
+        C{1,2}{ind} = num2str(intenst(x));
+        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
+        %dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+        %dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
+        %     '\t','precision',10);
 
         %run Falcon
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
@@ -67,10 +76,11 @@ if (length(rxnOfInt)==1)
     end
 elseif (length(rxnOfInt)==2)
     for x = 1:length(intenst)
-        C{1,2}(ind) = intenst(x); 
-        dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
-        dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
-             '\t','precision',10);
+        C{1,2}{ind} = num2str(intenst(x)); 
+        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
+        %dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+        %dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
+        %     '\t','precision',10);
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
@@ -79,10 +89,11 @@ elseif (length(rxnOfInt)==2)
     end
 else
     for x = 1:length(intenst)
-        C{1,2}(ind) = intenst(x); 
-        dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
-        dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
-             '\t','precision',10);
+        C{1,2}{ind} = num2str(intenst(x)); 
+        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
+        %dlmwrite('tempFileForAnalyzeFalcon.csv',txt,'');
+        %dlmwrite('tempFileForAnalyzeFalcon.csv',C,'-append','delimiter', ...
+        %     '\t','precision',10);
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
