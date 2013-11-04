@@ -78,7 +78,8 @@ parfor i = 1:reps
     PcorrE(i) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Pearson');
     ScorrE(i) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Spearman'); 
     KcorrE(i) = corr(rxn_exp(e_not_nan), rxn_exp_p(e_not_nan), 'type', 'Kendall');
-    EnormDiff(i) = norm(rxn_exp(~isnan(rxn_exp)) - rxn_exp_p(~isnan(rxn_exp_p)), 1);
+    EnormDiff(i) = norm(rxn_exp(~isnan(rxn_exp + rxn_exp_p)) - ...
+                   rxn_exp_p(~isnan(rxn_exp_p + rxn_exp)), 1);
 
     trec = tic();
     [v_p, corrval_p] = falcon(modelIrrev, rxn_exp_p, rxn_exp_sd, rxn_rule_group, ...
