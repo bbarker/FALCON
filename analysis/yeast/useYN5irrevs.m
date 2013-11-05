@@ -3,7 +3,9 @@ function [ynOut, ynBoundChanges] = useYN5irrevs(yn5, ynNew, leaveOut)
 % get these from the published paper.
 
 % Just in case it hasn't been run:
+yn5   = removeEnzymeIrrevs(yn5);
 ynNew = removeEnzymeIrrevs(ynNew);
+
 
 ynOut = ynNew;
 ynLBOldIdx = [];

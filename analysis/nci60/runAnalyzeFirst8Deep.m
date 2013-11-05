@@ -1,4 +1,4 @@
-function runAnalyzeFirst8Deep(model, analysisOnly, allCL, EXPCON)
+function runAnalyzeFirst8Deep(model, paramDir, analysisOnly, allCL, EXPCON)
 % A simple script to run 8 of 9 (since 8 is easy to do in parallel)
 % of the cell lines for which we have "deep protoeomic data". Can
 % optionally run and analyze all cell lines.
@@ -57,6 +57,13 @@ if ~EXPCON
     analysisLabel = [analysisLabel '_noEXPCON'];
 end
 
+if exist('paramDir', 'var')
+    if length(paramDir) > 0        
+        analysisLabel = [analysisLabel '_' paramDir];
+    end
+end
+
+
 % In case other constraints are added later
 consString = '';
 if exist('envConstrain', 'var')
@@ -67,17 +74,28 @@ end
 
 % Run Simulations
 if ~analysisOnly
-    runMultiPerturbtion(model, protThreshDir, CLs, envConstrain, analysisLabel, EXPCON);
-    runMultiPerturbtion(model, micrThreshDir, CLs, envConstrain, analysisLabel, EXPCON);
+    if ~exist('paramDir', 'var') || strcmp(paramDir, '')
+        runMultiPerturbtion(model, protThreshDir, CLs, envConstrain, ...
+                            analysisLabel, EXPCON);
+        runMultiPerturbtion(model, micrThreshDir, CLs, envConstrain, ...
+                            analysisLabel, EXPCON);
+    else
+        % make a parfor here and do a CL at a time
+        runComparisonScript(model, 'FALCON', [protThreshDir '/' paramDir], ...
+                            envConstrain, CLs, analysisLabel, EXPCON);
+        runComparisonScript(model, 'FALCON', [micrThreshDir '/' paramDir], ...
+                            envConstrain, CLs, analysisLabel, EXPCON);
+    end
 end
 falconProtOutDir = ['FALCON_' analysisLabel '_simresults_' consString protThreshDir '/'];
 falconMicrOutDir = ['FALCON_' analysisLabel '_simresults_' consString micrThreshDir '/'];
 
 
-% Do Analysis. colOrder = [3 1 2] (last column (3) specifies nan or 0).
-analyzeMultiPerturbation(model, falconProtOutDir, [3 1 2]);
-analyzeMultiPerturbation(model, falconMicrOutDir, [3 1 2]);
-
+if ~exist('paramDir', 'var') || strcmp(paramDir, '')
+    % Do Analysis. colOrder = [3 1 2] (last column (3) specifies nan or 0).
+    analyzeMultiPerturbation(model, falconProtOutDir, [3 1 2]);
+    analyzeMultiPerturbation(model, falconMicrOutDir, [3 1 2]);
+end
 
 %[meanVals, stdVals] = analyzeMultiPerturbation_ErrorBars(...
 %    analysisDir, suffix, splitLabels)

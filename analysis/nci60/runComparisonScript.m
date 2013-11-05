@@ -1,5 +1,5 @@
 function runComparisonScript(model, method, expFileDir, envConstrain, ...
-    CL, addLabel, EXPCON)
+    CLs, addLabel, EXPCON)
 %INPUT
 % model   (reversible form; the following fields are required)
 %   S            Stoichiometric matrix
@@ -29,8 +29,8 @@ function runComparisonScript(model, method, expFileDir, envConstrain, ...
 %                whether or not to constraints that are 
 %                medium-based CoRe-based, or both.
 %
-% CL             If nonempty or exists, should be the name
-%                of a single cell-line to run, as found in
+% CLs            If nonempty or exists, should be the name
+%                of list the cell-lines to run, as found in
 %                the CoRe table.
 %
 % addLabel       Label for any changes made to the model 
@@ -51,13 +51,16 @@ mediumExcIdxs = loadMediumExcIdxs(model);
 [celllinesarray jainMetsArray coretable] = readJainTable();
 jainMetsToExcIdxs = loadJainMetsToExcIdxs(jainMetsArray, model);
 
+sz_cla = size(celllinesarray)
 %In case we only want to run a single cell line:
-if exist('CL', 'var')
-    if length(CL) > 0
-        clIdx = find(strcmp(celllinesarray, CL));
-        celllinesarray = celllinesarray(clIdx);
+if exist('CLs', 'var')
+    clIdx = [];
+    for i = 1:length(CLs)
+        clIdx = [clIdx find(strcmp(celllinesarray, CLs{i}))]
     end
 end
+celllinesarray = celllinesarray(clIdx);
+sz_cla = size(celllinesarray)
 
 if ~exist('EXPCON', 'var')
     EXPCON = false;
