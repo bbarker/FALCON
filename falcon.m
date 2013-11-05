@@ -615,7 +615,7 @@ rthresh = 0.5;
 tol = 1e-9;
 
 k = 0;
-while k < nrxns 
+while k < (nrxns-1) 
     k = k + 1;
     if isRev(k)
         vSum = vI(k) + vI(k+1);
@@ -663,7 +663,7 @@ rthresh = 0.5;
 tol = 1e-8;
 
 k = 0;
-while k < nrxns 
+while k < (nrxns-1) 
     k = k + 1;
     if isRev(k)
         vSum = vI(k) + vI(k+1);
