@@ -2,6 +2,9 @@ function [ynOut, ynBoundChanges] = useYN5irrevs(yn5, ynNew, leaveOut)
 % since we require some irreversible reactions to start ...
 % get these from the published paper.
 
+% Just in case it hasn't been run:
+ynNew = removeEnzymeIrrevs(ynNew);
+
 ynOut = ynNew;
 ynLBOldIdx = [];
 ynUBOldIdx = [];

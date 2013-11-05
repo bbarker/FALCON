@@ -2,7 +2,7 @@ function rec2 = initializeRecon2(modelIn)
 % This script is used to set up default constraints
 % given any version of Human Recon 2.XX.
 
-rec2 = modelIn;
+rec2 = removeEnzymeIrrevs(modelIn);
 
 % Remove unhelpful transcript labels
 for i = 1:length(rec2.rxns)

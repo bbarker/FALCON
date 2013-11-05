@@ -1,4 +1,4 @@
-function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnOfInt, printFile)
+function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printFile)
 % This function looks at the change in flux for a reaction(s) when the 
 % gene intensity value varies using Falcon. 
 
@@ -18,9 +18,11 @@ function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, 
 %
 % Narayanan Sadagopan 10/12/13
 
+rxnOfInt = cellfun(@(x) find(strcmp(recMod.rxnNames, x)), rxnNames);
 
-EXPCON = true;
-dist = zeros(length(intenst),length(rxnOfInt)+1);
+
+EXPCON = false;
+dist = zeros(length(intenst),length(rxnOfInt)+2);
 count = 1;
 ind = 0;
 
@@ -72,6 +74,8 @@ if (length(rxnOfInt)==1)
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
+        dist(count,3) = norm(vRev, 1);
+        disp(dist(count,:));
         count = count + 1;
     end
 elseif (length(rxnOfInt)==2)
@@ -85,6 +89,8 @@ elseif (length(rxnOfInt)==2)
         dist(count,1) = intenst(x);
         dist(count,2) = vRev(rxnOfInt(1));
         dist(count,3) = vRev(rxnOfInt(2));
+        dist(count,4) = norm(vRev, 1);
+        disp(dist(count,:));
         count = count + 1;
     end
 else
@@ -99,6 +105,8 @@ else
         dist(count,2) = vRev(rxnOfInt(1));
         dist(count,3) = vRev(rxnOfInt(2));
         dist(count,4) = vRev(rxnOfInt(3));
+        dist(count,5) = norm(vRev, 1);
+        disp(dist(count,:));
         count = count + 1;
     end
 end

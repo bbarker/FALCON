@@ -111,8 +111,12 @@ notnan_r = ~isnan(r);
 % cause convergence problems at later iterations: I am not sure
 % if this is a numerical problem or something else. For now
 % this seems to be a good approximation:
+
 minUB = min(m.ub(m.ub > 0));
 flux_sum = sum(~m.rev & notnan_r)*minUB;
+if flux_sum == 0
+    flux_sum = mean(m.ub(m.ub > 0))/2
+end
 if FDEBUG
     flux_sum
 end

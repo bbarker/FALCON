@@ -13,6 +13,9 @@ useMinDisj = true;
 expCon = false;
 minFit = 0.0;
 regC = 0;
+
+nrxns = length(model.rxns);
+
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
 % load transcript data
@@ -69,6 +72,43 @@ else
 end
 
 
+% Standard FBA
+% Always run FBA ... why not.
+tic;
+solution        = optimizeCbModel(model,[],'one');
+v_standard_fba	= solution.x;
+timing.standard_fba = toc;
+fOpt            = solution.f;
+
+
+if find(strcmp(methodList, 'GIMME'))
+    disp('Running GIMME ...');
+    % "required metabolic functionalities" (=growth) set to 90% of maximum
+    model.lb(model.c == 1)	= 0.9*fOpt;
+    % gimme
+    tic;
+    v_gimme         = gimme(model, rxn_exp);
+    timing.gimme = toc;
+    save([genedata_filename '_gimme_flux.mat'], 'v_gimme');
+else
+    v_gimme = zeros(length(model.lb), 1);
+    timing.gimme = 0;
+end
+
+% shlomi
+if find(strcmp(methodList, 'Shlomi'))
+    disp('Running Shlomi ...');
+    tic;
+    v_shlomi    	= shlomi(model, rxn_exp);
+    timing.shlomi = toc;
+    save([genedata_filename '_shlomi_flux.mat'], 'v_shlomi');
+else
+    v_shlomi = zeros(length(model.lb), 1);
+    timing.shlomi = 0;
+end
+
+
+% !!! Warning, this code block modifies the model! run last for now
 if find(strcmp(methodList, 'eMoMA'))
     [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
         gene_exp, gene_exp_sd);
@@ -104,41 +144,6 @@ else
     timing.gene_exp = 0;
     v_fix = zeros(length(model.lb), 1);
     timing.fix = 0;
-end
-
-% Standard FBA
-% Always run FBA ... why not.
-tic;
-solution        = optimizeCbModel(model,[],'one');
-v_standard_fba	= solution.x;
-timing.standard_fba = toc;
-fOpt            = solution.f;
-
-
-if find(strcmp(methodList, 'GIMME'))
-    disp('Running GIMME ...');
-    % "required metabolic functionalities" (=growth) set to 90% of maximum
-    model.lb(model.c == 1)	= 0.9*fOpt;
-    % gimme
-    tic;
-    v_gimme         = gimme(model, rxn_exp);
-    timing.gimme = toc;
-    save([genedata_filename '_gimme_flux.mat'], 'v_gimme');
-else
-    v_gimme = zeros(length(model.lb), 1);
-    timing.gimme = 0;
-end
-
-% shlomi
-if find(strcmp(methodList, 'Shlomi'))
-    disp('Running Shlomi ...');
-    tic;
-    v_shlomi    	= shlomi(model, rxn_exp);
-    timing.shlomi = toc;
-    save([genedata_filename '_shlomi_flux.mat'], 'v_shlomi');
-else
-    v_shlomi = zeros(length(model.lb), 1);
-    timing.shlomi = 0;
 end
 
 % compare
