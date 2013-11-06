@@ -81,21 +81,21 @@ if ~analysisOnly
                             analysisLabel, EXPCON);
     else
         % make a parfor here and do a CL at a time
-        runComparisonScript(model, 'FALCON', [protThreshDir '/' paramDir], ...
-                            envConstrain, CLs, analysisLabel, EXPCON);
-        runComparisonScript(model, 'FALCON', [micrThreshDir '/' paramDir], ...
-                            envConstrain, CLs, analysisLabel, EXPCON);
+        parfor i = 1:length(CLs)
+            runComparisonScript(model, 'FALCON', [protThreshDir '/' paramDir], ...
+                                envConstrain, CLs(i), analysisLabel, EXPCON);
+            runComparisonScript(model, 'FALCON', [micrThreshDir '/' paramDir], ...
+                                envConstrain, CLs(i), analysisLabel, EXPCON);
+        end
     end
 end
 falconProtOutDir = ['FALCON_' analysisLabel '_simresults_' consString protThreshDir '/'];
 falconMicrOutDir = ['FALCON_' analysisLabel '_simresults_' consString micrThreshDir '/'];
 
 
-if ~exist('paramDir', 'var') || strcmp(paramDir, '')
-    % Do Analysis. colOrder = [3 1 2] (last column (3) specifies nan or 0).
-    analyzeMultiPerturbation(model, falconProtOutDir, [3 1 2]);
-    analyzeMultiPerturbation(model, falconMicrOutDir, [3 1 2]);
-end
+% Do Analysis. colOrder = [3 1 2] (last column (3) specifies nan or 0).
+analyzeMultiPerturbation(model, falconProtOutDir, [3 1 2]);
+analyzeMultiPerturbation(model, falconMicrOutDir, [3 1 2]);
 
 %[meanVals, stdVals] = analyzeMultiPerturbation_ErrorBars(...
 %    analysisDir, suffix, splitLabels)
