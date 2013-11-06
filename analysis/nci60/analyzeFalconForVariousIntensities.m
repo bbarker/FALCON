@@ -1,17 +1,23 @@
-function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printFile)
+function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix)
 % This function looks at the change in flux for a reaction(s) when the 
 % gene intensity value varies using Falcon. 
 
 %INPUTS
 %
 % recMod is the reversible model (human recon 2 or yeast)
+%
 % fileName is the file to analyzed (ex. '786_O.csv')
+%
 % gene is a string of the gene of interest
+%
 % rc is regularization constant on fluxes
+%
 % intenst is a vector containing all gene intensities to be analyzed
+%
 % rxnNames is a cell array containing up to 3 reaction numbers 
 %   ex. model.rxnNames{500}
-% printFile is the name of the file where the graph will be printed (.jpg)
+%
+% printPrefix is the name of the file where the graph will be printed (.jpg)
 %
 %OUTPUTS
 % dist is an array. 1st column is the gene intensity. Last column is 
@@ -93,23 +99,30 @@ delete('tempFileForAnalyzeFalcon.csv');
 
 %plot
 figure;
+set(gca, 'FontSize', 36);
+set(gcf, 'PaperUnits', 'inches');
+set(gcf, 'PaperPositionMode', 'manual');
+set(gcf, 'PaperPosition', [0.2 0.2 12 10]);
 hold all
-plot(dist(:,1),dist(:,2),'b-o','MarkerSize',10);
-legend(sprintf(rxnNames{1}),'Location','NorthEastOutside');
-if (length(rxnOfInt)==2)
-    plot(dist(:,1),dist(:,3),'g-*');
-    legend(sprintf(rxnNames{1}),sprintf(rxnNames{2}), ...
-        'Location','NorthEastOutside');
-elseif (length(rxnOfInt)==3)
-    plot(dist(:,1),dist(:,3),'g-*');
-    plot(dist(:,1),dist(:,4),'r-s');
-    legend(sprintf(rxnNames{1}),sprintf(rxnNames{2}), ...
+plot(dist(:, 1), dist(:, 2), 'b-o', 'MarkerSize', 10);
+hLegend = legend(sprintf(rxnNames{1}), 'Location', 'NorthEastOutside');
+set(hLegend, 'FontSize', 30);
+if (length(rxnOfInt) == 2)
+    plot(dist(:, 1), dist(:, 3), 'g-*');
+    legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
+        'Location', 'NorthEastOutside');
+elseif (length(rxnOfInt) == 3)
+    plot(dist(:, 1), dist(:, 3), 'g-*');
+    plot(dist(:, 1), dist(:, 4), 'r-s');
+    legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
         sprintf(rxnNames{3}));
 end
-title('Flux vs Intensity','FontSize',20);
+title('Flux vs Intensity','FontSize', 36);
 xlabel(sprintf('Intensity of the Gene with ID %s', gene), ...
-    'FontSize',16);
-ylabel('Flux','FontSize',16);
+    'FontSize', 32);
+ylabel('Flux', 'FontSize', 32);
 grid on;
-print('-dpng',printFile);
+print('-dpng', [printPrefix '.png'], '-r150');
+% publication quality:
+print('-depsc2', [printPrefix '.eps'], '-r600');
 close(figure);

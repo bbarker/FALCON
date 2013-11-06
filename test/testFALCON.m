@@ -110,6 +110,7 @@ else
     numFail = numFail + 1;
 end
 
+
 [v_solirrev, corrval, nvar, v_all] =         ...
     falcon(mI, rxn_exp, rxn_exp_sd,          ...
            rxn_rule_group, REG, 0, EXPCON, FDBG);
@@ -124,6 +125,8 @@ else
     disp('Test FAILED for linear pathway fluxes related to expression.');
     numFail = numFail + 1;
 end
+
+return 
 
 % It should be the case (unfortunately for now), that,
 % given no conflicting demands, expression on a futile cycle will cause
@@ -164,6 +167,7 @@ end
 % In branch model, do a series of tests that ensure increasing
 % flux with increasing expression:
 % a <= b <= c <= ...
+
 
 branchMaxExp = 10;
 expInit = 0;
