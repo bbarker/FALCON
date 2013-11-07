@@ -69,8 +69,9 @@ if exist('experimental_fluxes_filename', 'var')
     experimental = columnVector(experimental);
 
     % Kieran said the signs from the Lee paper flux data matched
-    % the signs predicted by the method:
-    experimental = sign(p_falcon) .* experimental
+    % the signs predicted by the method; this equates to
+    % only glucose being negative:
+    experimental(1) = -1*experimental(1);
 
     pCorrRef  = pCorr(p_falcon, experimental)
     kCorrRef  = kCorr(p_falcon, experimental)

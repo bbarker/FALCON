@@ -118,15 +118,16 @@ end
 v_solirrev';
 v_solrev = convertIrrevFluxDistribution(m, v_solirrev, matchRev)';
 
-if (v_solrev(1) > 0) && (v_solrev(2) > 0) && (v_solrev(7) > 0)
+% There are two linear pathways that are possible here:
+% v_2 or v_3_b and v_4_b, or both
+if (v_solrev(1) > 0) && ((v_solrev(2) > 0) || ...
+        (v_solrev(3) < 0) && (v_solrev(4) < 0)) && (v_solrev(7) > 0)
     disp('Test succeeded for linear pathway fluxes related to expression.');
     numSucc = numSucc + 1;
 else
     disp('Test FAILED for linear pathway fluxes related to expression.');
     numFail = numFail + 1;
 end
-
-return 
 
 % It should be the case (unfortunately for now), that,
 % given no conflicting demands, expression on a futile cycle will cause
@@ -188,23 +189,24 @@ for i = expInit:branchMaxExp
     if i > expInit;
         if all(abs(v_solrev_branch(3:4) - v_solrev_branch_pre(3:4)) < erTol)
             vF3F4_inc = [vF3F4_inc 0];
-        elseif all(v_solrev_branch(3:4) + erTol > v_solrev_branch_pre(3:4))
+        elseif all(-1*(v_solrev_branch(3:4) + erTol) > -1*v_solrev_branch_pre(3:4))
             vF3F4_inc = [vF3F4_inc 1]; 
-        elseif any(v_solrev_branch(3:4) < v_solrev_branch_pre(3:4) + erTol)
+        elseif any(-1*v_solrev_branch(3:4) < -1*(v_solrev_branch_pre(3:4) + erTol))
             vF3F4_inc = [vF3F4_inc -1];
         else
             vF3F4_inc = [vF3F4_inc nan];
         end
     end
 end
-% Now we check that as expression the rough the branch increase
+% Now we check that as expression through the branch increases
 % flux through the branch increases at least once and never decreases
-if any(vF3F4_inc == 1) && issorted(fliplr(vF3F4_inc)) && ~all(vF3F4_inc == -1)
+if any(vF3F4_inc == 1) && ~any(vF3F4_inc == -1)
     disp('Test succeeded for expression-dependent branching.');
     numSucc = numSucc + 1;
 else
     disp('Test FAILED for expression-dependent branching.');
     numFail = numFail + 1;
+    %vF3F4_inc %for debugging
 end
 
 disp(' '); disp(' ');

@@ -162,18 +162,20 @@ flux = strcmp(flux_to_scale,reaction_name);
 flux = experimental_fluxes.data(flux,1);
 
 for k = 1:size(experimental_fluxes.textdata,1)
-    j = find(strcmp(reaction_name{k},model.rxnNames));
+    j = find(strcmp(reaction_name{k}, model.rxnNames));
     experimental(k)     = experimental_fluxes.data(k,1);
-    p_gene_exp(k)       = flux*abs(v_gene_exp(j));
-    p_standard_fba(k)	= flux*abs(v_standard_fba(j));
-    p_gimme(k)          = flux*abs(v_gimme(j));
-    p_shlomi(k)     	= flux*abs(v_shlomi(j));
-    p_fix(k)     	= flux*abs(v_fix(j));
-    p_falcon(k)     	= flux*abs(v_falcon(j));
+    if k == 1
+         experimental(k) = -experimental(k);
+    end
+    p_gene_exp(k)       = flux*v_gene_exp(j);
+    p_standard_fba(k)	= flux*v_standard_fba(j);
+    p_gimme(k)          = flux*v_gimme(j);
+    p_shlomi(k)     	= flux*v_shlomi(j);
+    p_fix(k)     	= flux*v_fix(j);
+    p_falcon(k)     	= flux*v_falcon(j);
     % reaction_name{k}
     % v_falcon(j)
 end
-
 
 % remove small entries
 p_gene_exp(abs(p_gene_exp)<1e-6)            = 0;
