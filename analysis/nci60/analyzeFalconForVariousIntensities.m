@@ -1,9 +1,8 @@
-function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix)
+function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix, nV)
 % This function looks at the change in flux for a reaction(s) when the 
 % gene intensity value varies using Falcon. 
 
 %INPUTS
-%
 % recMod is the reversible model (human recon 2 or yeast)
 %
 % fileName is the file to analyzed (ex. '786_O.csv')
@@ -19,11 +18,16 @@ function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, 
 %
 % printPrefix is the name of the file where the graph will be printed (.jpg)
 %
+%OPTIONAL INPUT
+% nV if it exists, is a rxnNames entry that will be used to normalize
+% plotted fluxes.
+%
 %OUTPUTS
 % dist is an array. 1st column is the gene intensity. Last column is 
 % sum of all fluxes. Middle columns are fluxes of rxns of interest.
 %
 % Narayanan Sadagopan 10/12/13
+% Brandon Barker      11/06/13  Added parallelization and minor changes.
 
 rxnOfInt = cellfun(@(x) find(strcmp(recMod.rxnNames, x)), rxnNames);
 
@@ -69,16 +73,16 @@ set(gcf, 'PaperUnits', 'inches');
 set(gcf, 'PaperPositionMode', 'manual');
 set(gcf, 'PaperPosition', [0.2 0.2 12 10]);
 hold all
-plot(dist(:, 1), dist(:, 2), 'b-o', 'MarkerSize', 10);
+plot(dist(:, 1), dist(:, 2) ./ dist(:, end), 'b-o', 'MarkerSize', 10);
 % why does this not work???? :
 %hLeg = legend(rxnNames);
 hLeg = legend(sprintf(rxnNames{1}));
 if (length(rxnOfInt) == 2)
-    plot(dist(:, 1), dist(:, 3), 'g-*');
+    plot(dist(:, 1), dist(:, 3)./ dist(:, end), 'g-*');
     hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}))
 elseif (length(rxnOfInt) == 3)
-    plot(dist(:, 1), dist(:, 3), 'g-*');
-    plot(dist(:, 1), dist(:, 4), 'r-s');
+    plot(dist(:, 1), dist(:, 3) ./ dist(:, end), 'g-*');
+    plot(dist(:, 1), dist(:, 4) ./ dist(:, end), 'r-s');
     hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
         sprintf(rxnNames{3}));
 end
