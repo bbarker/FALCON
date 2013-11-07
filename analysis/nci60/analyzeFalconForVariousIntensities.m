@@ -16,15 +16,17 @@ function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, 
 % rxnNames is a cell array containing up to 3 reaction numbers 
 %   ex. model.rxnNames{500}
 %
-% printPrefix is the name of the file where the graph will be printed (.jpg)
+% printPrefix is the name of the file where the graph will be printed 
 %
 %OPTIONAL INPUT
 % nV if it exists, is a rxnNames entry that will be used to normalize
-% plotted fluxes.
+%   plotted fluxes.
 %
 %OUTPUTS
-% dist is an array. 1st column is the gene intensity. Last column is 
-% sum of all fluxes. Middle columns are fluxes of rxns of interest.
+% dist is an array. 1st column is the gene intensity. Second to last column  
+%   is sum of all fluxes. Last column is intensity of normalization rxn 
+%   (defaults to 1 if absent). Middle columns are fluxes of rxns 
+%   of interest.
 %
 % Narayanan Sadagopan 10/12/13
 % Brandon Barker      11/06/13  Added parallelization and minor changes.
@@ -32,8 +34,15 @@ function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, 
 rxnOfInt = cellfun(@(x) find(strcmp(recMod.rxnNames, x)), rxnNames);
 
 EXPCON = false;
-dist = zeros(length(intenst),length(rxnOfInt)+2);
+dist = zeros(length(intenst),length(rxnOfInt)+3);
 ind = 0;
+
+%determine normalization reaction
+if (nargin < 8)
+    normRxn = 0;
+else
+    normRxn = cellfun(@(x) find(strcmp(recMod.rxnNames, x)), nV);
+end
 
 %create temporary file
 fileID=fopen(fileName,'r');
@@ -55,13 +64,24 @@ if (ind==0)
     return;
 end
 
-parfor x = 1:length(intenst)
-    CC = C;
-    CC{1,2}{ind} = num2str(intenst(x)); 
-    cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; CC{:}], '\t', 2000); 
-    [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
-    dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1)];
-    disp(dist(x, :));
+if (normRxn ~=0)
+    parfor x = 1:length(intenst)
+        CC = C;
+        CC{1,2}{ind} = num2str(intenst(x)); 
+        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; CC{:}], '\t', 2000); 
+        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0); 
+        dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1) vRev(normRxn)];
+        disp(dist(x, :));
+    end
+else
+    parfor x = 1:length(intenst)
+        CC = C;
+        CC{1,2}{ind} = num2str(intenst(x)); 
+        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; CC{:}], '\t', 2000); 
+        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0); 
+        dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1) 1];
+        disp(dist(x, :));
+    end
 end
 
 delete('tempFileForAnalyzeFalcon.csv');
@@ -73,16 +93,16 @@ set(gcf, 'PaperUnits', 'inches');
 set(gcf, 'PaperPositionMode', 'manual');
 set(gcf, 'PaperPosition', [0.2 0.2 12 10]);
 hold all
-plot(dist(:, 1), dist(:, 2) ./ dist(:, end), 'b-o', 'MarkerSize', 10);
+plot(dist(:, 1), dist(:, 2) ./ dist(:, end), 'b-o', 'MarkerSize', 12);
 % why does this not work???? :
 %hLeg = legend(rxnNames);
 hLeg = legend(sprintf(rxnNames{1}));
 if (length(rxnOfInt) == 2)
-    plot(dist(:, 1), dist(:, 3)./ dist(:, end), 'g-*');
-    hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}))
+    plot(dist(:, 1), dist(:, 3)./ dist(:, end), 'g-*', 'MarkerSize', 12);
+    hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}));
 elseif (length(rxnOfInt) == 3)
-    plot(dist(:, 1), dist(:, 3) ./ dist(:, end), 'g-*');
-    plot(dist(:, 1), dist(:, 4) ./ dist(:, end), 'r-s');
+    plot(dist(:, 1), dist(:, 3) ./ dist(:, end), 'g-*', 'MarkerSize', 12);
+    plot(dist(:, 1), dist(:, 4) ./ dist(:, end), 'r-s', 'MarkerSize', 12);
     hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
         sprintf(rxnNames{3}));
 end
