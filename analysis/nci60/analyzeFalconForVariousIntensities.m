@@ -29,7 +29,6 @@ rxnOfInt = cellfun(@(x) find(strcmp(recMod.rxnNames, x)), rxnNames);
 
 EXPCON = false;
 dist = zeros(length(intenst),length(rxnOfInt)+2);
-count = 1;
 ind = 0;
 
 %create temporary file
@@ -52,47 +51,13 @@ if (ind==0)
     return;
 end
 
-if (length(rxnOfInt)==1)
-    %modify gene intensity and run Falcon
-    for x = 1:length(intenst)
-
-        %make change and rewrite file
-        C{1,2}{ind} = num2str(intenst(x));
-        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
-
-        %run Falcon
-        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
-        dist(count,1) = intenst(x);
-        dist(count,2) = vRev(rxnOfInt(1));
-        dist(count,3) = norm(vRev, 1);
-        disp(dist(count,:));
-        count = count + 1;
-    end
-elseif (length(rxnOfInt)==2)
-    for x = 1:length(intenst)
-        C{1,2}{ind} = num2str(intenst(x)); 
-        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
-        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
-        dist(count,1) = intenst(x);
-        dist(count,2) = vRev(rxnOfInt(1));
-        dist(count,3) = vRev(rxnOfInt(2));
-        dist(count,4) = norm(vRev, 1);
-        disp(dist(count,:));
-        count = count + 1;
-    end
-else
-    for x = 1:length(intenst)
-        C{1,2}{ind} = num2str(intenst(x)); 
-        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
-        [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
-        dist(count,1) = intenst(x);
-        dist(count,2) = vRev(rxnOfInt(1));
-        dist(count,3) = vRev(rxnOfInt(2));
-        dist(count,4) = vRev(rxnOfInt(3));
-        dist(count,5) = norm(vRev, 1);
-        disp(dist(count,:));
-        count = count + 1;
-    end
+parfor x = 1:length(intenst)
+    CC = C;
+    CC{1,2}{ind} = num2str(intenst(x)); 
+    cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; CC{:}], '\t', 2000); 
+    [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0);
+    dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1)];
+    disp(dist(x, :));
 end
 
 delete('tempFileForAnalyzeFalcon.csv');
@@ -105,24 +70,38 @@ set(gcf, 'PaperPositionMode', 'manual');
 set(gcf, 'PaperPosition', [0.2 0.2 12 10]);
 hold all
 plot(dist(:, 1), dist(:, 2), 'b-o', 'MarkerSize', 10);
-hLegend = legend(sprintf(rxnNames{1}), 'Location', 'NorthEastOutside');
-set(hLegend, 'FontSize', 30);
+% why does this not work???? :
+%hLeg = legend(rxnNames);
+hLeg = legend(sprintf(rxnNames{1}));
 if (length(rxnOfInt) == 2)
     plot(dist(:, 1), dist(:, 3), 'g-*');
-    legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
-        'Location', 'NorthEastOutside');
+    hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}))
 elseif (length(rxnOfInt) == 3)
     plot(dist(:, 1), dist(:, 3), 'g-*');
     plot(dist(:, 1), dist(:, 4), 'r-s');
-    legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
+    hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
         sprintf(rxnNames{3}));
 end
+set(hLeg, 'FontSize', 18);
 title('Flux vs Intensity','FontSize', 36);
-xlabel(sprintf('Intensity of the Gene with ID %s', gene), ...
+xlabel(sprintf('Intensity of Gene %s', gene), ...
     'FontSize', 32);
 ylabel('Flux', 'FontSize', 32);
 grid on;
+
 print('-dpng', [printPrefix '.png'], '-r150');
-% publication quality:
 print('-depsc2', [printPrefix '.eps'], '-r600');
+
+set(hLeg, 'Location', 'Best');
+print('-dpng', [printPrefix '_Best.png'], '-r150');
+print('-depsc2', [printPrefix '_Best.eps'], '-r600');
+
+set(hLeg, 'Location', 'BestOutside');
+print('-dpng', [printPrefix '_BestOut.png'], '-r150');
+print('-depsc2', [printPrefix '_BestOut.eps'], '-r600');
+
+set(hLeg, 'Location', 'NorthEastOutside');
+print('-dpng', [printPrefix '_NEOut.png'], '-r150');
+print('-depsc2', [printPrefix '_NEOut.eps'], '-r600');
+
 close(figure);

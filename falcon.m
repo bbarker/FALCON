@@ -113,7 +113,6 @@ notnan_r = ~isnan(r);
 % this seems to be a good approximation:
 
 minUB = min(m.ub(m.ub > 0));
-%This is causing a bug in testFALCON
 flux_sum = sum(~m.rev & notnan_r)*minUB;
 %flux_sum = min(m.ub(m.ub > 0)) / 2
 if flux_sum == 0
