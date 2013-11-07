@@ -38,7 +38,7 @@ dist = zeros(length(intenst),length(rxnOfInt)+3);
 ind = 0;
 
 %determine normalization reaction
-if (nargin < 8)
+if ~exist('nV', 'var')
     normRxn = 0;
 else
     normRxn = cellfun(@(x) find(strcmp(recMod.rxnNames, x)), nV);
@@ -67,20 +67,24 @@ end
 if (normRxn ~=0)
     parfor x = 1:length(intenst)
         CC = C;
-        CC{1,2}{ind} = num2str(intenst(x)); 
-        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; CC{:}], '\t', 2000); 
+        CC{1,2}{ind} = num2str(intenst(x));
+        rfid = [num2str(x) '_' num2str(randint(1, 1, 10e40))]; 
+        cell2csv([rfid 'tempFileForAnalyzeFalcon.csv'], [c1{:}; CC{:}], '\t', 2000); 
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0); 
         dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1) vRev(normRxn)];
         disp(dist(x, :));
+        delete([rfid 'tempFileForAnalyzeFalcon.csv']);
     end
 else
     parfor x = 1:length(intenst)
         CC = C;
         CC{1,2}{ind} = num2str(intenst(x)); 
-        cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; CC{:}], '\t', 2000); 
+        rfid = [num2str(x) '_' num2str(randint(1, 1, 10e40))]; 
+        cell2csv([rfid 'tempFileForAnalyzeFalcon.csv'], [c1{:}; CC{:}], '\t', 2000); 
         [vIrrev vRev] = runFalcon(recMod,'tempFileForAnalyzeFalcon.csv', rc, EXPCON, 0); 
         dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1) 1];
         disp(dist(x, :));
+        delete([rfid 'tempFileForAnalyzeFalcon.csv']);
     end
 end
 
