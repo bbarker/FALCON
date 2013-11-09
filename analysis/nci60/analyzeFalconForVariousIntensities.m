@@ -1,4 +1,4 @@
-function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix, nV)
+unction dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix, nV)
 % This function looks at the change in flux for a reaction(s) when the 
 % gene intensity value varies using Falcon. 
 
@@ -99,16 +99,16 @@ set(gcf, 'PaperUnits', 'inches');
 set(gcf, 'PaperPositionMode', 'manual');
 set(gcf, 'PaperPosition', [0.2 0.2 12 10]);
 hold all
-plot(dist(:, 1), dist(:, 2) ./ dist(:, end), 'b-o', 'MarkerSize', 12);
+plot(dist(:, 1), dist(:, 2) ./ abs(dist(:, end)), 'b-o', 'MarkerSize', 12);
 % why does this not work???? :
 %hLeg = legend(rxnNames);
 hLeg = legend(sprintf(rxnNames{1}));
 if (length(rxnOfInt) == 2)
-    plot(dist(:, 1), dist(:, 3)./ dist(:, end), 'g-*', 'MarkerSize', 12);
+    plot(dist(:, 1), dist(:, 3)./ abs(dist(:, end)), 'g-*', 'MarkerSize', 12);
     hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}));
 elseif (length(rxnOfInt) == 3)
-    plot(dist(:, 1), dist(:, 3) ./ dist(:, end), 'g-*', 'MarkerSize', 12);
-    plot(dist(:, 1), dist(:, 4) ./ dist(:, end), 'r-s', 'MarkerSize', 12);
+    plot(dist(:, 1), dist(:, 3) ./ abs(dist(:, end)), 'g-*', 'MarkerSize', 12);
+    plot(dist(:, 1), dist(:, 4) ./ abs(dist(:, end)), 'r-s', 'MarkerSize', 12);
     hLeg = legend(sprintf(rxnNames{1}), sprintf(rxnNames{2}), ...
         sprintf(rxnNames{3}));
 end
