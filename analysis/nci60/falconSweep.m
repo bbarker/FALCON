@@ -1,65 +1,45 @@
-function [scores a]= falconSweep (rec2,tissueName,rxnsOfInt)
+function [scores]= falconSweep (rec2, expressionFile, rxnsOfInt)
 %this function looks at all possible combinations of the two
 %irreversible directions for the input reactions
 
 %INPUTS
 %   rec2 is the human recon 2 model
-%   tissueName is the tissue being analyzed (.csv)
+%
+%   expressionFile is the tissue being analyzed (.csv)
+%
 %   rxnsOfInt is a vector containing the reactions to be analyzed (up
-%       to 12 rxns)
+%       to 16 rxns)
 %
 %OUTPUTS
-%   a is the list of all combinations run
 %   scores is whether glucose is transported in or out
+%       the index in scores can be used to find the combination
+%       of forward (0) or backward (1) rxns by computing the vector
+%       rxnsOfInt(boolean(str2numvec(dec2bin(index, length(rxnsOfInt)))))
+%       i.e.:
+%       0 is irreversible 0 to 1000
+%       1 is irreversible -1000 to 0
+
+% Narayanan Sadagopan  11/10/2013
+% Brandon Barker       11/11/2013
 
 len = length(rxnsOfInt);
 
-v = [0 1];
-%0 is irreversible 0 to 1000
-%1 is irreversible -1000 to 0
-
-if (len==1)
-    a=allcomb(v);
-elseif (len==2)
-    a=allcomb(v,v);
-elseif (len==3)
-    a=allcomb(v,v,v);
-elseif (len==4)
-    a=allcomb(v,v,v,v);
-elseif (len==5)
-    a=allcomb(v,v,v,v,v);
-elseif (len==6)
-    a=allcomb(v,v,v,v,v,v);
-elseif (len==7)
-    a=allcomb(v,v,v,v,v,v,v);
-elseif (len==8)
-    a=allcomb(v,v,v,v,v,v,v,v);
-elseif (len==9)
-    a=allcomb(v,v,v,v,v,v,v,v,v);
-elseif (len==10)
-    a=allcomb(v,v,v,v,v,v,v,v,v,v);
-elseif (len==11)
-    a=allcomb(v,v,v,v,v,v,v,v,v,v,v);
-else
-    a=allcomb(v,v,v,v,v,v,v,v,v,v,v,v);
+if len > 16
+    disp('Too many reaction sets to analyze!');
+    return;
 end
 
-scores = zeros(1,length(a(:,1)));
+scores = zeros(1, 2^len);
 
-parfor x = 1:length(a(:,1))
+parfor x = 1 : 2^len
     recMod = rec2;
-    for y = 1:length(a(x,:))
-        if (a(x,y)==0)
-            recMod.lb(rxnsOfInt(y)) = 0;
-            recMod.ub(rxnsOfInt(y)) = 1000;
-            recMod.rev(rxnsOfInt(y)) = 0;
-        else
-            recMod.lb(rxnsOfInt(y)) = -1000;
-            recMod.ub(rxnsOfInt(y)) = 0;
-            recMod.rev(rxnsOfInt(y)) = 0;
-        end
-    end
-    [virrev vrev] = runFalcon(recMod,tissueName,0.01,true,0);
+    aX = boolean(str2numvec(dec2bin(x - 1, len)));
+    recMod.rev(rxnsOfInt) = 0;
+    recMod.lb(rxnsOfInt(~aX)) = 0;
+    recMod.ub(rxnsOfInt(~aX)) = 1000;
+    recMod.lbrxnsOfInt(rxnsOfInt(aX)) = -1000;
+    recMod.ub(rxnsOfInt(aX)) = 0;
+    [virrev vrev] = runFalcon(recMod, expressionFile, 0.01, false, 0);
     if (vrev(1388)<0)
         scores(x) = 1;
     end
