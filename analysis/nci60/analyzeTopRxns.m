@@ -1,4 +1,4 @@
-function [scores rxnsOfInt]= analyzeTopRxns (rec2, expressionFile, numTops)
+function [scores rxnsOfInt signMatch]= analyzeTopRxns (rec2, expressionFile, numTops, excFlag)
 %this function looks at all possible combinations of the two
 %irreversible directions for a certain number of reversible
 %reactions with the highest fluxes
@@ -10,6 +10,9 @@ function [scores rxnsOfInt]= analyzeTopRxns (rec2, expressionFile, numTops)
 %
 %   numTops is the number of reactions to be analyzed (up to 16 rxns)
 %
+%OPTIONAL INPUTS
+%   excFlag is 1 if looking at top non-exchange rxns. Defaults to 0. 
+%
 %OUTPUTS
 %   scores is the absolute value of the differences in fluxes between
 %       the jain table and the falcon generated fluxes. 
@@ -19,9 +22,15 @@ function [scores rxnsOfInt]= analyzeTopRxns (rec2, expressionFile, numTops)
 %       i.e.:
 %       0 is irreversible 0 to 1000
 %       1 is irreversible -1000 to 0
+%   rxnsOfInt is a vector containing all the reactions that were analyzed
+%
 
 % Narayanan Sadagopan  11/10/2013
 % Brandon Barker       11/11/2013
+
+if ~exist('excFlag','var')
+    excFlag=0;
+end
 
 %from analyzeV_solFileOneCellLine
 [cellLine metArray coretable FVAvmin FVAvmax] = readJainTable();
@@ -41,40 +50,45 @@ if CLidx <= 0
     return;
 end
 
-CLidx
-
 [virrev vrev] = runFalcon(rec2, expressionFile, 0.01, false, 0);
 [vrevSort ind] = sort(abs(vrev),'descend');
+selExc=findExcRxns(rec2);
 
-%check for futile cycles?
-%find top non-exchange reactions?
 rxnsOfInt = zeros(1,numTops);
 count = 1;
 rxnCount = 1;
 %selects "numTops" top reactions
-while (count <= numTops)
-    if (rec2.rev(ind(rxnCount))==1)
-        rxnsOfInt(count) = ind(rxnCount);
-        count = count + 1;
+if (excFlag)
+    while (count <= numTops)
+        if (rec2.rev(ind(rxnCount)) && ~selExc(ind(rxnCount)))
+            rxnsOfInt(count) = ind(rxnCount);
+            count = count + 1;
+        end
+        rxnCount = rxnCount + 1;
     end
-    rxnCount = rxnCount + 1;
+else
+    while (count <= numTops)
+        if (rec2.rev(ind(rxnCount)))
+            rxnsOfInt(count) = ind(rxnCount);
+            count = count + 1;
+        end
+        rxnCount = rxnCount + 1;
+    end
 end
 
 len = length(rxnsOfInt);
-
 if len > 16
     disp('Too many reaction sets to analyze!');
     return;
 end
-
 scores = zeros(1, 2^len);
+signMatch = zeros(1, 2^len);
 
 excMetIds = loadJainMetsToExcIdxs(metArray, rec2);
 key = keys(excMetIds);
 val = values(excMetIds);
-disp(2^len)
 
-for x = 1 : 2^len
+parfor x = 1 : 2^len
     recMod = rec2;
     aX = boolean(str2numvec(dec2bin(x - 1, len)));
     recMod.rev(rxnsOfInt) = 0;
@@ -83,24 +97,33 @@ for x = 1 : 2^len
     recMod.lbrxnsOfInt(rxnsOfInt(aX)) = -1000;
     recMod.ub(rxnsOfInt(aX)) = 0;
     [virrev vrev] = runFalcon(recMod, expressionFile, 0.01, false, 0);
-    %add analyzeV_solFileOneCellLine?
     tempScore = 0;
+    signCount = 0; 
     for y = 1 : length(metArray)
         for z = 1 : length(key)
             if (strcmp(key(z), metArray(y)))
-                tempScore = tempScore + abs(coretable(y,CLidx)-vrev(val{z}));
-                  if vz_sz > 1
-                       z
-                       vz_sz = size(val{z})
-                       valz = val{z}
-                       break
-                  end
+                if (length(val{z})==1)
+                    tempScore = tempScore + abs(coretable(y,CLidx)-vrev(val{z}));
+                    if ((coretable(y,CLidx) > 0 && vrev(val{z}) > 0) ...
+                            ||(coretable(y,CLidx) < 0 && vrev(val{z}) < 0))
+                        signCount = signCount + 1;
+                    end
+                    break;
+                else
+                    temp = 0;
+                    for i = 1:length(val{z})
+                        temp = temp + vrev(val{z}(i));
+                    end
+                    tempScore = tempScore + abs(coretable(y,CLidx)-temp);
+                    if ((coretable(y,CLidx) > 0 && temp > 0) ...
+                            ||(coretable(y,CLidx) < 0 && temp < 0))
+                        signCount = signCount + 1;
+                    end
+                    break;
+                end
             end
         end
     end
-
-    sco_sz = size(scores)
-    x_idx = x
-    ts_sz = size(tempScore)
+    signMatch(x) = signCount/length(key);
     scores(x) = tempScore;
 end
