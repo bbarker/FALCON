@@ -1,4 +1,4 @@
-function [scores]= falconSweep (rec2, expressionFile, rxnsOfInt)
+function [scores]= falconSweep (rec2, expressionFile, rxnsOfInt, targetRxn, compZero)
 %this function looks at all possible combinations of the two
 %irreversible directions for the input reactions
 
@@ -9,6 +9,11 @@ function [scores]= falconSweep (rec2, expressionFile, rxnsOfInt)
 %
 %   rxnsOfInt is a vector containing the reactions to be analyzed (up
 %       to 16 rxns)
+%
+%   targetRxn is the reaction to who's flux is being analyzed
+%
+%   compZero is 0 if looking for less than zero fluxes, 1 if looking for 
+%       greater than zero fluxes
 %
 %OUTPUTS
 %   scores is whether glucose is transported in or out
@@ -40,7 +45,13 @@ parfor x = 1 : 2^len
     recMod.lbrxnsOfInt(rxnsOfInt(aX)) = -1000;
     recMod.ub(rxnsOfInt(aX)) = 0;
     [virrev vrev] = runFalcon(recMod, expressionFile, 0.01, false, 0);
-    if (vrev(1388)<0)
-        scores(x) = 1;
+    if (compZero==0)
+        if (vrev(targetRxn)<0)
+            scores(x)=1;
+        end
+    else
+        if (vrev(targetRxn)>0)
+            scores(x) = 1;
+        end
     end
 end
