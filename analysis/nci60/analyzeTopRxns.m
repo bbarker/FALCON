@@ -22,7 +22,6 @@ function [scores rxnsOfInt]= analyzeTopRxns (rec2, expressionFile, numTops)
 
 % Narayanan Sadagopan  11/10/2013
 % Brandon Barker       11/11/2013
-% Narayanan Sadagopan  11/12/2013
 
 %from analyzeV_solFileOneCellLine
 [cellLine metArray coretable FVAvmin FVAvmax] = readJainTable();
@@ -41,6 +40,8 @@ if CLidx <= 0
     disp('Error: cell line not found.');
     return;
 end
+
+CLidx
 
 [virrev vrev] = runFalcon(rec2, expressionFile, 0.01, false, 0);
 [vrevSort ind] = sort(abs(vrev),'descend');
@@ -68,12 +69,12 @@ end
 
 scores = zeros(1, 2^len);
 
-excMetIds=loadJainMetsToExcIdxs(metArray,rec2);
-key=keys(excMetIds);
-val=values(excMetIds);
+excMetIds = loadJainMetsToExcIdxs(metArray, rec2);
+key = keys(excMetIds);
+val = values(excMetIds);
 disp(2^len)
 
-parfor x = 1 : 2^len
+for x = 1 : 2^len
     recMod = rec2;
     aX = boolean(str2numvec(dec2bin(x - 1, len)));
     recMod.rev(rxnsOfInt) = 0;
@@ -84,12 +85,22 @@ parfor x = 1 : 2^len
     [virrev vrev] = runFalcon(recMod, expressionFile, 0.01, false, 0);
     %add analyzeV_solFileOneCellLine?
     tempScore = 0;
-    for y = 1: length(metArray)
-        for z = 1 : length (key)
-            if (strcmp(key(z),metArray(y)))
+    for y = 1 : length(metArray)
+        for z = 1 : length(key)
+            if (strcmp(key(z), metArray(y)))
                 tempScore = tempScore + abs(coretable(y,CLidx)-vrev(val{z}));
+                  if vz_sz > 1
+                       z
+                       vz_sz = size(val{z})
+                       valz = val{z}
+                       break
+                  end
             end
         end
     end
-    scores(x)=tempScore;
+
+    sco_sz = size(scores)
+    x_idx = x
+    ts_sz = size(tempScore)
+    scores(x) = tempScore;
 end
