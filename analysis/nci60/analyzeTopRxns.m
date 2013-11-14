@@ -1,4 +1,4 @@
-function [scores rxnsOfInt signMatch]= analyzeTopRxns (rec2, expressionFile, numTops, excFlag)
+function [scores signMatch originalScore originalSign rxnsOfInt]= analyzeTopRxns (rec2, expressionFile, numTops, excFlag)
 %this function looks at all possible combinations of the two
 %irreversible directions for a certain number of reversible
 %reactions with the highest fluxes
@@ -22,17 +22,25 @@ function [scores rxnsOfInt signMatch]= analyzeTopRxns (rec2, expressionFile, num
 %       i.e.:
 %       0 is irreversible 0 to 1000
 %       1 is irreversible -1000 to 0
+%
+%   signMatch is the percentage of exchange reactions that have the same
+%       sign as the flux from the jain table
+%       
+%   originalScore is the score of the model without making changes
+%
+%   originalSign is the percentage of the model without making changes
+%
 %   rxnsOfInt is a vector containing all the reactions that were analyzed
 %
 
-% Narayanan Sadagopan  11/10/2013
+% Narayanan Sadagopan  11/13/2013
 % Brandon Barker       11/11/2013
 
 if ~exist('excFlag','var')
     excFlag=0;
 end
 
-%from analyzeV_solFileOneCellLine
+%from analyzeV_solFileOneCellLine, find tissue index in table
 [cellLine metArray coretable FVAvmin FVAvmax] = readJainTable();
 inputFiSplit = strsplit(expressionFile, '/');
 fileName = inputFiSplit{end};
@@ -50,13 +58,18 @@ if CLidx <= 0
     return;
 end
 
+%declaring variables
 [virrev vrev] = runFalcon(rec2, expressionFile, 0.01, false, 0);
 [vrevSort ind] = sort(abs(vrev),'descend');
-selExc=findExcRxns(rec2);
-
+selExc = findExcRxns(rec2);
 rxnsOfInt = zeros(1,numTops);
 count = 1;
 rxnCount = 1;
+
+%normalization
+coretable(:,CLidx) = coretable(:,CLidx)/abs(max(coretable(:,CLidx)));
+vrev(:) = vrev(:)/abs(max(vrev));
+
 %selects "numTops" top reactions
 if (excFlag)
     while (count <= numTops)
@@ -76,6 +89,7 @@ else
     end
 end
 
+%length check and declaring size of outputs
 len = length(rxnsOfInt);
 if len > 16
     disp('Too many reaction sets to analyze!');
@@ -84,10 +98,45 @@ end
 scores = zeros(1, 2^len);
 signMatch = zeros(1, 2^len);
 
+%get metabolite and exchange reaction conversions
 excMetIds = loadJainMetsToExcIdxs(metArray, rec2);
 key = keys(excMetIds);
 val = values(excMetIds);
 
+%find originalScore and originalSign
+tempScore = 0;
+signCount = 0; 
+for y = 1 : length(metArray)
+    for z = 1 : length(key)
+        if (strcmp(key(z), metArray(y)))
+            if (length(val{z})==1)
+                tempScore = tempScore + abs(coretable(y,CLidx)-vrev(val{z}));
+                if ((coretable(y,CLidx) > 0 && vrev(val{z}) > 0) ...
+                        ||(coretable(y,CLidx) < 0 && vrev(val{z}) < 0)...
+                        ||(coretable(y,CLidx) == 0 && vrev(val{z}) == 0))
+                    signCount = signCount + 1;
+                end
+                break;
+            else
+                temp = 0;
+                for i = 1:length(val{z})
+                    temp = temp + vrev(val{z}(i));
+                end
+                tempScore = tempScore + abs(coretable(y,CLidx)-temp);
+                if ((coretable(y,CLidx) > 0 && temp > 0) ...
+                        ||(coretable(y,CLidx) < 0 && temp < 0)...
+                        ||(coretable(y,CLidx) == 0 && temp == 0))
+                    signCount = signCount + 1;
+                end
+                break;
+            end
+        end
+    end
+end
+originalSign = signCount/length(key);
+originalScore = tempScore;
+
+%run for all combinations of 0 to 1000 and -1000 to 0
 parfor x = 1 : 2^len
     recMod = rec2;
     aX = boolean(str2numvec(dec2bin(x - 1, len)));
@@ -97,6 +146,7 @@ parfor x = 1 : 2^len
     recMod.lbrxnsOfInt(rxnsOfInt(aX)) = -1000;
     recMod.ub(rxnsOfInt(aX)) = 0;
     [virrev vrev] = runFalcon(recMod, expressionFile, 0.01, false, 0);
+    vrev(:) = vrev(:)/abs(max(vrev));
     tempScore = 0;
     signCount = 0; 
     for y = 1 : length(metArray)
@@ -105,7 +155,8 @@ parfor x = 1 : 2^len
                 if (length(val{z})==1)
                     tempScore = tempScore + abs(coretable(y,CLidx)-vrev(val{z}));
                     if ((coretable(y,CLidx) > 0 && vrev(val{z}) > 0) ...
-                            ||(coretable(y,CLidx) < 0 && vrev(val{z}) < 0))
+                            ||(coretable(y,CLidx) < 0 && vrev(val{z}) < 0)...
+                            ||(coretable(y,CLidx) == 0 && vrev(val{z}) == 0))
                         signCount = signCount + 1;
                     end
                     break;
@@ -116,7 +167,8 @@ parfor x = 1 : 2^len
                     end
                     tempScore = tempScore + abs(coretable(y,CLidx)-temp);
                     if ((coretable(y,CLidx) > 0 && temp > 0) ...
-                            ||(coretable(y,CLidx) < 0 && temp < 0))
+                            ||(coretable(y,CLidx) < 0 && temp < 0)...
+                            ||(coretable(y,CLidx) == 0 && temp == 0))
                         signCount = signCount + 1;
                     end
                     break;
