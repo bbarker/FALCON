@@ -1,4 +1,4 @@
-unction dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix, nV)
+function dist = analyzeFalconForVariousIntensities (recMod, fileName, gene, rc, intenst, rxnNames, printPrefix, nV)
 % This function looks at the change in flux for a reaction(s) when the 
 % gene intensity value varies using Falcon. 
 
