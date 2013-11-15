@@ -305,7 +305,6 @@ while sum(~m.rev) > nR_old
     rGrpsUsed = 0;
     while k < nrxns
         k = k + 1;
-        d = r(k);
         s = r_sd(k);
         %objDenom = max(d, expZtol) * s;
         objDenom = s;
@@ -316,7 +315,7 @@ while sum(~m.rev) > nR_old
         else
             cons1 = r_group_cons(r_group(k));
         end
-        if ~m.rev(k) && ~isnan(d) && s > 0 %(s > 0 should always be true anyway)
+        if ~m.rev(k) && ~isnan(r(k)) && s > 0 %(s > 0 should always be true anyway)
             if first_r_group_visited <= 0
                 first_r_group_visited = r_group(k);
             end
@@ -330,12 +329,12 @@ while sum(~m.rev) > nR_old
             end
             %disp([k size(N,2) numel(NColLab) size(N,1) numel(b)])
             %First abs constaint:
-            N(cons1, nrxns + 1) = -d;  %This is the normalization variable
+            N(cons1, nrxns + 1) = -r(k);  %This is the normalization variable
             N(cons1, k) = 1;  
             N(cons1, s2 + 1) = -1;     %delta variable
             b(cons1) = 0;
             %Second abs constaint:
-            N(cons1 + 1, nrxns + 1) = d; %This is the normalization variable
+            N(cons1 + 1, nrxns + 1) = r(k); %This is the normalization variable
             N(cons1 + 1, k) = -1;  
             N(cons1 + 1, s2 + 1) = -1;  %delta variable
             b(cons1 + 1) = 0;
@@ -344,7 +343,7 @@ while sum(~m.rev) > nR_old
                     U(s2 + 1) = inf;    % it is just the same has having -delta <= 0
             csense(cons1)   = 'L';
             csense(cons1 + 1) = 'L';
-            fUpdate = fUpdate - abs(v_orig(k) - d)/objDenom;
+            fUpdate = fUpdate - abs(v_orig(k) - r(k))/objDenom;
             if FDEBUG
                 NRowLab{cons1} = ['RG_' num2str(r_group(k))];
                 NRowLab{cons1 + 1} = ['RG_' num2str(r_group(k))];
