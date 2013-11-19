@@ -740,7 +740,7 @@ fun dlist_sum_var (inset: !genes, emap: &gDMap, smap: &gDMap): (double, double) 
   cvar: double): (int, double, double) = case+ rlist of
     | list_cons (x, xs) => let
         val xval = gDMap_find(emap, x)
-        val sval = gDMap_find(smap, x)
+        val sval = pow(gDMap_find(smap, x), 2.0)
         //Negative values mean the gene wasn't in the dataset:
         val miss = if (xval < 0.0 orelse (xval <> xval)) then miss+1 else miss 
         val csum = if (xval < 0.0 orelse (xval <> xval)) then csum else csum + xval
