@@ -16,7 +16,7 @@ function vRev = convertIrrevFluxDistribution(vIrrev, matchRev)
 % Markus Herrgard 1/30/07
 %
 % Brandon Barker, Yiping Wang 6/23/2013
-% Updated to correctly negate strictly backward reactions
+%     - correctly negate strictly backward reactions
 % 
 processedFlux = false*ones(length(vIrrev),1);
 
