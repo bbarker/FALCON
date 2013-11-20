@@ -116,7 +116,7 @@ end
            rxn_rule_group, REG, 0, EXPCON, FDBG);
 
 v_solirrev';
-v_solrev = convertIrrevFluxDistribution(m, v_solirrev, matchRev)';
+v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev)';
 
 % There are two linear pathways that are possible here:
 % v_2 or v_3_b and v_4_b, or both
@@ -154,7 +154,7 @@ rxn_exp_0loop(5:8) = 0;
              rxn_rule_group, REG, 0, EXPCON, FDBG);
 
 v_solirrev_0loop';
-v_solrev_0loop = convertIrrevFluxDistribution(m, v_solirrev_0loop, matchRev)';
+v_solrev_0loop = convertIrrevFluxDistribution(v_solirrev_0loop, matchRev)';
 
 % It should be the case that reactions F_3 and F_4 are zero, but not F_2:
 if any(v_solrev_0loop(3:4)) && ~any(v_solrev_0loop(2))
@@ -184,8 +184,7 @@ for i = expInit:branchMaxExp
           falcon(mI, rxn_exp_branch, rxn_exp_sd,  ...
                  rxn_rule_group, REG, 0, EXPCON, FDBG);
     v_solrev_branch_pre = v_solrev_branch;
-    v_solrev_branch = convertIrrevFluxDistribution(m,    ...
-                          v_solirrev_branch, matchRev)';
+    v_solrev_branch = convertIrrevFluxDistribution(v_solirrev_branch, matchRev)';
     if i > expInit;
         if all(abs(v_solrev_branch(3:4) - v_solrev_branch_pre(3:4)) < erTol)
             vF3F4_inc = [vF3F4_inc 0];

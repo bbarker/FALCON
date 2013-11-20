@@ -64,7 +64,7 @@ if norm(v,1) < 1e-7
     return;
 end
 
-vrev = convertIrrevFluxDistribution(model, v, matchRev);
+vrev = convertIrrevFluxDistribution(v, matchRev);
 
 % = simpleTruncatedNorm(sigma, a, b, , mu)
 Zthresh = 1e-6;
@@ -89,7 +89,7 @@ parfor i = 1:reps
     [v_p, corrval_p] = falcon(modelIrrev, rxn_exp_p, rxn_exp_sd, rxn_rule_group, ...
                               regC, minFit, expCon);
     TimeRec(i) = toc(trec);
-    vrev_p = convertIrrevFluxDistribution(model, v_p, matchRev);
+    vrev_p = convertIrrevFluxDistribution(v_p, matchRev);
     PcorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Pearson');
     ScorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Spearman'); 
     KcorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Kendall');

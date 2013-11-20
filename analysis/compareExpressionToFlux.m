@@ -26,7 +26,7 @@ FDEBUG = 0;
 
 v_solirrev = falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
                     rxn_rule_group, 0.01, 0, EXPCON, FDEBUG);
-v_solrev = convertIrrevFluxDistribution(model, v_solirrev, matchRev);
+v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);
 
 function sumout = mysum(x)
     if numel(x) == 0

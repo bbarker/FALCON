@@ -15,4 +15,4 @@ WTflux = convertToIrreversibleFluxVector(modelIrrev, irrev2rev, WTflux);
                                 zeros(length(modelIrrev.rxns), 1), ...
                                 rxnListIrrev);
 v_solirrev = solutionDel.x;
-v_solrev = convertIrrevFluxDistribution(model, v_solirrev, matchRev);
+v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);

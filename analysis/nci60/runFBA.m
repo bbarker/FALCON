@@ -20,4 +20,4 @@ function [v_solirrev v_solrev] = runFBA(model)
 modelIrrev = changeObjective(modelIrrev, 'biomass_reaction');
 solutionStructIrrev = optimizeCbModel(modelIrrev, 'max');
 v_solirrev = solutionStructIrrev.x;
-v_solrev = convertIrrevFluxDistribution(model, v_solirrev, matchRev);
+v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);

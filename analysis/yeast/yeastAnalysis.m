@@ -63,7 +63,7 @@ if find(strcmp(methodList, 'FALCON'))
         [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
             rxn_exp_irr, rxn_exp_sd_irr, rxn_rule_group, regC, minFit, expCon);
     end
-    v_falcon = convertIrrevFluxDistribution(model, v_falconIrr, matchRev);
+    v_falcon = convertIrrevFluxDistribution(v_falconIrr, matchRev);
     timing.falcon = toc;
     save([genedata_filename '_falcon_flux.mat'], 'v_falcon');
 else

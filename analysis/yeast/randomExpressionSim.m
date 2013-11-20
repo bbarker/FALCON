@@ -51,7 +51,7 @@ end
     computeMinDisj(modelIrrev, expFile);
 [v_falconIrrRef, corrval_falconRef] = falcon(modelIrrev,    ...
     rxn_expRef, rxn_exp_sdRef, rxn_rule_groupRef, regC, minFit, expCon);
-v_falconRef = convertIrrevFluxDistribution(model, v_falconIrrRef, matchRev);
+v_falconRef = convertIrrevFluxDistribution(v_falconIrrRef, matchRev);
 disp(['v_fNormRef = ' num2str(norm(v_falconRef, 1))]);
 
 % compare
@@ -115,7 +115,7 @@ parfor i = 1:nSims
         computeMinDisj(modelIrrev, tmpFileName);
     [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
         rxn_exp, rxn_exp_sd, rxn_rule_group, regC, minFit, expCon);
-    v_falcon = convertIrrevFluxDistribution(model, v_falconIrr, matchRev);
+    v_falcon = convertIrrevFluxDistribution(v_falconIrr, matchRev);
     delete(tmpFileName);
 %    if exist('experimental_fluxes_filename', 'var') 
 %    No way to test for existence in parfor?
