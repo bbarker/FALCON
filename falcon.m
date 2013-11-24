@@ -89,10 +89,6 @@ MASSPROD = false;
 
 t_falcon = tic;
 
-%Need to take into account this isn't a rev model,
-% so this won't work: 
-%boundsRev = sign(m.lb .* m.ub) < 0;
-%boundsRev = m.rev;
 boundsRev = getBoundsRev(m);
 
 if ~exist('FDEBUG', 'var')
