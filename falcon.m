@@ -89,6 +89,12 @@ MASSPROD = false;
 
 t_falcon = tic;
 
+%Need to take into account this isn't a rev model,
+% so this won't work: 
+%boundsRev = sign(m.lb .* m.ub) < 0;
+%boundsRev = m.rev;
+boundsRev = getBoundsRev(m);
+
 if ~exist('FDEBUG', 'var')
     FDEBUG = false;
 end
@@ -113,7 +119,7 @@ notnan_r = ~isnan(r);
 % this seems to be a good approximation:
 
 minUB = min(m.ub(m.ub > 0));
-flux_sum = sum(~m.rev & notnan_r)*minUB;
+flux_sum = sum(~boundsRev & notnan_r)*minUB;
 %flux_sum = min(m.ub(m.ub > 0)) / 2
 if flux_sum == 0
     flux_sum = mean(m.ub(m.ub > 0))/2
@@ -165,7 +171,6 @@ m.lb(m.c == 1) = minFit;
 
 rxnhasgene = (sum(m.rxnGeneMat')~=0);
 
-%rev = false(size(m.rxns));
 corrval = nan;
 nR_old = 0;
 v_sol = zeros(size(m.rxns));
@@ -174,11 +179,11 @@ conv = 0;
 nvar = nan;
 fUpdate = 0;
 rGrpsUsed = 0;
-while sum(~m.rev) > nR_old
+while sum(~boundsRev) > nR_old
     cnt = cnt + 1;
-    nR_old = sum(~m.rev); 
-    % nnnanrev = sum((notnan_r) & m.rev) / 2;
-    nnan_irr = r_group(notnan_r & ~m.rev);
+    nR_old = sum(~boundsRev); 
+    % nnnanrev = sum((notnan_r) & boundsRev) / 2;
+    nnan_irr = r_group(notnan_r & ~boundsRev);
     nnnan_irr = length(intersect(nnan_irr, nnan_irr));
     % Used for an alternative problem that incorporates
     % reversible reactions.
@@ -278,7 +283,7 @@ while sum(~m.rev) > nR_old
     for k = 1:length(ecrxns)
         N(s1+1, ecrxns(k)) = -1;
     end
-    flux_sum = sum(~m.rev & notnan_r)*minUB;
+    flux_sum = sum(~boundsRev & notnan_r)*minUB;
     N(s1 + 1, nrxns + 2) = flux_sum;
     %b(s1 + 1) = flux_sum;
     b(s1 + 1) = 0; 
@@ -315,7 +320,7 @@ while sum(~m.rev) > nR_old
         else
             cons1 = r_group_cons(r_group(k));
         end
-        if ~m.rev(k) && ~isnan(r(k)) && s > 0 %(s > 0 should always be true anyway)
+        if ~boundsRev(k) && ~isnan(r(k)) && s > 0 %(s > 0 should always be true anyway)
             if first_r_group_visited <= 0
                 first_r_group_visited = r_group(k);
             end
@@ -367,7 +372,7 @@ end
 
 if 1
     if FDEBUG
-        disp(['Not Reversible: ' num2str(sum(~m.rev))]);
+        disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN, ...
                                                   FDEBUG, NRowLab, NColLab, cnt);
@@ -385,21 +390,21 @@ end
 % should help this to some extent, but again the numerics are tricky.
 
 if 0
-    revRxns = find(m.rev);
+    revRxns = find(boundsRev);
     if numel(revRxns) > 0
         firstRevRxn = revRxns(1);
         FLsave = L(firstRevRxn);
         FUsave = U(firstRevRxn);
         BLsave = L(firstRevRxn + 1);
         BUsave = U(firstRevRxn + 1);
-        m.rev(firstRevRxn) = 0;
-        m.rev(firstRevRxn + 1) = 0;
+        boundsRev(firstRevRxn) = 0;
+        boundsRev(firstRevRxn + 1) = 0;
         % Do forward = 0 first:
         m.lb(firstRevRxn) = 0;
         m.ub(firstRevRxn) = 0;
     end
     if FDEBUG
-        disp(['Not Reversible: ' num2str(sum(~m.rev))]);
+        disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN, ...
                                                   FDEBUG, NRowLab, NColLab, cnt);
@@ -416,7 +421,7 @@ if 0
         U(firstRevRxn + 1) = 0;
     end
     if FDEBUG
-        disp(['Not Reversible: ' num2str(sum(~m.rev))]);
+        disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN, ...
                                                   FDEBUG, NRowLab, NColLab, cnt);
@@ -426,10 +431,10 @@ if 0
     end
     L(firstRevRxn + 1) = BLsave;
     U(firstRevRxn + 1) = BUsave;
-    irrev_nz_f = sum(v_f(find(~m.rev)) ~= 0)
-    irrev_nz_b = sum(v_b(find(~m.rev)) ~= 0)
-    nNZE_f = countNonZeroEq(v_f, m.rev, nrxns)
-    nNZE_b = countNonZeroEq(v_b, m.rev, nrxns)
+    irrev_nz_f = sum(v_f(find(~boundsRev)) ~= 0)
+    irrev_nz_b = sum(v_b(find(~boundsRev)) ~= 0)
+    nNZE_f = countNonZeroEq(v_f, boundsRev, nrxns)
+    nNZE_b = countNonZeroEq(v_b, boundsRev, nrxns)
     if (fOpt_f / irrev_nz_f > fOpt_b / irrev_nz_b)
         [v, fOpt, conv, vbasN, cbasN] = deal(v_f, fOpt_f, conv_f, vbasN_f, cbasN_f);
         m.lb(firstRevRxn + 1) = 0;
@@ -455,17 +460,18 @@ end % of if 1/0
         v_sol = v_orig(1:nrxns);
         v_all = [v_all v_sol];
         nvar = v_orig(nrxns + 1);
-        [m.lb m.ub m.rev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, m.rev, nrxns, cnt, m);
+        [m.lb m.ub boundsRev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, ...
+                                    boundsRev, nrxns, cnt, m);
         if FDEBUG
             disp('New nvar, zvar is:');
             disp([nvar v(nrxns + 2)]);
             disp('First 15 fluxes:')
             disp(v_sol(1:15)');
             disp('Num Irrev, Previous Num Irrev:')
-            disp([sum(~m.rev) nR_old]);
+            disp([sum(~boundsRev) nR_old]);
         end    
     end
-end % end of while sum(~m.rev) > nR_old
+end % end of while sum(~boundsRev) > nR_old
 
 falconTime = toc(t_falcon);
 if conv
@@ -592,7 +598,6 @@ if conv
     end
 end
 end % of easyLP
-
 
 
 function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, cnt, m)
