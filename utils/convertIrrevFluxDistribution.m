@@ -35,8 +35,9 @@ for i = 1:length(vIrrev)
                 vRev(vRevlen+1) = vIrrev(i);
 	    end
         else
-            disp(['Warning: rev_rxn ' num2str(vRevlen+1) ', irrev rxn ' ...
-                  num2str(i) ' missed in matchRev.']);
+            vRev(vRevlen+1) = vIrrev(i);
+            %disp(['Warning: rev_rxn ' num2str(vRevlen+1) ', irrev rxn ' ...
+            %      num2str(i) ' missed in matchRev.']);
         end
         processedFlux(i) = true;
     end
