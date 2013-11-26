@@ -8,6 +8,10 @@ function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
 
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
+if length(methodList) < 1
+    methodList = allMethods;
+end
+
 %Whether to use new complexation method in Lee method
 useMinDisj = true;
 expCon = false;
@@ -82,6 +86,10 @@ fOpt            = solution.f;
 
 
 if find(strcmp(methodList, 'GIMME'))
+    if ~exist('rxn_exp', 'var')
+        [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
+            gene_exp, gene_exp_sd);
+    end
     disp('Running GIMME ...');
     % "required metabolic functionalities" (=growth) set to 90% of maximum
     model.lb(model.c == 1)	= 0.9*fOpt;
@@ -97,6 +105,10 @@ end
 
 % shlomi
 if find(strcmp(methodList, 'Shlomi'))
+    if ~exist('rxn_exp', 'var')
+        [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
+            gene_exp, gene_exp_sd);
+    end
     disp('Running Shlomi ...');
     tic;
     v_shlomi    	= shlomi(model, rxn_exp);
@@ -110,8 +122,10 @@ end
 
 % !!! Warning, this code block modifies the model! run last for now
 if find(strcmp(methodList, 'eMoMA'))
-    [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
-        gene_exp, gene_exp_sd);
+    if ~exist('rxn_exp', 'var')
+        [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
+            gene_exp, gene_exp_sd);
+    end
     % scale by uptake reaction
     uptake              = find(strcmp(gene_to_scale,model.rxnNames));
     rxn_exp_sd          = rxn_exp_sd/rxn_exp(uptake);
