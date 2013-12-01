@@ -599,6 +599,9 @@ for k = 1:length(gene_exp)
 end
 
 solution        = optimizeCbModel(model,[],'one');
+if numel(solution.x) < 1
+    solution.x = zeros(size(model.lb));
+end
 v_sol = solution.x(1:length(model.rxns));
 
 function v_sol = shlomi(model,rxn_exp)
