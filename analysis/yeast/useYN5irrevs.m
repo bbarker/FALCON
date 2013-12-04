@@ -1,11 +1,12 @@
-function [ynOut, ynBoundChanges] = useYN5irrevs(yn5, ynNew, leaveOut)
+function [ynOut, ynBoundChanges] = useYN5irrevs(yn5, ynNew, leaveOut, noDir)
 % since we require some irreversible reactions to start ...
 % get these from the published paper.
 
 % Just in case it hasn't been run:
-yn5   = removeEnzymeIrrevs(yn5);
-ynNew = removeEnzymeIrrevs(ynNew);
-
+if ~exist('noDir', 'var')
+    yn5   = removeEnzymeIrrevs(yn5);
+    ynNew = removeEnzymeIrrevs(ynNew);
+end
 
 ynOut = ynNew;
 ynLBOldIdx = [];
