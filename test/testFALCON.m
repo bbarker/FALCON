@@ -185,6 +185,7 @@ for i = expInit:branchMaxExp
                  rxn_rule_group, REG, 0, EXPCON, FDBG);
     v_solrev_branch_pre = v_solrev_branch;
     v_solrev_branch = convertIrrevFluxDistribution(v_solirrev_branch, matchRev)';
+    %v_solrev_branch
     if i > expInit;
         if all(abs(v_solrev_branch(3:4) - v_solrev_branch_pre(3:4)) < erTol)
             vF3F4_inc = [vF3F4_inc 0];
@@ -199,11 +200,15 @@ for i = expInit:branchMaxExp
 end
 % Now we check that as expression through the branch increases
 % flux through the branch increases at least once and never decreases
+% Note: this test sometimes fails due to cycles, which, is an area for
+% for future improvement, possibly using thermodynamic methods.
 if any(vF3F4_inc == 1) && ~any(vF3F4_inc == -1)
     disp('Test succeeded for expression-dependent branching.');
+    %vF3F4_inc
     numSucc = numSucc + 1;
 else
     disp('Test FAILED for expression-dependent branching.');
+    %vF3F4_inc
     numFail = numFail + 1;
     %vF3F4_inc %for debugging
 end

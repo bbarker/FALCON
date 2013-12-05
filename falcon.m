@@ -175,6 +175,8 @@ conv = 0;
 nvar = nan;
 fUpdate = 0;
 rGrpsUsed = 0;
+flux_sum_pri = flux_sum;
+v_pri = [];
 while sum(~boundsRev) > nR_old
     cnt = cnt + 1;
     nR_old = sum(~boundsRev); 
@@ -279,7 +281,10 @@ while sum(~boundsRev) > nR_old
     for k = 1:length(ecrxns)
         N(s1+1, ecrxns(k)) = -1;
     end
-    flux_sum = sum(~boundsRev & notnan_r)*minUB;
+    if numel(v_pri) > 0
+        flux_sum_pri = sum(v_pri(ecrxns));
+    end
+    flux_sum = min(sum(~boundsRev & notnan_r)*minUB, flux_sum_pri);
     N(s1 + 1, nrxns + 2) = flux_sum;
     %b(s1 + 1) = flux_sum;
     b(s1 + 1) = 0; 
@@ -448,6 +453,7 @@ end % of if 1/0
         disp([fOpt v(nrxns + 1) v(nrxns + 1)]);
     end
     if conv
+        v_pri = v;
         v_orig = v;
         if v(nrxns + 2) ~= 0
             v_orig = v / v(nrxns + 2); %Transform to original
@@ -551,6 +557,10 @@ if any(isnan(b))
 end
 
 params.method = 1;
+%params.OptimalityTol = 1e-9;  %Maybe some of these need to be set
+%params.FeasibilityTol = 1e-9; %according to LFP scaling
+%params.ScaleFlag = 0;
+%params.MarkowitzTol = 0.99;
 if nargin > 6 && length(vbas) > 0
     %params.vbasis = zeros(1, length(vlb));
     %params.vbasis(1:length(vbas)) = vbas;
@@ -598,6 +608,9 @@ if conv
                                csense, v(j1));
         end
     end
+else
+   solstat = solution.stat
+   sol = solution.full   
 end
 end % of easyLP
 
