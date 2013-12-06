@@ -557,11 +557,11 @@ if any(isnan(b))
     error('nan inputs not allowed: something went wrong');
 end
 
-params.method = 1;
+params.method = 3;
 %params.OptimalityTol = 1e-9;  %Maybe some of these need to be set
 %params.FeasibilityTol = 1e-9; %according to LFP scaling
 %params.ScaleFlag = 0;
-params.MarkowitzTol = 0.99;
+%params.MarkowitzTol = 0.99;
 if nargin > 6 && length(vbas) > 0
     %params.vbasis = zeros(1, length(vlb));
     %params.vbasis(1:length(vbas)) = vbas;
