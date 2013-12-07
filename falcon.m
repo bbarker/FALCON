@@ -2,7 +2,6 @@ function [v_sol, corrval, nvar, v_all] = ...
     falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG)
 
 TESTING = false;
-
 % If true, allow S*v >= 0 instead of S*v == 0.
 MASSPROD = false;
 
@@ -118,12 +117,11 @@ minUB = min(m.ub(m.ub > 0));
 flux_sum = sum(~boundsRev & notnan_r)*minUB;
 %flux_sum = min(m.ub(m.ub > 0)) / 2
 if flux_sum == 0
-    flux_sum = mean(m.ub(m.ub > 0))/2
+    flux_sum = mean(m.ub(m.ub > 0))/2;
 end
 if FDEBUG
     flux_sum
 end
-
 
 % Typically required to be >= 0, we can require strict positivity
 % due to having non-affine in our LFP.
@@ -143,6 +141,8 @@ r_sum = sum(r(notnan_r));
 r_pri_max = max(r);
 r             = flux_sum * r / r_sum;
 r_sd          = flux_sum * r_sd / r_sum;
+%r             = r / r_sum;
+%r_sd          = r_sd / r_sum;
 if FDEBUG
     disp('Sum new r:');
     disp(sum(r(notnan_r)));
@@ -230,7 +230,7 @@ while sum(~boundsRev) > nR_old
     f(s2 + 1) = 0;
     f(s2 + 2) = 0;
     s2 = s2 + 2;
-
+    
     %Add unitary constraint for denominator (see B&V 4.32).
     csense(s1 + 1) = 'E';
     N(s1 + 1, nrxns + 1) = 1;
@@ -316,6 +316,10 @@ while sum(~boundsRev) > nR_old
         else
             cons1 = r_group_cons(r_group(k));
         end
+	%k
+	%~boundsRev(k)
+	%~isnan(r(k))
+	%s>0
         if ~boundsRev(k) && ~isnan(r(k)) && s > 0 %(s > 0 should always be true anyway)
             if first_r_group_visited <= 0
                 first_r_group_visited = r_group(k);
@@ -442,7 +446,6 @@ if 0
     end
 end % of if 1/0
 
-   
     if FDEBUG
         disp('fOpt, n, z:');
         disp([fOpt v(nrxns + 1) v(nrxns + 1)]);

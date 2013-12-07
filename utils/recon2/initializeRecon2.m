@@ -14,7 +14,7 @@ end
 
 %Assign description if it doesn't exist
 if ~isfield(rec2,'description')
-  rec2.description = 'human_recon_2'
+  rec2.description = 'human_recon_2';
 end
 
 % Unconstrain reactions (namely boundary reactions) % This may be

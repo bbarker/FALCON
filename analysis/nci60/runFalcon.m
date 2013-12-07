@@ -31,9 +31,39 @@ if ~exist('FDEBUG', 'var')
 end
 
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
+
 [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
     computeMinDisj(modelIrrev, expressionFile);
 
 [v_solirrev corral]= falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
                     rxn_rule_group, rc, 0, EXPCON, FDEBUG);
+for i=1:length(modelIrrev.rxns)
+  %disp([modelIrrev.rxns{i} ' ' num2str(v_solirrev(i))]);
+end
 v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);
+
+curatedRxnNames={'HEX1','PGI','PFK','FBA','TPI','GAPD','PGK','PGM','ENO','PYK','LDH_L','G6PDH2c','G6PDH2r','PGL','PGLc','GND','GNDc','RPI','RPE','RPEc','TALA','TKT1','TKT2','PRPPS','GLUPRT','PRAGSr','GARFT','PRFGS','r0666','AIRCr','PRASCS','ADSL2','AICART','IMPC'};
+glycolysisRxnNames=model.rxns(strcmp(model.subSystems,'Glycolysis/gluconeogenesis'));
+pentosePhosphateRxnNames=model.rxns(strcmp(model.subSystems,'Pentose phosphate pathway'));
+purineSynthesisRxnNames=model.rxns(strcmp(model.subSystems,'Purine synthesis'));
+citricAcidCycleRxnNames=model.rxns(strcmp(model.subSystems,'Citric acid cycle'));
+oxidativePhosphorylationRxnNames=model.rxns(strcmp(model.subSystems,'Oxidative phosphorylation'));
+curatedRxnNames=[glycolysisRxnNames; pentosePhosphateRxnNames; purineSynthesisRxnNames; oxidativePhosphorylationRxnNames; citricAcidCycleRxnNames];
+curatedRxnFluxes=zeros(1,length(curatedRxnNames));
+outputFI=fopen('../rxnsToShow.txt','w');
+for i=1:length(model.rxns)
+  curatedRxnIdx=find(strcmp(model.rxns{i},curatedRxnNames));
+  if(sum(strcmp(model.rxns{i},curatedRxnNames))~=0)
+    disp([model.rxns{i} ' ' num2str(v_solrev(i))]);
+  end
+  if(sum(strcmp(model.rxns{i},curatedRxnNames))==0 && abs(v_solrev(i))>0 && sum(strfind(model.rxns{i},'TR_'))==0)
+    %disp([model.rxns{i} ' ' num2str(v_solrev(i))]);
+    %fprintf(outputFI,'%s\n',model.rxns{i});
+  end
+  curatedRxnFluxes(curatedRxnIdx)=v_solrev(i);
+  if(sum(strfind(model.rxns{i},'TR_'))~=0)
+    disp([model.rxns{i} ' ' num2str(v_solrev(i))]);
+  end
+end
+
+%makeBarGraph(1:length(curatedRxnNames),curatedRxnFluxes,1:length(curatedRxnNames),curatedRxnNames,[-1000 1000],'curatedRxnFluxes','../curatedRxnFluxes.png');

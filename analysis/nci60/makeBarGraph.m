@@ -1,5 +1,6 @@
 function makeBarGraph(x,y,xTicks,xTickLabels,yLims,aTitle,saveLoc)
 figure('Position',[300, 300, 2000, 500],'Visible','off');
+set(gcf,'PaperPositionMode','auto');
 a=bar(x,y,0.5);
 set(gca,'XTickLabel',xTickLabels);
 set(gca,'XTick',xTicks);
