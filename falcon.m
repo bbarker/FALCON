@@ -1,5 +1,5 @@
 function [v_sol, corrval, nvar, v_all] = ...
-    falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG)
+    falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG, LPmeth)
 
 TESTING = false;
 
@@ -97,6 +97,9 @@ end
 if ~exist('EXPCON', 'var')
     EXPCON = true;
 end
+if ~exist('LPmeth', 'var')
+    LPmeth = 1; % dual-simplex for gurobi
+end
 
 nrxns = length(m.rxns);
 nmets = length(m.mets);
@@ -126,8 +129,10 @@ end
 
 
 % Typically required to be >= 0, we can require strict positivity
-% due to having non-affine in our LFP.
-ZMIN = 0.0001;
+% due to having non-affine in our LFP. Currently this is not the
+% case, but check CC (Charnes Cooper) comments.
+%ZMIN = 0.0001;
+ZMIN = 0;
 
 rgrp_notnan = r_group(notnan_r);
 vbasN = [];
@@ -139,7 +144,9 @@ ngroups = union(r_group, 1);
 v_all = [];
 
 ecrxns = find(any(m.rxnGeneMat, 2));
-r_sum = sum(r(notnan_r));
+% Initial scaling may have some effect on initial
+% alternative optima:
+r_sum = sum(r(notnan_r)); 
 r_pri_max = max(r);
 r             = flux_sum * r / r_sum;
 r_sd          = flux_sum * r_sd / r_sum;
@@ -285,11 +292,14 @@ while sum(~boundsRev) > nR_old
         flux_sum_pri = sum(v_pri(ecrxns));
     end
     %flux_sum = min(sum(~boundsRev & notnan_r)*minUB, 0.75*flux_sum_pri);
-    flux_sum = 0.99*flux_sum_pri;
+    %flux_sum = 0.99*flux_sum_pri;
+    % CC-transformed version:
     N(s1 + 1, nrxns + 2) = flux_sum;
-    %b(s1 + 1) = flux_sum;
     b(s1 + 1) = 0; 
     csense(s1 + 1) = 'L';
+    % Non-CC transformed version:
+    %b(s1 + 1) = -flux_sum;
+    %csense(s1 + 1) = 'L';
     if FDEBUG
         NRowLab{s1 + 1} = 'FlxSum';
     end
@@ -375,12 +385,12 @@ end
 if 1
     if FDEBUG
         disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN, ...
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,                   ...
+                                                  csense, vbasN, cbasN, LPmeth,  ...
                                                   FDEBUG, NRowLab, NColLab, cnt);
     else
         [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN);
+                                                  csense, vbasN, cbasN, LPmeth);
     end
 end
 
@@ -407,12 +417,12 @@ if 0
     end
     if FDEBUG
         disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-        [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN, ...
+        [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,         ...
+                                                  csense, vbasN, cbasN, LPmeth, ...
                                                   FDEBUG, NRowLab, NColLab, cnt);
     else
         [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN);
+                                                  csense, vbasN, cbasN, LPmeth);
     end
 
     % Do backward = 0:
@@ -424,12 +434,12 @@ if 0
     end
     if FDEBUG
         disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-        [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN, ...
+        [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,         ...
+                                                  csense, vbasN, cbasN, LPmeth, ...
                                                   FDEBUG, NRowLab, NColLab, cnt);
     else
         [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN);
+                                                  csense, vbasN, cbasN, LPmeth);
     end
     L(firstRevRxn + 1) = BLsave;
     U(firstRevRxn + 1) = BUsave;
@@ -451,7 +461,7 @@ end % of if 1/0
    
     if FDEBUG
         disp('fOpt, n, z:');
-        disp([fOpt v(nrxns + 1) v(nrxns + 1)]);
+        disp([fOpt v(nrxns + 1) v(nrxns + 2)]);
     end
     if conv
         v_pri = v;
@@ -461,7 +471,7 @@ end % of if 1/0
             corrval = fOpt / v(nrxns + 2);
         end
         v_sol = v_orig(1:nrxns);
-        v_all = [v_all v_sol];
+        v_all = [v_all columnVector(v(1 : nrxns + 2))];
         nvar = v_orig(nrxns + 1);
         [m.lb m.ub boundsRev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, ...
                                     boundsRev, nrxns, cnt, m);
@@ -486,8 +496,8 @@ else
 end
 end % of falcon
 
-function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense, ...
-                                                vbas, cbas, FDEBUG,        ...
+function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense,  ...
+                                                vbas, cbas, LPmeth, FDEBUG, ...
                                                 rowLabels, colLabels, cnt)
 %
 %easyLP
@@ -557,7 +567,7 @@ if any(isnan(b))
     error('nan inputs not allowed: something went wrong');
 end
 
-params.method = 3;
+params.method = LPmeth;
 %params.OptimalityTol = 1e-9;  %Maybe some of these need to be set
 %params.FeasibilityTol = 1e-9; %according to LFP scaling
 %params.ScaleFlag = 0;

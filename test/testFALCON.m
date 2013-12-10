@@ -38,7 +38,7 @@ function testFALCON(FDBG)
 % Brandon Barker    Oct 10, 2013
 
 
-EXPCON = 1;
+EXPCON = 0;
 REG = 0;
 erTol = 1e-9;
 
@@ -213,6 +213,23 @@ else
     %vF3F4_inc %for debugging
 end
 
+rxn_exp10 = 10*rxn_exp;
+[v_solirrev_10exp, corrval, nvar, v_all] =   ...
+      falcon(mI, rxn_exp10, rxn_exp_sd,  ...
+             rxn_rule_group, REG, 0, EXPCON, FDBG);
+z = v_all(nrxns + 2, end);
+n = v_all(nrxns + 1, end);
+if z >= 1
+    %Since the expression is larger than the ub in all cases,
+    %it should be scalled down, i.e., z > 1
+    disp('Test FAILED for LFP scaling.');
+    numFail = numFail + 1;
+else
+    disp('Test succeeded for LFP scaling.');
+    numSucc = numSucc + 1;
+end
+
 disp(' '); disp(' ');
 disp('Number of Failed and Successful tests: ');
 disp([numFail numSucc]);
+

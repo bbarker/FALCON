@@ -1,5 +1,5 @@
 function [v_solirrev v_solrev corrval] = ...
-    runFalcon(model, expressionFile, rc, EXPCON, FDEBUG)
+      testModelData(model, expressionFile, FDEBUG)
 %INPUT
 % model (the following fields are required - others can be supplied)
 %   S            Stoichiometric matrix
@@ -23,17 +23,20 @@ function [v_solirrev v_solrev corrval] = ...
 % v_solrev      reversible flux vector
 %
 %
-% Yiping Wang    09/08/13
-% Brandon Barker 09/15/2013  Now calls convertIrrevFluxDistribution
+% Brandon Barker  - based on runFalcon.m
 
+minFit = 0;
+EXPCON = false;
+rc = 0;
 if ~exist('FDEBUG', 'var')
     FDEBUG = false;
 end
+
 
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
     computeMinDisj(modelIrrev, expressionFile);
 
 [v_solirrev corral]= falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
-                    rxn_rule_group, rc, 0, EXPCON, FDEBUG);
+                    rxn_rule_group, rc, minFit, EXPCON, FDEBUG);
 v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);
