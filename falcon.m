@@ -206,6 +206,7 @@ while sum(~boundsRev) > nR_old
     %  cols:    nrxns + n + z + exp residual vars
     N = spalloc(nmets + 1       + 2*nrxns      + 1        + 2*nnnan_irr   + 1, ...
                 nrxns + 1 + 1 + nnnan_irr            , floor(2.3*nSnz));
+    dimFail = false;
     if FDEBUG
         sz_N = size(N)
     end
@@ -379,7 +380,10 @@ while sum(~boundsRev) > nR_old
     end
 
 if ~all(sz_N == size(N)) || sz_N(1) ~= numel(b) || sz_N(2) ~= numel(L)
+    %This seems to only occur very rarely with highly perturbed data,
+    %but more investigation may prove insightful. 
     disp('WARNING: mismatch in estimated and actual dimension detected!!!');
+    dimFail = true;
     sz_N
     sz_N_new = size(N)
     blen = numel(b)
@@ -387,82 +391,83 @@ if ~all(sz_N == size(N)) || sz_N(1) ~= numel(b) || sz_N(2) ~= numel(L)
     save('size_debug.mat', 'r_group', 'r_sd', 'r');
 end
 
-if 1
-    if FDEBUG
-        disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,                   ...
-                                                  csense, vbasN, cbasN, LPmeth,  ...
-                                                  FDEBUG, NRowLab, NColLab, fIter);
-    else
-        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN, LPmeth);
-    end
-end
-
-% This seems to do more poorly because of how the score can be defined
-% by how well a single reaction matches - certainly it does bad in 
-% the test model, but it needs to be tested on recon 2 to
-% see if it is worth pursuing further. We also have to be careful not
-% to favor longer pathways where a shorter one will do - regularization
-% should help this to some extent, but again the numerics are tricky.
-
-if 0
-    revRxns = find(boundsRev);
-    if numel(revRxns) > 0
-        firstRevRxn = revRxns(1);
-        FLsave = L(firstRevRxn);
-        FUsave = U(firstRevRxn);
-        BLsave = L(firstRevRxn + 1);
-        BUsave = U(firstRevRxn + 1);
-        boundsRev(firstRevRxn) = 0;
-        boundsRev(firstRevRxn + 1) = 0;
-        % Do forward = 0 first:
-        m.lb(firstRevRxn) = 0;
-        m.ub(firstRevRxn) = 0;
-    end
-    if FDEBUG
-        disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-        [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,         ...
-                                                  csense, vbasN, cbasN, LPmeth, ...
-                                                  FDEBUG, NRowLab, NColLab, fIter);
-    else
-        [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN, LPmeth);
+if ~dimFail
+    if 1
+        if FDEBUG
+            disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
+            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,                   ...
+                                                      csense, vbasN, cbasN, LPmeth,  ...
+                                                      FDEBUG, NRowLab, NColLab, fIter);
+        else
+            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
+                                                      csense, vbasN, cbasN, LPmeth);
+        end
     end
 
-    % Do backward = 0:
-    if numel(revRxns) > 0
-        L(firstRevRxn) = FLsave;
-        U(firstRevRxn) = FUsave;
-        L(firstRevRxn + 1) = 0;
-        U(firstRevRxn + 1) = 0;
-    end
-    if FDEBUG
-        disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-        [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,         ...
-                                                  csense, vbasN, cbasN, LPmeth, ...
-                                                  FDEBUG, NRowLab, NColLab, fIter);
-    else
-        [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
-                                                  csense, vbasN, cbasN, LPmeth);
-    end
-    L(firstRevRxn + 1) = BLsave;
-    U(firstRevRxn + 1) = BUsave;
-    irrev_nz_f = sum(v_f(find(~boundsRev)) ~= 0)
-    irrev_nz_b = sum(v_b(find(~boundsRev)) ~= 0)
-    nNZE_f = countNonZeroEq(v_f, boundsRev, nrxns)
-    nNZE_b = countNonZeroEq(v_b, boundsRev, nrxns)
-    if (fOpt_f / irrev_nz_f > fOpt_b / irrev_nz_b)
-        [v, fOpt, conv, vbasN, cbasN] = deal(v_f, fOpt_f, conv_f, vbasN_f, cbasN_f);
-        m.lb(firstRevRxn + 1) = 0;
-        m.ub(firstRevRxn + 1) = 0;        
-    else
-        [v, fOpt, conv, vbasN, cbasN] = deal(v_b, fOpt_b, conv_b, vbasN_b, cbasN_b);
-        m.lb(firstRevRxn) = 0;
-        m.ub(firstRevRxn) = 0;
-    end
-end % of if 1/0
+    % This seems to do more poorly because of how the score can be defined
+    % by how well a single reaction matches - certainly it does bad in 
+    % the test model, but it needs to be tested on recon 2 to
+    % see if it is worth pursuing further. We also have to be careful not
+    % to favor longer pathways where a shorter one will do - regularization
+    % should help this to some extent, but again the numerics are tricky.
 
+    if 0
+        revRxns = find(boundsRev);
+        if numel(revRxns) > 0
+            firstRevRxn = revRxns(1);
+            FLsave = L(firstRevRxn);
+            FUsave = U(firstRevRxn);
+            BLsave = L(firstRevRxn + 1);
+            BUsave = U(firstRevRxn + 1);
+            boundsRev(firstRevRxn) = 0;
+            boundsRev(firstRevRxn + 1) = 0;
+            % Do forward = 0 first:
+            m.lb(firstRevRxn) = 0;
+            m.ub(firstRevRxn) = 0;
+        end
+        if FDEBUG
+            disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
+            [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,         ...
+                                                      csense, vbasN, cbasN, LPmeth, ...
+                                                      FDEBUG, NRowLab, NColLab, fIter);
+        else
+            [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
+                                                      csense, vbasN, cbasN, LPmeth);
+        end
+
+        % Do backward = 0:
+        if numel(revRxns) > 0
+            L(firstRevRxn) = FLsave;
+            U(firstRevRxn) = FUsave;
+            L(firstRevRxn + 1) = 0;
+            U(firstRevRxn + 1) = 0;
+        end
+        if FDEBUG
+            disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
+            [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,         ...
+                                                      csense, vbasN, cbasN, LPmeth, ...
+                                                      FDEBUG, NRowLab, NColLab, fIter);
+        else
+            [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
+                                                      csense, vbasN, cbasN, LPmeth);
+        end
+        L(firstRevRxn + 1) = BLsave;
+        U(firstRevRxn + 1) = BUsave;
+        irrev_nz_f = sum(v_f(find(~boundsRev)) ~= 0)
+        irrev_nz_b = sum(v_b(find(~boundsRev)) ~= 0)
+        nNZE_f = countNonZeroEq(v_f, boundsRev, nrxns)
+        nNZE_b = countNonZeroEq(v_b, boundsRev, nrxns)
+        if (fOpt_f / irrev_nz_f > fOpt_b / irrev_nz_b)
+            [v, fOpt, conv, vbasN, cbasN] = deal(v_f, fOpt_f, conv_f, vbasN_f, cbasN_f);
+            m.lb(firstRevRxn + 1) = 0;
+            m.ub(firstRevRxn + 1) = 0;        
+        else
+            [v, fOpt, conv, vbasN, cbasN] = deal(v_b, fOpt_b, conv_b, vbasN_b, cbasN_b);
+            m.lb(firstRevRxn) = 0;
+            m.ub(firstRevRxn) = 0;
+        end
+    end % of if 1/0
+end % of if ~dimFail
    
     if FDEBUG
         disp('fOpt, n, z:');
