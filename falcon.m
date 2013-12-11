@@ -1,4 +1,4 @@
-function [v_sol, corrval, nvar, v_all] = ...
+function [v_sol, corrval, nvar, v_all, fTime, fIter] = ...
     falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG, LPmeth)
 
 TESTING = false;
@@ -177,7 +177,7 @@ rxnhasgene = (sum(m.rxnGeneMat')~=0);
 corrval = nan;
 nR_old = 0;
 v_sol = zeros(size(m.rxns));
-cnt = 0;
+fIter = 0;
 conv = 0;
 nvar = nan;
 fUpdate = 0;
@@ -185,7 +185,7 @@ rGrpsUsed = 0;
 flux_sum_pri = flux_sum;
 v_pri = [];
 while sum(~boundsRev) > nR_old
-    cnt = cnt + 1;
+    fIter = fIter + 1;
     nR_old = sum(~boundsRev); 
     % nnnanrev = sum((notnan_r) & boundsRev) / 2;
     nnan_irr = r_group(notnan_r & ~boundsRev);
@@ -367,19 +367,24 @@ while sum(~boundsRev) > nR_old
                 NColLab{s2 + 1} = ['t_' num2str(r_group(k))];
             end    
             % Require the objective value to remain stable.
-            if TESTING && cnt > 1 && abs(corrval) > 0
+            if TESTING && fIter > 1 && abs(corrval) > 0
                 N(objPriorRow, s2 + 1) = 1/objDenom;
             end
 
         end %end of if not nan
     end %end while k < nrxns
     
-    if TESTING && cnt > 1 && abs(corrval) > 0
+    if TESTING && fIter > 1 && abs(corrval) > 0
         N(objPriorRow, nrxns + 2) = rGrpsUsed*(corrval / rGrpsPrev);
     end
 
 if ~all(sz_N == size(N)) || sz_N(1) ~= numel(b) || sz_N(2) ~= numel(L)
     disp('WARNING: mismatch in estimated and actual dimension detected!!!');
+    sz_N
+    sz_N_new = size(N)
+    blen = numel(b)
+    Llen = numel(L)
+    save('size_debug.mat', 'r_group', 'r_sd', 'r');
 end
 
 if 1
@@ -387,7 +392,7 @@ if 1
         disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,                   ...
                                                   csense, vbasN, cbasN, LPmeth,  ...
-                                                  FDEBUG, NRowLab, NColLab, cnt);
+                                                  FDEBUG, NRowLab, NColLab, fIter);
     else
         [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN, LPmeth);
@@ -419,7 +424,7 @@ if 0
         disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,         ...
                                                   csense, vbasN, cbasN, LPmeth, ...
-                                                  FDEBUG, NRowLab, NColLab, cnt);
+                                                  FDEBUG, NRowLab, NColLab, fIter);
     else
         [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN, LPmeth);
@@ -436,7 +441,7 @@ if 0
         disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,         ...
                                                   csense, vbasN, cbasN, LPmeth, ...
-                                                  FDEBUG, NRowLab, NColLab, cnt);
+                                                  FDEBUG, NRowLab, NColLab, fIter);
     else
         [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
                                                   csense, vbasN, cbasN, LPmeth);
@@ -474,7 +479,7 @@ end % of if 1/0
         v_all = [v_all columnVector(v(1 : nrxns + 2))];
         nvar = v_orig(nrxns + 1);
         [m.lb m.ub boundsRev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, ...
-                                    boundsRev, nrxns, cnt, m);
+                                    boundsRev, nrxns, m);
         if FDEBUG
             disp('New nvar, zvar is:');
             disp([nvar v(nrxns + 2)]);
@@ -486,19 +491,19 @@ end % of if 1/0
     end
 end % end of while sum(~boundsRev) > nR_old
 
-falconTime = toc(t_falcon);
+fTime = toc(t_falcon);
 if conv
-    disp(['FALCON: solver converged in ' num2str(falconTime) ' seconds and ' ...
-           num2str(cnt) ' iterations.']);
+    disp(['FALCON: solver converged in ' num2str(fTime) ' seconds and ' ...
+           num2str(fIter) ' iterations.']);
 else
-    disp(['FALCON: solver did NOT converge in ' num2str(falconTime) ...
-          ' seconds and ' num2str(cnt) ' iterations.']);
+    disp(['FALCON: solver did NOT converge in ' num2str(fTime) ...
+          ' seconds and ' num2str(fIter) ' iterations.']);
 end
 end % of falcon
 
 function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense,  ...
                                                 vbas, cbas, LPmeth, FDEBUG, ...
-                                                rowLabels, colLabels, cnt)
+                                                rowLabels, colLabels, fIter)
 %
 %easyLP
 %
@@ -545,7 +550,7 @@ vub = vub(:);
 
 % Do this after optimization below as well.
 if exist('rowLabels', 'var')
-    printFalconProblem(rowLabels, colLabels, cnt, a, b, vlb, vub, f, ...
+    printFalconProblem(rowLabels, colLabels, fIter, a, b, vlb, vub, f, ...
                        csense, 0);
 end
 
@@ -615,7 +620,7 @@ if conv
         % Print again in case optimization succeeded and we can print v
         colLabels(j2) = [];
         if exist('rowLabels', 'var')
-            printFalconProblem(rowLabels, colLabels, cnt + 0.1, a, b, vlb, vub, f, ...
+            printFalconProblem(rowLabels, colLabels, fIter + 0.1, a, b, vlb, vub, f, ...
                                csense, v(j1));
         end
     end
@@ -626,7 +631,7 @@ end
 end % of easyLP
 
 
-function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, cnt, m)
+function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, fIter, m)
 % Compute LB/UB for irrev AND rev model, as well as 
 % setting the corresponding rev vectors.
 %
@@ -674,7 +679,7 @@ while k < (nrxns-1)
 end
 end % of setRxnDirection
 
-function [iLB iUB isRev] = setFBRxnDirection(vI, iLB, iUB, isRev, nrxns, cnt, m)
+function [iLB iUB isRev] = setFBRxnDirection(vI, iLB, iUB, isRev, nrxns, m)
 % Compute LB/UB for irrev AND rev model, as well as 
 % setting the corresponding rev vectors.
 %

@@ -2,6 +2,18 @@ function rec2 = initializeRecon2(modelIn)
 % This script is used to set up default constraints
 % given any version of Human Recon 2.XX.
 
+%%% First we fix any specific problems in the model:
+maxBnd = max(modelIn.ub);
+zeroBndRxns = [];
+zeroBndRxns = [zeroBndRxns find(strcmp(modelIn.rxns, 'PIt2m'))];
+zeroBndRxns = [zeroBndRxns find(strcmp(modelIn.rxns, 'CYOOm2'))];
+zeroBndRxns = [zeroBndRxns find(strcmp(modelIn.rxns, 'FTHFDH'))];
+modelIn.lb(zeroBndRxns) = -maxBnd;
+modelIn.ub(zeroBndRxns) = maxBnd;
+modelIn.rev(zeroBndRxns) = true;
+
+%%% End of specific problem fixes.
+
 rec2 = removeEnzymeIrrevs(modelIn);
 
 % Remove unhelpful transcript labels

@@ -65,6 +65,7 @@ if status ~= 0
         disp('try #3...');
         [status, cmdout] = system(['minDisj ', genedata_filename, ' ', rfname, ' > ', rfout]);
         if status ~= 0 
+            minDisjCmd = ['minDisj ', genedata_filename, ' ', rfname, ' > ', rfout]
             disp(['minDisj failed with return code ' num2str(status)]);
             return;
         end

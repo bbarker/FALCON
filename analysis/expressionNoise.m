@@ -1,7 +1,7 @@
 function [sigmaVec, PcorrV, ScorrV, KcorrV, PcorrE, ScorrE, KcorrE, ...
           PcorrEV, ScorrEV, KcorrEV, Vactive, VdeltaSign, VOnOff,   ...
-          VnormDiff, EnormDiff, TimeRec] =                          ...
-          expressionNoise(model, expFile, sigMax, reps, simLabel)
+          VnormDiff, EnormDiff, TimeRec, IterRec] =                          ...
+          expressionNoise(model, expFile, sigMax, reps, simLabel, LPmeth)
 
 regC   = 0;
 minFit = 0;
@@ -9,6 +9,9 @@ expCon = 0;
 
 if ~exist('simLabel', 'var')
     simLabel = '';
+end
+if ~exist('LPmeth', 'var')
+    LPmeth = 1;
 end
 
 % Things to track:
@@ -44,6 +47,7 @@ VOnOff  = zeros(1, reps);
 VnormDiff  = zeros(1, reps);
 EnormDiff  = zeros(1, reps);
 TimeRec    = zeros(1, reps);
+IterRec    = zeros(1, reps);
 
 %Make irreversible model
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
@@ -58,7 +62,7 @@ nIrxns = length(modelIrrev.rxns);
 
 %Now compute initial flux:
 [v, corrval] = falcon(modelIrrev, rxn_exp, rxn_exp_sd, rxn_rule_group, ...
-                      regC, minFit, expCon);
+                      regC, minFit, expCon, false, LPmeth);
 if norm(v,1) < 1e-7
     disp('Error, initial flux prediction failed.');
     return;
@@ -85,10 +89,10 @@ parfor i = 1:reps
     EnormDiff(i) = norm(rxn_exp(~isnan(rxn_exp + rxn_exp_p)) - ...
                    rxn_exp_p(~isnan(rxn_exp_p + rxn_exp)), 1);
 
-    trec = tic();
-    [v_p, corrval_p] = falcon(modelIrrev, rxn_exp_p, rxn_exp_sd, rxn_rule_group, ...
-                              regC, minFit, expCon);
-    TimeRec(i) = toc(trec);
+    [v_p, corrval_p, n, VA, fTime, fIter] = falcon(modelIrrev, rxn_exp_p, ... 
+        rxn_exp_sd, rxn_rule_group, regC, minFit, expCon, false, LPmeth);
+    TimeRec(i) = fTime;
+    IterRec(i) = fIter;
     vrev_p = convertIrrevFluxDistribution(v_p, matchRev);
     PcorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Pearson');
     ScorrV(i) = corr(vrev(:), vrev_p(:), 'type', 'Spearman'); 
@@ -112,8 +116,8 @@ modName = strrep(strrep(strrep(strrep(num2str(model.description), ' ', ''), ...
 [pathstr, expName, ext] = fileparts(expFile);
 
 save(['pertData_' modName '_' expName '_' num2str(sigMax) '_' num2str(reps) ...
-      '_' finishTime '_' simLabel '.mat'], 'sigmaVec',                      ...
+      '_' finishTime '_' simLabel '_' num2str(LPmeth) '.mat'], 'sigmaVec',  ...
      'PcorrV', 'ScorrV', 'KcorrV', 'PcorrE', 'ScorrE', 'KcorrE', 'PcorrEV', ... 
      'ScorrEV', 'KcorrEV', 'Vactive', 'VdeltaSign', 'VOnOff', 'VnormDiff',  ...
-     'EnormDiff', 'TimeRec');  
+     'EnormDiff', 'TimeRec', 'IterRec');  
 
