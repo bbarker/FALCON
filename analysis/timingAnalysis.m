@@ -14,3 +14,27 @@ function [timeMat iterMat] = timingAnalysis( nReps)
 
 % For the plot, we can most likely plot the points we have
 % real data for in a different color.
+
+
+% best to have an optional argument to load these all from a .mat file
+
+% Note iIN800 and iFF708 don't appear to have valid Gene labels
+yeastModFiles = {'iND750.xml', 'iMM904_flux_orig.xml', ...
+                 'yeast_5.21_MCISB.xml', 'yeast_6.06_cobra.xml', ...
+                 'yeast_7.00_cobra.xml'};
+
+%include Ecoli core model
+ecoliModFiles = {'ecoli_core_model.xml', 'iJR904.xml', 'iAF1260.xml' ...
+                 'JO1366.xml' }
+
+% Now save to .mat file if .mat not provided as an argument.
+
+yeastExpFile = 
+ecoliExpFile = 
+humanExpFile = 
+
+
+
+%Best to remove any directionality constraints not matching rev
+%to guarantee more similarity between metrics 
+%removeEnzymeIrrevs.m?
