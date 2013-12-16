@@ -91,6 +91,12 @@ t_falcon = tic;
 
 boundsRev = getBoundsRev(m);
 
+if ~exist('rc', 'var')
+    rc = 0;
+end
+if ~exist('minFit', 'var')
+    minFit = 0;
+end
 if ~exist('FDEBUG', 'var')
     FDEBUG = false;
 end

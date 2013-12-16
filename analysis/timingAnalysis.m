@@ -1,7 +1,12 @@
-function [timeMat iterMat] = timingAnalysis(nReps, models)
+function [timeMat iterMat] = timingAnalysis(nReps, method, models)
 %
 % Set this to the location of the SBML models directory. 
 myModelDir = '/home/brandon/FBA/models';
+% Set these to the expression files:
+yeastExpFile = '/home/brandon/FBA/models/Analysis/AdaptiveMOMA/LeeExpFlux/genedata_75.txt';
+ecoliExpFile = '/home/brandon/FBA/models/Analysis/AdaptiveMOMA/LeeExpFlux/ecoli_MOPSCompGluc.expSTD.csv';
+humanExpFile = '/home/brandon/FBA/models/Analysis/CancerExpression/NCI60/nci60rseq_thresh/0_0.0/K562.csv';
+
 %
 % Takes a cell array of models, and uses
 % the internal lookup table to find specified
@@ -19,28 +24,49 @@ myModelDir = '/home/brandon/FBA/models';
 % real data for in a different color.
 
 
+yeastModFiles = {'iND750', 'iMM904_flux_orig', 'yeast_5.21_MCISB', ...
+                 'yeast_6.06_cobra', 'yeast_7.00_cobra'};
+ecoliModFiles = {'ecoli_core_model', 'iJR904', 'iAF1260', 'iJO1366'};
+humanModFiles = {'recon1', 'recon2model.v02'};
+%Note that 2.02 has some bugs, we replace it with 2.03, only available
+%as a .mat file on humanmetabolism.org.
+modFileNames = cellfun(@(x) [x '.xml'], {yeastModFiles{:}, ecoliModFiles{:}, ...
+                  humanModFiles{:}}, 'UniformOutput', false);
+nModels = length(modFileNames);
+
+nYmod = length(yeastModFiles);
+nECmod = length(ecoliModFiles);
+nHmod = length(humanModFiles);
+
+timeMat = nan*ones(nModels, nReps);
+iterMat = nan*ones(nModels, nReps); 
+
+expFileNames(1 : nYmod) = deal({yeastExpFile});
+expFileNames(nYmod + 1 : nYmod + nECmod) = deal({ecoliExpFile});
+expFileNames(nYmod + nECmod + 1 : nYmod + nECmod + nHmod) = deal({humanExpFile});
+
+
 % best to have an optional argument to load these all from a .mat file
+
+
 if ~exist('models', 'var')
     origDir = pwd();
     cd(myModelDir);
     models = {};
     % Note iIN800 and iFF708 don't appear to have valid Gene labels
-    yeastModFiles = {'iND750', 'iMM904_flux_orig', 'yeast_5.21_MCISB', ...
-                     'yeast_6.06_cobra', 'yeast_7.00_cobra'};
 
-    for i = 1:length(yeastModFiles)
+    for i = 1:nYmod
         models{end+1} = readCbModel([yeastModFiles{i} '.xml']);
         models{end} = removeEnzymeIrrevs(models{end});
     end
     %include Ecoli core model
-    ecoliModFiles = {'ecoli_core_model', 'iJR904', 'iAF1260', 'iJO1366'};
-    for i = 1:length(ecoliModFiles)
+
+    for i = 1:nECmod
         models{end+1} = readCbModel([ecoliModFiles{i} '.xml']);
         models{end} = removeEnzymeIrrevs(models{end});
     end
     % ? include recon 2.1 if on time?
-    humanModFiles = {'recon1', 'recon2model.v02'};
-    for i = 1:length(humanModFiles)
+    for i = 1:nHmod
         models{end+1} = readCbModel([humanModFiles{i} '.xml']);
         models{end} = initializeRecon2(models{end});
         %removeEnzymeIrrevs handled in initializeRecon2
@@ -55,12 +81,33 @@ if ~exist('models', 'var')
     save('timingModels.mat', 'models');
 end
 
+for i = 1:nModels
+    mI = convertToIrreversible(models{i});
+    iVec = nan*ones(1, nReps);
+    tVec = nan*ones(1, nReps);
+    if strcmp(method, 'FALCON')
+        parfor j = 1:nReps
+            t0 = tic();
+            [r, r_s, r_g] = computeMinDisj(mI, expFileNames{i});
+            [~, ~, ~, ~, ~, fIter] = falcon(mI, r, r_s, r_g);
+            tVec(j) = toc(t0);
+            iVec(j) = fIter;
+        end
+    elseif strcmp(method, 'Lee')
+        parfor j = 1:nReps
+            t0 = tic();
+            [r, r_s, r_misG] = geneToRxn(models{i}, expFileNames{i});
+            [~, lIter] = dataToFluxFix(models{i}, r, r_s);
+            tVec(j) = toc(t0);
+            iVec(j) = lIter;
+        end 
+    end
+    timeMat(i, :) = tVec;
+    iterMat(i, :) = iVec;
+end
 
-%yeastExpFile = 
-%ecoliExpFile = 
-%humanExpFile = 
-
-
+timeMat = timeMat';
+iterMat = iterMat';
 
 %Best to remove any directionality constraints not matching rev
 %to guarantee more similarity between metrics 
