@@ -26,7 +26,7 @@ for k = 1:length(m.rxns)
         n = t(j);
         n_sd = t_sd(j);
 	if ~isempty(n)
-          ga = regexprep(ga,['\<',w{kk},'\>'],[num2str(n),'Â±',num2str(n_sd)]); % Â±
+          ga = regexprep(ga,['\<',w{kk},'\>'],[num2str(n),'±',num2str(n_sd)]); % ±
 	else
 	  true_missing = true_missing+1;
 	  %try right first
