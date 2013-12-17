@@ -14,12 +14,14 @@ end
 
 for k = 1:length(m.rxns)
     ga = m.grRules{k};
-    ga = strrep(ga,'-','_');
+    ga = strrep(ga,'-','_');    
     w = regexp(ga,'\<\w*\>','match'); 
     w = setdiff(w,{'and','or','AND','OR'});
-
     for kk = 1:length(w)
 	j = find(strcmp(w{kk},g));
+	if length(j) == 0 %for names encloses in parentheses:
+	  j = find(strcmp(['(',w{kk},')'],g));
+	end
 	if numel(j) > 1
 	  j = j(1); %temporary fix
 	end
@@ -27,6 +29,8 @@ for k = 1:length(m.rxns)
         n_sd = t_sd(j);
 	if ~isempty(n)
           ga = regexprep(ga,['\<',w{kk},'\>'],[num2str(n),'±',num2str(n_sd)]); % ±
+	  %Now try with parentheses ...
+          ga = regexprep(ga,['\<','\(',w{kk},'\)','\>'],[num2str(n),'±',num2str(n_sd)]); % ±
 	else
 	  true_missing = true_missing+1;
 	  %try right first
@@ -36,6 +40,15 @@ for k = 1:length(m.rxns)
 	  %try left
 	  gatmp = regexprep(gatmp,['\s+and\s+','\<',w{kk},'\>'], '', 'ignorecase');
 	  gatmp = regexprep(gatmp,['\s+or\s+','\<',w{kk},'\>'], '', 'ignorecase');
+
+	  %Now try with parentheses ...
+	  %try right first
+	  gatmp = regexprep(gatmp,['\<','\(',w{kk},'\)','\>','\s+and\s+'], '', 'ignorecase');
+	  gatmp = regexprep(gatmp,['\<','\(',w{kk},'\)','\>','\s+or\s+'], '', 'ignorecase');
+
+	  %try left
+	  gatmp = regexprep(gatmp,['\s+and\s+','\<','\(',w{kk},'\)','\>'], '', 'ignorecase');
+	  gatmp = regexprep(gatmp,['\s+or\s+','\<','\(',w{kk},'\)','\>'], '', 'ignorecase');
 
 	  if strcmp(gatmp,ga)
   	    rxn_missing_gene(k) = 1;
@@ -54,3 +67,4 @@ for k = 1:length(m.rxns)
       %disp('skipping rxn');
     end
 end
+disp(['Number of reactions actually missing data: ', num2str(true_missing)]);
