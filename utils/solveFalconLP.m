@@ -303,7 +303,6 @@ switch solver
         else
            stat = -1; % Solution not optimal or solver problem
         end
-        
     case 'gurobi5'
         %% gurobi 5
         % Free academic licenses for the Gurobi solver can be obtained from

@@ -86,16 +86,17 @@ fOpt            = solution.f;
 
 
 if find(strcmp(methodList, 'GIMME'))
+    m = model;
     if ~exist('rxn_exp', 'var')
-        [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
+        [rxn_exp, rxn_exp_sd] = geneToReaction(m, genenames, ...
             gene_exp, gene_exp_sd);
     end
     disp('Running GIMME ...');
     % "required metabolic functionalities" (=growth) set to 90% of maximum
-    model.lb(model.c == 1)	= 0.9*fOpt;
+    m.lb(m.c == 1)	= 0.9*fOpt;
     % gimme
     tic;
-    v_gimme         = gimme(model, rxn_exp);
+    v_gimme         = gimme(m, rxn_exp);
     timing.gimme = toc;
     save([genedata_filename '_gimme_flux.mat'], 'v_gimme');
 else
@@ -119,38 +120,37 @@ else
     timing.shlomi = 0;
 end
 
-
-% !!! Warning, this code block modifies the model! run last for now
 if find(strcmp(methodList, 'eMoMA'))
+    m = model;
     if ~exist('rxn_exp', 'var')
-        [rxn_exp, rxn_exp_sd] = geneToReaction(model, genenames, ...
+        [rxn_exp, rxn_exp_sd] = geneToReaction(m, genenames, ...
             gene_exp, gene_exp_sd);
     end
     % scale by uptake reaction
-    uptake              = find(strcmp(gene_to_scale,model.rxnNames));
+    uptake              = find(strcmp(gene_to_scale,m.rxnNames));
     rxn_exp_sd          = rxn_exp_sd/rxn_exp(uptake);
     rxn_exp             = rxn_exp/rxn_exp(uptake);
 
-    model.lb(uptake)	= 1;
-    model.ub(uptake)	= 1;
+    m.lb(uptake)	= 1;
+    m.ub(uptake)	= 1;
     % Gene expression constraint FBA
     disp('Running eMoMA (original) ...');
     tic;
-    if useMinDisj
-        v_gene_exp = dataToFlux(model, rxn_exp_md, rxn_exp_sd_md);
-    else
-        v_gene_exp = dataToFlux(model, rxn_exp, rxn_exp_sd);
-    end
+    %if useMinDisj
+    %    v_gene_exp = dataToFlux(m, rxn_exp_md, rxn_exp_sd_md);
+    %else
+        v_gene_exp = dataToFlux(m, rxn_exp, rxn_exp_sd);
+    %end
     timing.gene_exp=toc;
     save([genedata_filename '_gene_exp_flux.mat'], 'v_gene_exp');
     % fixed expression method
     disp('Running eMoMA (exp fix) ...');
     tic;
-    if useMinDisj
-        v_fix = dataToFluxFix(model, rxn_exp_md, rxn_exp_sd_md);
-    else
-        v_fix = dataToFluxFix(model, rxn_exp, rxn_exp_sd);
-    end
+    %if useMinDisj
+    %    v_fix = dataToFluxFix(m, rxn_exp_md, rxn_exp_sd_md);
+    %else
+        v_fix = dataToFluxFix(m, rxn_exp, rxn_exp_sd);
+    %end
     timing.fix = toc;
     save([genedata_filename '_fix_flux.mat'], 'v_fix');
 else
@@ -219,7 +219,7 @@ end
 p_standard_fba_best	= zeros(size(experimental_fluxes.textdata,1),1);
 for k = 1:size(experimental_fluxes.textdata,1)
     j = find(strcmp(experimental_fluxes.textdata{k,1},model.rxnNames));
-    p_standard_fba_best(k) = flux*abs(v_standard_fba_best(j)); %#ok<FNDSB>
+    p_standard_fba_best(k) = flux*v_standard_fba_best(j); %#ok<FNDSB>
 end
 p_standard_fba_best(abs(p_standard_fba_best)<1e-6)	= 0;
 

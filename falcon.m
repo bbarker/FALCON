@@ -584,6 +584,7 @@ if any(isnan(b))
 end
 
 params.method = LPmeth;
+params.seed = randi(intmax);
 %params.OptimalityTol = 1e-9;  %Maybe some of these need to be set
 %params.FeasibilityTol = 1e-9; %according to LFP scaling
 %params.ScaleFlag = 0;
