@@ -4,8 +4,8 @@ function [n,n_sd] = addGeneData(g)
 n = nan;
 n_sd = nan;
 
-ApmB = '[0-9\.]+±[0-9\.]+';
-
+%ApmB = '[0-9\.]+±[0-9\.]+';
+ApmB = '[0-9\.]+e?-?[0-9]*±[0-9\.]+e?-?[0-9]*';
 if ~isempty(g)
     while isnan(n)
         %Checking for bad stuff, cough cough iMM1415 cough
@@ -27,7 +27,7 @@ if ~isempty(g)
 	g = gtmp;
 
         try 
-            match_expr      = '([0-9\.])+±([0-9\.]+)';
+            match_expr      = '([0-9\.]+e?-?[0-9]*)±([0-9\.]+e?-?[0-9]*)';
             g_av            = regexprep(g,match_expr,'$1');
             g_sd            = regexprep(g,match_expr,'$2');
             n               = eval(g_av);
@@ -37,27 +37,46 @@ if ~isempty(g)
             match_expr      = ['\((\s*',ApmB,'\s*)\)'];
             replace_expr    = '$1';
             g = regexprep(g,match_expr,replace_expr);
+
             % replace and
             match_expr      = ['(',ApmB,')\s+and\s+(',ApmB,')'];
-            replace_expr    = '${AandB($1,$2)}';
-            g = regexprep(g,match_expr,replace_expr,'once','ignorecase');
-
+            oldExp = regexp(g, match_expr, 'tokens', 'ignorecase');
+            %replace_expr    = '${AandB($1,$2)}';
+            if length(oldExp) >= 1
+                replace_expr = str(eval(['AandB(' char(39) oldExp{1}{1} char(39) ...
+                                  ',' char(39) oldExp{1}{2} char(39) ')']));
+                g = regexprep(g,match_expr,replace_expr,'once','ignorecase');
+            end
+           
             % replace or
             match_expr      = ['(',ApmB,')\s+or\s+(',ApmB,')'];
-            replace_expr    = '${AorB($1,$2)}';
-            g = regexprep(g,match_expr,replace_expr,'once','ignorecase');
+            oldExp = regexp(g, match_expr, 'tokens', 'ignorecase');
+            %replace_expr    = '${AorB($1,$2)}'
+            if length(oldExp) >= 1
+                replace_expr = str(eval(['AorB(' char(39) oldExp{1}{1} char(39) ...
+                                  ',' char(39) oldExp{1}{2} char(39) ')']));
+                g = regexprep(g,match_expr,replace_expr,'once','ignorecase');
+            end
 	    %format without brackets
-            %match_expr      = [ApmB,'\s+or\s+',ApmB];
-            %replace_expr    = '${AorB($1,$2)}';
-            %g = regexprep(g,match_expr,replace_expr,'once');
-           
+            %if strcmp(g, g0)
+            %    match_expr      = [ApmB,'\s+or\s+',ApmB];
+            %    replace_expr    = '${AorB($1,$2)}';
+            %    g = regexprep(g,match_expr,replace_expr,'once');
+            %end
         end
     end
 end
 
+function s = str(s)
+if isnumeric(s)
+    s = num2str(s);
+end    
+
+
+
 function str = AandB(str1,str2) %#ok<DEFNU>
 
-ApmB = '([0-9\.])+±([0-9\.]+)';
+ApmB = '([0-9\.]+e?-?[0-9]*)±([0-9\.]+e?-?[0-9]*)';
 match_expr      = ApmB;
 m1              = eval(regexprep(str1,match_expr,'$1'));
 s1              = eval(regexprep(str1,match_expr,'$2'));
@@ -75,7 +94,7 @@ end
 str = [num2str(m),'±',num2str(s)];
 
 function str = AorB(str1,str2) %#ok<DEFNU>
-ApmB = '([0-9\.])+±([0-9\.]+)';
+ApmB = '([0-9\.]+e?-?[0-9]*)±([0-9\.]+e?-?[0-9]*)';
 match_expr      = ApmB;
 m1              = eval(regexprep(str1,match_expr,'$1'));
 s1              = eval(regexprep(str1,match_expr,'$2'));

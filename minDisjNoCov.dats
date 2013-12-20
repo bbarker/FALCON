@@ -719,7 +719,7 @@ fun list_min (inlist: List string, emap: &gDMap): string = let
         val xval = gDMap_find(emap, x)
         val cminval = gDMap_find(emap, cmin)
         //Negative values mean the gene wasn't in the dataset:
-        val xval = if xval < 0.0 then cminval else xval
+        val xval = if (xval < 0.0 orelse (xval <> xval)) then cminval else xval
       in
         if cminval < xval then loop(cmin,xs,emap) else loop(x,xs,emap) 
       end
@@ -979,6 +979,7 @@ implement main {n} (argc,argv) = () where  {
   prval pf = ptrarr_cons(pf1, pf2)
   prval () = fpf(pf)
   val () = gDMap_free(ExpMap)
+
   val () = gDMap_free(STDMap)
   val () = exit(0)
 }

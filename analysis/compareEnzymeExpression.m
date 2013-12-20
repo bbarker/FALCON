@@ -31,12 +31,75 @@ diffMat = zeros(nReps + 1, nRxns);
 rNotNan = ~isnan(r_md);
 nnanTotal = sum(rNotNan);
 
-nnanDiffOrig = sum(r_md(rNotNan) ~= r_lee(rNotNan));
+r_md(isnan(r_md)) = -1;
+r_lee(isnan(r_lee)) = -1;
+
+nnanDiffOrig = sum(r_md ~= r_lee);
 diffMat(1, :) = (r_md ~= r_lee)';
 
-for i = 2 : nReps + 1
-    nnanDiffAvg = 0;
-    nnanDiffTotal = 0;
+%get expression file name
+[pathstr, expName, ext] = fileparts(expFile);
+
+genedata         = importdata(expFile);
+[ndrows, ndcols] = size(genedata.data);
+if ndcols == 2
+    genenames	= genedata.textdata(:,1);
+    genenames(1)= [];
+    gene_exp	= genedata.data(:,1);
+    gene_exp_sd	= genedata.data(:,2);
+elseif ndcols == 3
+    %genenames	= cellfun(@num2str, ...
+    %    columnVector(num2cell(genedata.data(:, 1))), 'UniformOutput', false);
+    genenames    = genedata.data(:,1); 
+    %genenames(1)= [];
+    gene_exp	 = genedata.data(:,2);
+    gene_exp_sd	 = genedata.data(:,3);
 end
+
+ngenes = length(gene_exp);
+
+
+parfor i = 2 : (nReps + 1)
+    permVec = randperm(ngenes);
+    gene_exp_perm = gene_exp(permVec);
+    gene_exp_sd_perm = gene_exp_sd(permVec);
+    %genenames_perm = genenames(permVec);
+    % Since FALCON currently only supports calling minDisj on a file,
+    % this means we need to write out all the data to a randomly
+    % generated file and then delete the file.
+    tmpFileName = ['compareEnzymeExpression_' num2str(nReps) '_' num2str(i) ...
+                   '_' expName '.csv'];
+    gdout = genedata;
+    if ndcols == 2
+        % need permuted gene names too
+        % gdout.textdata(2:end, 1) = genenames_perm;
+        gdout.textdata(2:end, 2) = cellfun(@num2str, ...
+            num2cell(gene_exp_perm), 'UniformOutput', false);
+        gdout.textdata(2:end, 3) = cellfun(@num2str, ...
+            num2cell(gene_exp_sd_perm), 'UniformOutput', false);
+        cell2csv(tmpFileName, gdout.textdata, '\t', 2000);
+    elseif ndcols == 3
+        %gdout.data(:,1) = genenames_perm;
+        gdout.data(:,2) = gene_exp_perm;
+        gdout.data(:,3) = gene_exp_sd_perm; 
+        cell2csv(tmpFileName, gdout.textdata(1,:), '\t', 2000);
+        dlmwrite(tmpFileName, gdout.data, '-append', 'delimiter', ...
+            '\t', 'precision', 15);
+    else
+        disp('Problem reading gene expression file.');
+        %return; ?? what to do in parfor?
+    end    
+
+    [r_lee, rs_lee, ~] = geneToRxn(model, tmpFileName);
+    [r_md, rs_md, ~] = computeMinDisj(model, tmpFileName);
+    delete(tmpFileName);
+
+    r_md(isnan(r_md)) = -1;
+    r_lee(isnan(r_lee)) = -1;    
+    diffMat(i, :) = (r_md ~= r_lee)';
+end
+
+nnanDiffTotal = sum(boolean(sum(diffMat)));
+nnanDiffAvg = mean(sum(diffMat'));
 
 %apply rNotNan to diffMat
