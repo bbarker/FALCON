@@ -57,7 +57,7 @@ elseif ndcols == 3
 end
 
 ngenes = length(gene_exp);
-
+nnanDiffTotal = nan*ones(1, nReps + 1);
 
 parfor i = 2 : (nReps + 1)
     permVec = randperm(ngenes);
@@ -99,7 +99,11 @@ parfor i = 2 : (nReps + 1)
     diffMat(i, :) = (r_md ~= r_lee)';
 end
 
-nnanDiffTotal = sum(boolean(sum(diffMat)));
+nnanDiffTotal(1) = nnanDiffOrig;
+parfor i = 2 : nReps + 1
+    nnanDiffTotal(i) = sum(boolean(sum(diffMat(1 : i, :))));
+end
+
 nnanDiffAvg = mean(sum(diffMat'));
 
 %apply rNotNan to diffMat
