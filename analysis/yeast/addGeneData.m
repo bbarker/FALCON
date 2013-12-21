@@ -8,7 +8,7 @@ n_sd = nan;
 ApmB = '[0-9\.]+e?-?[0-9]*±[0-9\.]+e?-?[0-9]*';
 if ~isempty(g)
     while isnan(n)
-        %Checking for bad stuff, cough cough iMM1415 cough
+        %Checking for bad stuff, e.g. iMM1415
         gtmp = regexprep(g,'\s+or\s+or\s+', ' or ', 'ignorecase');
         gtmp = regexprep(gtmp,'\s+and\s+and\s+', ' and ', 'ignorecase');
 	if strcmp(gtmp,g) == 0
