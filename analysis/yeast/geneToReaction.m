@@ -52,7 +52,7 @@ for k = 1:length(m.rxns)
 
 	  if strcmp(gatmp,ga)
   	    rxn_missing_gene(k) = 1;
-	    disp(gatmp);
+            disp(['skipping rxn# ' num2str(k) ' due to ' gatmp]);
 	  else
 	    ga = gatmp;
 	  end
@@ -63,8 +63,6 @@ for k = 1:length(m.rxns)
       [n,n_sd] = addGeneData(ga);
       r(k) = n;
       r_sd(k) = n_sd;
-    else
-      %disp('skipping rxn');
     end
 end
 disp(['Number of reactions actually missing data: ', num2str(true_missing)]);

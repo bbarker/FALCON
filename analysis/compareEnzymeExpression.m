@@ -25,7 +25,8 @@ diffMat = zeros(nReps + 1, nRxns);
 
 [r_lee, rs_lee, ~] = geneToRxn(model, expFile);
 [r_md, rs_md, ~] = computeMinDisj(model, expFile);
-
+%For testing:
+%[r_md, rs_md] = deal(r_lee, rs_lee);
 
 %Should be the same for both methods
 rNotNan = ~isnan(r_md);
@@ -34,8 +35,19 @@ nnanTotal = sum(rNotNan);
 r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;
 
+
 nnanDiffOrig = sum(r_md ~= r_lee);
 diffMat(1, :) = (r_md ~= r_lee)';
+
+diffRxns = find(r_md ~= r_lee);
+dbgCell = cell(nnanDiffOrig, 4);
+for i = 1 : nnanDiffOrig
+    dbgCell{i, 1} = model.rxnNames{diffRxns(i)};
+    dbgCell{i, 2} = model.grRules{diffRxns(i)};
+    dbgCell{i, 3} = num2str(r_md(diffRxns(i)));
+    dbgCell{i, 4} = num2str(r_lee(diffRxns(i)));
+end
+cell2csv(['compareEnzymeExpression_' strrep(model.description, ' ', '_') '.csv'], dbgCell, ',', 2000);
 
 %get expression file name
 [pathstr, expName, ext] = fileparts(expFile);
@@ -92,6 +104,8 @@ parfor i = 2 : (nReps + 1)
 
     [r_lee, rs_lee, ~] = geneToRxn(model, tmpFileName);
     [r_md, rs_md, ~] = computeMinDisj(model, tmpFileName);
+    %For testing:
+    %[r_md, rs_md] = deal(r_lee, rs_lee);
     delete(tmpFileName);
 
     r_md(isnan(r_md)) = -1;
