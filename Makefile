@@ -1,8 +1,3 @@
-#
-#
-# Makefile for K&R examples in Chapter 1
-#
-#
 
 ######
 
