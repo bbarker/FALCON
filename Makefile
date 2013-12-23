@@ -19,6 +19,7 @@ CFLAGS_ATS=-I$(ATSHOME) -I$(ATSHOME)/ccomp/runtime/
 LDFLAGS_ATS=-L$(ATSHOME)/ccomp/lib/
 LDFLAGS = $(LDFLAGS_ATS)
 CFLAGS = $(CFLAGS_ATS)
+# Need to remove this and generate all source:
 ATSGC = $(ATSHOME)/ccomp/runtime/GCATS/gc.o
 ######
 
@@ -31,7 +32,7 @@ all:: checkall
 checkall::
 cleanall:: clean
 cleanall:: ; $(RMF) *_?ats.html 
-
+cleanall:: ; $(RMF) *.c
 ######
 
 
@@ -41,12 +42,8 @@ minDisj: minDisjNoCov_dats.c sstream_dats.c sstream_sats.c
 	$(CC) -O2 -D_ATS_GCATS $(CFLAGS) $(LDFLAGS) -o minDisj $(ATSGC) \
         minDisjNoCov_dats.c sstream_dats.c sstream_sats.c $(ATSPREL) -lm -lats
 
-minDisjNoCov_dats.c: minDisjNoCov.dats
-	$(ATSOPT) --output minDisjNoCov_dats.c --dynamic minDisjNoCov.dats
-sstream_dats.c: sstream.dats
-	$(ATSOPT) --output sstream_dats.c --dynamic sstream.dats
-sstream_sats.c: sstream.sats
-	$(ATSOPT) --output sstream_sats.c --static sstream.sats
+%_sats.c: %.sats; $(ATSOPT) --output $@ --static  $<
+%_dats.c: %.dats; $(ATSOPT) --output $@ --dynamic $<
 
 ######
 
@@ -60,6 +57,6 @@ RMF = rm -f
 
 clean:
 	$(RMF) *~
-	$(RMF) *_?ats.c *_?ats.o
+	$(RMF) *_?ats.o
 
 ###### end of [Makefile] ######
