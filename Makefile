@@ -36,10 +36,10 @@ cleanall:: ; $(RMF) *.c
 ######
 
 
-checkall:: minDisj
-cleanall:: ; $(RMF) minDisj
-minDisj: minDisjNoCov_dats.c sstream_dats.c sstream_sats.c
-	$(CC) -O2 -D_ATS_GCATS $(CFLAGS) $(LDFLAGS) -o minDisj $(ATSGC) \
+checkall:: mindisj
+cleanall:: ; $(RMF) mindisj
+mindisj: minDisjNoCov_dats.c sstream_dats.c sstream_sats.c
+	$(CC) -O2 -D_ATS_GCATS $(CFLAGS) $(LDFLAGS) -o mindisj $(ATSGC) \
         minDisjNoCov_dats.c sstream_dats.c sstream_sats.c $(ATSPREL) -lm -lats
 
 %_sats.c: %.sats; $(ATSOPT) --output $@ --static  $<
