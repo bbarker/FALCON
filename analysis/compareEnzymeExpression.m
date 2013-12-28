@@ -39,6 +39,9 @@ r_lee(isnan(r_lee)) = -1;
 nnanDiffOrig = sum(r_md ~= r_lee);
 diffMat(1, :) = (r_md ~= r_lee)';
 
+% uncomment for debugging purposes:
+printDiffs(model, r_md, r_lee);
+
 diffRxns = find(r_md ~= r_lee);
 dbgCell = cell(nnanDiffOrig, 4);
 for i = 1 : nnanDiffOrig
@@ -121,3 +124,15 @@ end
 nnanDiffAvg = mean(sum(diffMat'));
 
 %apply rNotNan to diffMat
+
+function printDiffs(m, r1, r2)
+% print the gene rule and computed expression levels
+% (and possibly the individual gene expression levels)
+% for all differences
+
+rDiffs = find(r1 ~= r_2);
+
+for i = 1:length(rDiffs)
+   ri = rDiffs(i);
+   disp([m.grRules(ri) '\t' num2str(r1(ri)) '\t' num2str(r2(ri))]);
+end
