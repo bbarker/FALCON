@@ -36,13 +36,13 @@ r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;
 
 
-nnanDiffOrig = sum(r_md ~= r_lee);
-diffMat(1, :) = (r_md ~= r_lee)';
+diffMat(1, :) = isDiffExp(r_md, r_lee);
+nnanDiffOrig = sum(diffMat(1, :));
 
 % uncomment for debugging purposes:
 printDiffs(model, r_md, r_lee);
 
-diffRxns = find(r_md ~= r_lee);
+diffRxns = find(isDiffExp(r_md, r_lee));
 dbgCell = cell(nnanDiffOrig, 4);
 for i = 1 : nnanDiffOrig
     dbgCell{i, 1} = model.rxnNames{diffRxns(i)};
@@ -107,13 +107,20 @@ parfor i = 2 : (nReps + 1)
 
     [r_lee, rs_lee, ~] = geneToRxn(model, tmpFileName);
     [r_md, rs_md, ~] = computeMinDisj(model, tmpFileName);
+
     %For testing:
     %[r_md, rs_md] = deal(r_lee, rs_lee);
     delete(tmpFileName);
 
     r_md(isnan(r_md)) = -1;
-    r_lee(isnan(r_lee)) = -1;    
-    diffMat(i, :) = (r_md ~= r_lee)';
+    r_lee(isnan(r_lee)) = -1;  
+  
+    % uncomment for debugging purposes:
+    % (needs for not parfor loop)
+    % priorDiffs = find(boolean(sum(diffMat(1 : (i-1), :))));
+    % printDiffs(model, r_md, r_lee, priorDiffs);
+
+    diffMat(i, :) = isDiffExp(r_md, r_lee);
 end
 
 nnanDiffTotal(1) = nnanDiffOrig;
@@ -125,14 +132,22 @@ nnanDiffAvg = mean(sum(diffMat'));
 
 %apply rNotNan to diffMat
 
-function printDiffs(m, r1, r2)
+function d = isDiffExp(r1, r2)
+d = columnVector(boolean(abs(r1 - r2) > 1e-4))';
+% end of isDiffExp
+
+function printDiffs(m, r1, r2, priorDiffs)
 % print the gene rule and computed expression levels
 % (and possibly the individual gene expression levels)
 % for all differences
-
-rDiffs = find(r1 ~= r_2);
+rDiffs = find(isDiffExp(r1, r2));
+if exist('priorDiffs', 'var')
+    rDiffs = setdiff(rDiffs, priorDiffs);
+end
 
 for i = 1:length(rDiffs)
    ri = rDiffs(i);
-   disp([m.grRules(ri) '\t' num2str(r1(ri)) '\t' num2str(r2(ri))]);
+   rd = num2str(abs(r1(ri) - r2(ri)));
+   disp([num2str(ri) ':' 9 m.grRules{ri} 9 num2str(r1(ri)) 9 num2str(r2(ri)) 9 rd]);
 end
+% end of printDiffs
