@@ -1,0 +1,1 @@
+local #include "./sstream.sats" in (* *) end
