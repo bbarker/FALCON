@@ -23,7 +23,7 @@ nRxns = length(model.rxns);
 
 diffMat = zeros(nReps + 1, nRxns);
 
-[r_lee, rs_lee, ~] = geneToRxn(model, expFile);
+[r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
 [r_md, rs_md, ~] = computeMinDisj(model, expFile);
 %For testing:
 %[r_md, rs_md] = deal(r_lee, rs_lee);
@@ -35,14 +35,13 @@ nnanTotal = sum(rNotNan);
 r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;
 
-
-diffMat(1, :) = isDiffExp(r_md, r_lee);
+diffMat(1, :) = isDiffExp(r_md, r_lee, r_miss);
 nnanDiffOrig = sum(diffMat(1, :));
 
 % uncomment for debugging purposes:
-printDiffs(model, r_md, r_lee);
+printDiffs(model, r_md, r_lee, r_miss);
 
-diffRxns = find(isDiffExp(r_md, r_lee));
+diffRxns = find(isDiffExp(r_md, r_lee, r_miss));
 dbgCell = cell(nnanDiffOrig, 4);
 for i = 1 : nnanDiffOrig
     dbgCell{i, 1} = model.rxnNames{diffRxns(i)};
@@ -105,7 +104,7 @@ parfor i = 2 : (nReps + 1)
         %return; ?? what to do in parfor?
     end    
 
-    [r_lee, rs_lee, ~] = geneToRxn(model, tmpFileName);
+    [r_lee, rs_lee, r_miss] = geneToRxn(model, tmpFileName);
     [r_md, rs_md, ~] = computeMinDisj(model, tmpFileName);
 
     %For testing:
@@ -118,9 +117,9 @@ parfor i = 2 : (nReps + 1)
     % uncomment for debugging purposes:
     % (needs for not parfor loop)
     % priorDiffs = find(boolean(sum(diffMat(1 : (i-1), :))));
-    % printDiffs(model, r_md, r_lee, priorDiffs);
+    % printDiffs(model, r_md, r_lee, r_miss, priorDiffs);
 
-    diffMat(i, :) = isDiffExp(r_md, r_lee);
+    diffMat(i, :) = isDiffExp(r_md, r_lee, r_miss);
 end
 
 nnanDiffTotal(1) = nnanDiffOrig;
@@ -132,15 +131,15 @@ nnanDiffAvg = mean(sum(diffMat'));
 
 %apply rNotNan to diffMat
 
-function d = isDiffExp(r1, r2)
-d = columnVector(boolean(abs(r1 - r2) > 1e-4))';
+function d = isDiffExp(r1, r2, rmg)
+d = columnVector(boolean(abs(r1 - r2) > 1e-4) & (~rmg))';
 % end of isDiffExp
 
-function printDiffs(m, r1, r2, priorDiffs)
+function printDiffs(m, r1, r2, rmg, priorDiffs)
 % print the gene rule and computed expression levels
 % (and possibly the individual gene expression levels)
 % for all differences
-rDiffs = find(isDiffExp(r1, r2));
+rDiffs = find(isDiffExp(r1, r2, rmg));
 if exist('priorDiffs', 'var')
     rDiffs = setdiff(rDiffs, priorDiffs);
 end
