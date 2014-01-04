@@ -11,6 +11,8 @@ nR_old = 0;
 
 v_sol = zeros(size(m.rxns));
 
+nRxns = length(m.rxns);
+
 lIter = 0;
 while sum(~m.rev) > nR_old
     lIter = lIter + 1;
@@ -24,12 +26,15 @@ while sum(~m.rev) > nR_old
     f = zeros(size(m.rxns))';
     b = zeros(size(m.mets));
     
-    for k = 1:length(m.rxns)
-        d = r(k);
-        s = r_sd(k);
-        if ~m.rev(k) && ~isnan(d) && s>0
+    kPerm = randperm(nRxns);
+    for k = 1:nRxns
+        kp = kPerm(k);
+        %kp = k; %use for "deterministic" method.
+        d = r(kp);
+        s = r_sd(kp);
+        if ~m.rev(kp) && ~isnan(d) && s>0
             [s1,s2] = size(N);
-            N(s1+1,k) = 1; N(s1+1,s2+1) = -1; N(s1+1,s2+2) = 1;
+            N(s1+1, kp) = 1; N(s1+1, s2+1) = -1; N(s1+1, s2+2) = 1;
             L(s2+1) = 0; L(s2+2) = 0;
             U(s2+1) = inf; U(s2+2) = inf;
             b(s1+1) = d;

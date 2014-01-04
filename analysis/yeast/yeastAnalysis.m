@@ -1,10 +1,14 @@
 function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
-    p_standard_fba_best, p_gimme, p_shlomi, p_fix,p_falcon, timing] =      ...
+    p_standard_fba_best, p_gimme, p_shlomi, p_fix, p_falcon,              ...
+    s_fix, s_falcon, timing] =                                            ...
     yeastAnalysis(model, genedata_filename, experimental_fluxes_filename, ...
     gene_to_scale, flux_to_scale, methodList)
 
 % kieran: 26 apr 12
 
+% Brandon Barker Jan 2013 - Jan 1014
+
+nReps = 10;
 
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
@@ -61,14 +65,17 @@ if find(strcmp(methodList, 'FALCON'))
     tic;
     %Need to separate transcript data loading
     if useMinDisj % need to modify to use old expression values
-        [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
-            rxn_exp_md, rxn_exp_sd_md, rxn_rule_group, regC, minFit, expCon);
+        [v_falconIrr, ~, ~, ~, ~, v_falconIrr_s] = ...
+            falconMulti(modelIrrev, rxn_exp_md, ...
+            rxn_exp_sd_md, rxn_rule_group, nReps, regC, minFit, expCon);
     else
-        [v_falconIrr, corrval_falcon] = falcon(modelIrrev,    ...
-            rxn_exp_irr, rxn_exp_sd_irr, rxn_rule_group, regC, minFit, expCon);
+        [v_falconIrr, ~, ~, ~, ~, v_falconIrr_s] = ...
+            falconMulti(modelIrrev, rxn_exp_irr, rxn_exp_sd_irr, ...
+            rxn_rule_group, nReps, regC, minFit, expCon);
     end
     v_falcon = convertIrrevFluxDistribution(v_falconIrr, matchRev);
-    timing.falcon = toc;
+    timing.falcon = toc/nReps;
+    v_falcon_s = convertIrrevFluxDistribution(v_falconIrr_s, matchRev);
     save([genedata_filename '_falcon_flux.mat'], 'v_falcon');
 else
     v_falcon = zeros(length(model.lb), 1);
@@ -148,8 +155,12 @@ if find(strcmp(methodList, 'eMoMA'))
     tic;
     %if useMinDisj
     %    v_fix = dataToFluxFix(m, rxn_exp_md, rxn_exp_sd_md);
+    %    [v_fix, ~, v_fix_s, ~] = dataToFluxFixMulti( ...
+    %        m, rxn_exp_md, rxn_exp_sd_md, nReps)
     %else
-        v_fix = dataToFluxFix(m, rxn_exp, rxn_exp_sd);
+        % v_fix = dataToFluxFix(m, rxn_exp, rxn_exp_sd);
+        [v_fix, ~, v_fix_s, ~] = dataToFluxFixMulti( ...
+            m, rxn_exp, rxn_exp_sd, nReps)
     %end
     timing.fix = toc;
     save([genedata_filename '_fix_flux.mat'], 'v_fix');
@@ -166,11 +177,13 @@ experimental_fluxes = importdata(experimental_fluxes_filename);
 reaction_name   = experimental_fluxes.textdata;
 experimental	= zeros(size(experimental_fluxes.textdata,1),1);
 p_gene_exp      = zeros(size(experimental_fluxes.textdata,1),1);
-p_standard_fba	= p_gene_exp;
+p_standard_fba  = p_gene_exp;
 p_gimme         = p_gene_exp;
 p_shlomi     	= p_gene_exp;
 p_fix     	= p_gene_exp;
 p_falcon     	= p_gene_exp;
+s_fix           = p_gene_exp;
+s_falcon        = p_gene_exp;
 
 flux = strcmp(flux_to_scale,reaction_name);
 flux = experimental_fluxes.data(flux,1);
@@ -187,6 +200,8 @@ for k = 1:size(experimental_fluxes.textdata,1)
     p_shlomi(k)     	= flux*v_shlomi(j);
     p_fix(k)     	= flux*v_fix(j);
     p_falcon(k)     	= flux*v_falcon(j);
+    s_fix(k)     	= flux*v_fix_s(j);
+    s_falcon(k)     	= flux*v_falcon_s(j);
     % reaction_name{k}
     % v_falcon(j)
 end
