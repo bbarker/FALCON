@@ -8,7 +8,7 @@ function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
 
 % Brandon Barker Jan 2013 - Jan 1014
 
-nReps = 10;
+nReps = 8;
 
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
@@ -65,11 +65,11 @@ if find(strcmp(methodList, 'FALCON'))
     tic;
     %Need to separate transcript data loading
     if useMinDisj % need to modify to use old expression values
-        [v_falconIrr, ~, ~, ~, ~, v_falconIrr_s] = ...
+        [v_falconIrr, ~, ~, ~, ~, ~, v_falconIrr_s] = ...
             falconMulti(modelIrrev, rxn_exp_md, ...
             rxn_exp_sd_md, rxn_rule_group, nReps, regC, minFit, expCon);
     else
-        [v_falconIrr, ~, ~, ~, ~, v_falconIrr_s] = ...
+        [v_falconIrr, ~, ~, ~, ~, ~, v_falconIrr_s] = ...
             falconMulti(modelIrrev, rxn_exp_irr, rxn_exp_sd_irr, ...
             rxn_rule_group, nReps, regC, minFit, expCon);
     end
@@ -168,6 +168,7 @@ else
     v_gene_exp = zeros(length(model.lb), 1);
     timing.gene_exp = 0;
     v_fix = zeros(length(model.lb), 1);
+    v_fix_s = v_fix;
     timing.fix = 0;
 end
 

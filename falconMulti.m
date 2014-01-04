@@ -59,17 +59,20 @@ parfor i = 1:nReps
 end
 
 v_sol   = mean(v_sol_Dist)';
+nvar    = mean(nvar_Dist);
 corrval = mean(corrval_Dist);
-ftime   = mean(ftime_Dist);
+fTime   = mean(fTime_Dist);
 fIter   = mean(fIter_Dist);
 
 v_sol_s   = std(v_sol_Dist)';
+nvar_s    = std(nvar_Dist);
 corrval_s = std(corrval_Dist);
-ftime_s   = std(ftime_Dist);
+fTime_s   = std(fTime_Dist);
 fIter_s   = std(fIter_Dist);
 
 fileNameOut = ['falcon_' num2str(nReps) '_' timeInit '.mat'];
 save(fileNameOut, 'v_sol', 'v_sol_s', 'v_sol_Dist', ...
     'corrval', 'corrval_s', 'corrval_Dist',         ...
-    'ftime', 'ftime_s', 'ftime_Dist',               ...
+    'nvar', 'nvar_s', 'nvar_Dist',                  ...
+    'fTime', 'fTime_s', 'fTime_Dist',               ...
     'fIter', 'fIter_s', 'fIter_Dist');
