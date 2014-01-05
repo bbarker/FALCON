@@ -4,6 +4,7 @@ function [v_sol, lIter, v_sol_s, lIter_s] = ...
 % This is like dataToFlux, but returns a mean and std
 % for v_sol and lIter, and saves the flux distributions.
 
+nRxns = length(m.rxns);
 
 v_sol_Dist   = zeros(nReps, nRxns);
 lIter_Dist   = zeros(nReps, nRxns);

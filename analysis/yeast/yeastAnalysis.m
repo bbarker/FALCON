@@ -79,6 +79,7 @@ if find(strcmp(methodList, 'FALCON'))
     save([genedata_filename '_falcon_flux.mat'], 'v_falcon');
 else
     v_falcon = zeros(length(model.lb), 1);
+    v_falcon_s = v_falcon;
     timing.falcon = 0;
 end
 
@@ -162,7 +163,7 @@ if find(strcmp(methodList, 'eMoMA'))
         [v_fix, ~, v_fix_s, ~] = dataToFluxFixMulti( ...
             m, rxn_exp, rxn_exp_sd, nReps)
     %end
-    timing.fix = toc;
+    timing.fix = toc/nReps;
     save([genedata_filename '_fix_flux.mat'], 'v_fix');
 else
     v_gene_exp = zeros(length(model.lb), 1);
