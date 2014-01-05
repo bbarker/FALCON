@@ -8,7 +8,7 @@ function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
 
 % Brandon Barker Jan 2013 - Jan 1014
 
-nReps = 8;
+nReps = 100;
 
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
