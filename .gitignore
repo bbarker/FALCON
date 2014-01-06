@@ -5,3 +5,11 @@ gurobi.log
 *#*
 minDisj
 *.exe
+
+#ATS dependencies
+ATSDEPCOPIES
+ATSDEPCOPIES/*
+
+#Possible Intermediates:
+*.c
+*.o
