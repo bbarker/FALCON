@@ -11,5 +11,8 @@ ATSDEPCOPIES
 ATSDEPCOPIES/*
 
 #Possible Intermediates:
+.atscdep
+.atscdep_tmp
+.depend
 *.c
 *.o
