@@ -1,0 +1,43 @@
+#
+# A Simple Makefile for portable compilation.
+#
+# By portable, we mean non-dependent on an ATS installation;
+# certain settings in the makefiles may need to be adjusted,
+# but these should primarily be limited to this file.
+
+######       Environment Configuration      ######
+
+CC = gcc
+
+ifndef ATSHOME
+MYPORTDIR := ./MYPORTDIR #Use if you have ATS includes 
+else
+MYPORTDIR=$(ATSHOME)    #Use if you have ATS installed
+endif
+
+CFLAGS += -O2
+
+#LDFLAGS += 
+
+######   End of Environment Configuration   ######
+
+######        Project Configuration         ######
+
+SOURCES_DATS += minDisjNoCov.dats sstream.dats
+
+SOURCES_SATS += sstream.sats
+
+######
+
+MYTARGET=mindisj
+
+######    End of Project Configuration      ######
+
+.PRECIOUS: *_?ats.c
+
+######
+
+include utils/atsmake-pre.mk   # Mostly environment setup
+include utils/atsmake-post.mk  # Mostly build rules
+
+###### end of [Makefile] ######
