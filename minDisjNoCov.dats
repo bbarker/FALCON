@@ -901,7 +901,10 @@ toCNF (bexp, emap): GREXP = let
   end
 
   
-  
+%{^
+#define __sscanf0(line, gene, exp, std) \
+  sscanf(line, "%s\t%lf\t%lf", (char*)gene, exp, std)
+%}  
   
 implement main {n} (argc,argv) = () where  {
   // val () = gc_chunk_count_limit_max_set (~1) // infinite
@@ -934,11 +937,18 @@ implement main {n} (argc,argv) = () where  {
         var std: double?
         var resexp: double?
         var resstd: double?
-        val _ = sscanf (linein, "%s\t%lf\t%lf", !p_gene, exp, std) where {
-        extern fun sscanf {l:agz} (s: !strptr l, format: string,
-          gene: &(@[byte?][BSZ]) >> @[byte][BSZ], exp: &double? >> double, 
-          std: &double? >> double) :int = "mac#sscanf"    
-        }
+//
+        val _ =
+        __sscanf0 (
+          linein, !p_gene, exp, std
+        ) where {
+          extern fun __sscanf0{l:agz}
+          (
+            line: !strptr l
+          , gene: &(@[byte?][BSZ]) >> @[byte][BSZ]
+          , exp: &double? >> double, std: &double? >> double
+          ) : int = "mac#__sscanf0"
+        } (* end of [val] *)
 //
         val gene = $UN.cast{String}(p_gene)
         val nstr = string1_length (gene)

@@ -3,6 +3,7 @@ gurobi.log
 *~
 *.#*
 *#*
+*.stackdump
 minDisj
 *.exe
 
