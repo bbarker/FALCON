@@ -17,6 +17,8 @@
  
 (* TODO:
 
+  In ATS2 port, consider using Hongwei's cstream.
+
   Add fn* to mutually recursive functions in parser and link by "and"s to
   make sure they are recognized as being mutually tail recursive.
 
@@ -97,6 +99,8 @@ exception TestCase of ()
 
 #define NAN 0.0/0.0
 
+extern
+fun isnan(x: double): bool
 
 absviewtype genes
 
@@ -389,6 +393,8 @@ fun isAlpha(c:char): bool
 extern
 fun isWhiteSpace(c:char): bool
 
+implement
+isnan(x) = (x != x)
 
 implement
 whileCharTst
@@ -546,7 +552,7 @@ grexp_to_string(e0): string = case+ e0 of
   // Could be a single gene required for this reaction
   | GRgenes(!s) => let 
     val ssize = genes_size(!s)
-    val _ = if ssize <> 1 then $raise InvalidCase;
+    val _ = if ssize != 1 then $raise InvalidCase;
     val g1: string = ""
     var gene: string 
     val ans = genes_choose(!s,gene)
@@ -706,7 +712,7 @@ fun list_min (inlist: List string, emap: &gDMap): string = let
         val xval = gDMap_find(emap, x)
         val cminval = gDMap_find(emap, cmin)
         //Negative values mean the gene wasn't in the dataset:
-        val xval = if (xval <> xval) then cminval else xval
+        val xval = if isnan(xval) then cminval else xval
       in
         if cminval < xval then loop(cmin,xs,emap) else loop(x,xs,emap) 
       end
@@ -729,10 +735,10 @@ fun dlist_sum_var (inset: !genes, emap: &gDMap, smap: &gDMap): (double, double) 
         val xval = gDMap_find(emap, x)
         val sval = pow(gDMap_find(smap, x), 2.0)
         //Negative values mean the gene wasn't in the dataset:
-        val miss = if (xval <> xval) then miss+1 else miss 
-        val csum = if (xval <> xval) then csum else csum + xval
+        val miss = if isnan(xval) then miss+1 else miss 
+        val csum = if isnan(xval) then csum else csum + xval
         //Assume independent variables for now
-        val cvar = if (xval <> xval) then cvar else (cvar + sval)                 
+        val cvar = if isnan(xval) then cvar else (cvar + sval)                 
       in
         loop(xs,emap,smap,miss,csum,cvar)
       end
