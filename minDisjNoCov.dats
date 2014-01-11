@@ -20,20 +20,6 @@
   Add fn* to mutually recursive functions in parser and link by "and"s to
   make sure they are recognized as being mutually tail recursive.
 
-  Write a wrapper minDisj.m; feed in rules via stdin,
-  and expression data can be passed as a filename argument 
-  as it currently is.
-  
-  Actually, can't use stdin:
-  http://www.mathworks.com/matlabcentral/answers/67402-pipe-output-to-stdin-of-a-process-and-capture-output
-
-  Don't need a map of int-sets, just have a map of ints
-  and do the following:
-    1) Write a GREXP fun to get all genes in a rule
-    and store them as genes (set of strings).
-    2) Listize the genes, and for each gene, increase
-    its pleiotropy count by 1 in the int-map.
-
   Although it is less likely that genes within a disjunction
   are correlation as much as genes within a conjunction,
   assuming this may be a problem; we should check actual 
@@ -103,6 +89,7 @@ exception UnforseenLexeme of ()
 exception ParserParensUnbalanced of ()
 exception ParserIllegalToken of ()
 exception ParserPrematureEND of ()
+exception InvalidData of ()
 exception InvalidCase of ()
 exception EmptyList of ()
 exception MapKeyNotFound of ()
@@ -719,7 +706,7 @@ fun list_min (inlist: List string, emap: &gDMap): string = let
         val xval = gDMap_find(emap, x)
         val cminval = gDMap_find(emap, cmin)
         //Negative values mean the gene wasn't in the dataset:
-        val xval = if (xval < 0.0 orelse (xval <> xval)) then cminval else xval
+        val xval = if (xval <> xval) then cminval else xval
       in
         if cminval < xval then loop(cmin,xs,emap) else loop(x,xs,emap) 
       end
@@ -742,10 +729,10 @@ fun dlist_sum_var (inset: !genes, emap: &gDMap, smap: &gDMap): (double, double) 
         val xval = gDMap_find(emap, x)
         val sval = pow(gDMap_find(smap, x), 2.0)
         //Negative values mean the gene wasn't in the dataset:
-        val miss = if (xval < 0.0 orelse (xval <> xval)) then miss+1 else miss 
-        val csum = if (xval < 0.0 orelse (xval <> xval)) then csum else csum + xval
+        val miss = if (xval <> xval) then miss+1 else miss 
+        val csum = if (xval <> xval) then csum else csum + xval
         //Assume independent variables for now
-        val cvar = if (xval < 0.0 orelse (xval <> xval))then cvar else (cvar + sval)                 
+        val cvar = if (xval <> xval) then cvar else (cvar + sval)                 
       in
         loop(xs,emap,smap,miss,csum,cvar)
       end
@@ -958,6 +945,7 @@ implement main {n} (argc,argv) = () where  {
 //
         val _ = gDMap_insert(emap, gene, exp) 
         val _ = gDMap_insert(smap, gene, std)
+        val _ = if exp < 0.0 orelse std < 0.0 then $raise InvalidData;        
 //
         val _ = strptr_free(linein)
       in
