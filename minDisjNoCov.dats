@@ -43,6 +43,8 @@
 (*
 ** please do not change unless you know what you do
 *)
+
+(*
 //
 staload _(*anon*) = "libc/SATS/stdio.sats"
 //
@@ -63,7 +65,19 @@ staload _(*anon*) = "prelude/DATS/pointer.dats"
 //
 staload _(*anon*) = "prelude/DATS/reference.dats"
 //
+
+*)
+
+(* ****** ****** *)
+//
+#include
+"share/atspre_staload.hats"
+//
+(* ****** ****** *)
+
 (* ********************************* Begin CODE ******************************** *)
+
+
 
 staload
 UN = "prelude/SATS/unsafe.sats"
@@ -312,7 +326,7 @@ fun GREXP_copy(gr: !GREXP): GREXP = case+ gr of
     val x = GRdisj(GREXP_copy(!lx),GREXP_copy(!rx))
     prval () = fold@ gr
     in x end
- 
+
 fun GREXP_free(gr: GREXP): void = case+ gr of 
   | ~GRgenes(g) => genes_free(g)
   | ~GRconj(g) => genes_free(g)

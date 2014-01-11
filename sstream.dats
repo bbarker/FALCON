@@ -1,3 +1,5 @@
+
+(*
 //
 staload _(*anon*) = "libc/SATS/stdio.sats"
 //
@@ -18,6 +20,15 @@ staload _(*anon*) = "prelude/DATS/pointer.dats"
 //
 staload _(*anon*) = "prelude/DATS/reference.dats"
 //
+
+*)
+
+(* ****** ****** *)
+//
+#include
+"share/atspre_staload.hats"
+//
+(* ****** ****** *)
 
 staload "sstream.sats"
 
