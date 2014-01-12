@@ -84,7 +84,8 @@ UN = "prelude/SATS/unsafe.sats"
 
 staload "prelude/SATS/string.sats"
 staload "prelude/SATS/filebas.sats"
-staload "prelude/SATS/printf.sats"
+// Not in ATS2:
+//staload "prelude/SATS/printf.sats"
 staload "libc/SATS/stdio.sats"
 staload "prelude/SATS/integer.sats"
 staload "prelude/SATS/list.sats"
@@ -296,7 +297,7 @@ datatype GRTOK =
   | TKrpar of ()
   | TKEND of ()
 
-dataviewtype GREXP = 
+datavtype GREXP = 
   | GRgenes of genes
   | GRconj of genes
   | GRconj of (GREXP,GREXP)
@@ -309,23 +310,11 @@ typedef GRtokenizer = '{
 }
 
 fun GREXP_copy(gr: !GREXP): GREXP = case+ gr of
-  | GRgenes(!g) => let 
-    val x = genes_copy(!g) prval () = fold@ gr 
-    in GRgenes(x) end
-  | GRconj(!g) => let
-    val x = genes_copy(!g) prval () = fold@ gr    
-    in GRconj(x) end
-  | GRdisj(!g) => let
-    val x = genes_copy(!g) prval () = fold@ gr 
-    in GRdisj(x) end 
-  | GRconj(!lx,!rx) => let
-    val x = GRconj(GREXP_copy(!lx),GREXP_copy(!rx))
-    prval () = fold@ gr
-    in x end
-  | GRdisj(!lx,!rx) => let 
-    val x = GRdisj(GREXP_copy(!lx),GREXP_copy(!rx))
-    prval () = fold@ gr
-    in x end
+  | GRgenes (g) => GRgenes (genes_copy(g))
+  | GRconj (g) => GRconj (genes_copy(g))
+  | GRdisj (g) => GRdisj (genes_copy(g))
+  | GRconj (lx, rx) => GRconj(GREXP_copy(lx), GREXP_copy(rx))
+  | GRdisj (lx, rx) => GRdisj(GREXP_copy(lx), GREXP_copy(rx))
 
 fun GREXP_free(gr: GREXP): void = case+ gr of 
   | ~GRgenes(g) => genes_free(g)
@@ -498,77 +487,36 @@ macdef p_disj(e0,e1,e2) = x where {
 
 implement
 grexp_to_string(e0): string = case+ e0 of
-  | GRconj (!e1, !e2) => (case+ (!e1, !e2) of 
-    | (GRdisj (!x), GRdisj (!z)) => p_disj(e0,!e1,!e2)     
-    | (GRdisj (!x,!y), GRdisj (!z)) => p_disj(e0,!e1,!e2)
-    | ( GRdisj (!z), GRdisj (!x,!y)) => p_disj(e0,!e1,!e2)
-    | ( GRdisj (!z,!w), GRdisj (!x,!y)) => p_disj(e0,!e1,!e2)      
-    | (_, GRdisj (!x)) => let
-      prval () = fold@ !e2 
-      val x = eCd(!e1,!e2)
-      prval () = fold@ e0
-      in x end
-    | (_, GRdisj (!x,!y)) => let
-      prval () = fold@ !e2 
-      val x = eCd(!e1,!e2)
-      prval () = fold@ e0
-      in x end      
-    | (GRdisj (!x), _) => let
-      prval () = fold@ !e1
-      val x =  dCe(!e1,!e2)
-      prval () = fold@ e0 
-      in x end
-    | (GRdisj (!x,!y), _) => let
-      prval () = fold@ !e1
-      val x =  dCe(!e1,!e2)
-      prval () = fold@ e0 
-      in x end      
-    | (_,_) =>> let
-      val x = grexp_to_string(!e1) + " and " + grexp_to_string(!e2)
-      prval () = fold@ e0
-      in x end 
-    )
-  | GRconj (!e1) =>> let 
-    val x = stringInOpIze(!e1," and ") 
-    prval () = fold@ e0
-    in x end
-  | GRdisj (!e1, !e2) =>  (case+ (!e1, !e2) of 
-    | (GRgenes (!s1), GRgenes (!s2)) => let 
-      val x = stringInOpIze(!s1,"") + " or " + stringInOpIze(!s2,"")
-      prval () = fold@ !e1 and () = fold@ !e2 and () = fold@ e0
-      in x end
-    | (GRgenes (!s1), _) => let
-      val x = stringInOpIze(!s1,"") + " or "
-      prval () = fold@ !e1
-      val y = grexp_to_string(!e2)
-      prval () = fold@ e0
-      in x + y end
-    | (_, GRgenes (!s2)) => let
-      val y = " or " + stringInOpIze(!s2,"")
-      prval () = fold@ !e2
-      val x = grexp_to_string(!e1)
-      prval () = fold@ e0 
-      in x + y end
-    | (_,_) => let
-      val x = grexp_to_string(!e1) + " or " + grexp_to_string(!e2) 
-      in (fold@ e0; x) end
-    )
-  | GRdisj (!e1) =>> let 
-    val x = stringInOpIze(!e1," or ") 
-    prval () = fold@ e0
-    in x end
+  | GRconj (e1, e2) => (case+ (e1, e2) of
+    (GRdisj (x), GRdisj (z)) => p_disj(e0, e1, e2)
+    | (GRdisj (x, y), GRdisj (z)) => p_disj(e0, e1, e2)   
+    | ( GRdisj (z), GRdisj (x, y)) => p_disj(e0, e1, e2)    
+    | ( GRdisj (z, w), GRdisj (x, y)) => p_disj(e0, e1, e2)    
+    | (_, GRdisj (x)) => eCd(e1, e2)
+    | (_, GRdisj (x, y)) => eCd(e1, e2)
+    | (GRdisj (x), _) => dCe(e1, e2)
+    | (GRdisj (x, y), _) => dCe(e1, e2)  
+    | (_, _) =>> grexp_to_string(e1) + " and " + grexp_to_string(e2)
+  )
+  | GRconj (e1) =>> stringInOpIze(e1, " and ")
+  | GRdisj (e1, e2) => (case+ (e1, e2) of 
+    | (GRgenes (s1), GRgenes (s2)) => 
+      stringInOpIze(s1, "") + " or " + stringInOpIze(s2, "")
+    | (GRgenes (s1), _) => stringInOpIze(s1, "") + " or " + grexp_to_string(e2)
+    | (_, GRgenes (s2)) => grexp_to_string(e1) + " or " + stringInOpIze(s2, "")
+    | (_, _) => grexp_to_string(e1) + " or " + grexp_to_string(e2) 
+  )
+  | GRdisj (e1) =>> stringInOpIze(e1, " or ")
   // Could be a single gene required for this reaction
-  | GRgenes(!s) => let 
-    val ssize = genes_size(!s)
-    val _ = if ssize != 1 then $raise InvalidCase;
+  | GRgenes(s) => let 
+    val ssize = genes_size(s)
+    val () = if ssize != 1 then $raise InvalidCase;
     val g1: string = ""
     var gene: string 
-    val ans = genes_choose(!s,gene)
+    val ans = genes_choose(s, gene)
     val _ = assertloc (ans)      
     prval any = opt_unsome {string} gene
-    prval () = fold@ e0
     in gene end
-
 
 implement
 print_pretty_grexp (grexp): void = () where {
