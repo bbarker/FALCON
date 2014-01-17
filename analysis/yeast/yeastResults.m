@@ -1,4 +1,4 @@
-function falconCorr = yeastResults(model, methodList, experiment, writeRes, fLabel)
+function falconCorr = yeastResults(model, methodList, experiment, writeRes, fLabel, nReps)
 
 % kieran: 26 apr 12
 % Brandon Barker 01/19/13 
@@ -30,6 +30,10 @@ end
 if ~exist('writeRes', 'var')
     writeRes = true;
 end
+if ~exist('nReps', 'var')
+    nReps = 7; %Reasonable default
+end
+
 
 falconCorr = -inf;
 
@@ -38,7 +42,7 @@ for i = 1:length(expFiles)
         p_standard_fba_best, p_gimme, p_shlomi, p_fix, p_falcon,            ...
         s_fix, s_falcon, timing] =                                          ...
         yeastAnalysis(model, expFiles{i}, fluxFiles{i},                     ...
-            gene_to_scale, flux_to_scale, methodList);
+            gene_to_scale, flux_to_scale, methodList, nReps);
 
     falconCorr = mycorr(p_falcon, experimental);
 

@@ -2,13 +2,11 @@ function [reaction_name, experimental, p_gene_exp, p_standard_fba,        ...
     p_standard_fba_best, p_gimme, p_shlomi, p_fix, p_falcon,              ...
     s_fix, s_falcon, timing] =                                            ...
     yeastAnalysis(model, genedata_filename, experimental_fluxes_filename, ...
-    gene_to_scale, flux_to_scale, methodList)
+    gene_to_scale, flux_to_scale, methodList, nReps)
 
 % kieran: 26 apr 12
 
 % Brandon Barker Jan 2013 - Jan 1014
-
-nReps = 100;
 
 allMethods = {'FALCON', 'eMoMA', 'GIMME', 'Shlomi', 'fitFBA'};
 
