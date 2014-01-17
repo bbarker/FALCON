@@ -401,13 +401,9 @@ if ~dimFail
     if 1
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,            ...
-                                                      csense, vbasN, cbasN,  ...
-                                                      NRowLab, NColLab, fIter);
-        else
-            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,           ...
-                                                      csense, vbasN, cbasN);
         end
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,            ...
+                                               csense, vbasN, cbasN);
     end
 
     % This seems to do more poorly because of how the score can be defined
@@ -433,13 +429,9 @@ if ~dimFail
         end
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-            [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,  ...
-                                                      csense, vbasN, cbasN,  ...
-                                                      NRowLab, NColLab, fIter);
-        else
-            [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
-                                                      csense, vbasN, cbasN);
         end
+	[v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
+						         csense, vbasN, cbasN);
 
         % Do backward = 0:
         if numel(revRxns) > 0
@@ -450,13 +442,10 @@ if ~dimFail
         end
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-            [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,         ...
-                                                      csense, vbasN, cbasN,         ...
-                                                      NRowLab, NColLab, fIter);
-        else
-            [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
-                                                      csense, vbasN, cbasN);
         end
+	[v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
+						         csense, vbasN, cbasN);
+
         L(firstRevRxn + 1) = BLsave;
         U(firstRevRxn + 1) = BUsave;
         irrev_nz_f = sum(v_f(find(~boundsRev)) ~= 0)
@@ -513,8 +502,7 @@ end
 
 
 function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense,  ...
-                                                vbas, cbas, ...
-                                                rowLabels, colLabels, fIter)
+                                                vbas, cbas)
 %
 %easyLP
 %
@@ -560,8 +548,8 @@ vlb = vlb(:);
 vub = vub(:);
 
 % Do this after optimization below as well.
-if exist('rowLabels', 'var')
-    printFalconProblem(rowLabels, colLabels, fIter, a, b, vlb, vub, f, ...
+if exist('NRowLab', 'var')
+    printFalconProblem(NRowLab, NColLab, fIter, a, b, vlb, vub, f, ...
                        csense, 0);
 end
 
@@ -630,9 +618,9 @@ if conv
             disp('Converged, but fOpt still nan!');
         end
         % Print again in case optimization succeeded and we can print v
-        colLabels(j2) = [];
-        if exist('rowLabels', 'var')
-            printFalconProblem(rowLabels, colLabels, fIter + 0.1, a, b, vlb, vub, f, ...
+        NColLab(j2) = [];
+        if exist('NRowLab', 'var')
+            printFalconProblem(NRowLab, NColLab, fIter + 0.1, a, b, vlb, vub, f, ...
                                csense, v(j1));
         end
     end
