@@ -549,14 +549,13 @@ print_tks(ss: sstream): void =
   end
 
 implement
-toCaps(c): char = if (c >= 'a' && c <= 'z') then char_of_int(int_of_char(c)-32) else c
-
+toCaps(c): char = if (c >= 'a' && c <= 'z') then int2char0(char2int0(c)-32) else c
   
 implement 
 subsstr_caps(ss: sstream, p1: size_t, p2): string = let
     fun loop(i: size_t):<cloref1> string = if i < p2 then let       
         val x = sstream_substr(ss,i,i+1)
-        val c = toCaps(string_test_char_at( string1_of_string(x), size1_of_int1(0) ))
+        val c = toCaps(string_test_at(g1ofg0(x), 0))
        in
         tostring(c) + loop(i+1)
       end
@@ -682,7 +681,7 @@ end // end of [list_min]
    This function and its cousins could benefit from proofs. *)
      
 fun dlist_sum_var (inset: !genes, emap: &gDMap, smap: &gDMap): (double, double) = let 
-  val num_genes = int_of_size(genes_size(inset))
+  val num_genes = g0uint2int_size_int(genes_size(inset))
   val inlist = genes_listize(inset)
   fun loop(rlist: List(string), emap: &gDMap, smap: &gDMap, miss: int, csum: double,
   cvar: double): (int, double, double) = case+ rlist of
@@ -701,7 +700,7 @@ fun dlist_sum_var (inset: !genes, emap: &gDMap, smap: &gDMap): (double, double) 
 in case+ inlist of
   | list_cons (x, xs) => let 
       val (miss, csum, cvar) = loop(inlist, emap, smap, 0, 0.0, 0.0)
-    in  ( double_of_int(num_genes)*csum/(double_of_int((num_genes - miss))), cvar) end  
+    in  ( g0int2float_int_double(num_genes)*csum/(g0int2float_int_double(num_genes - miss)), cvar) end  
   | list_nil () => ( $raise EmptyList; (0.0, 0.0))  
 end // end of [dlist_sum_var]
 
@@ -847,7 +846,6 @@ toCNF (bexp, emap): GREXP = let
     ):GREXP
 
   end
-
   
 %{^
 #define __sscanf0(line, gene, exp, std) \
