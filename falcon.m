@@ -401,12 +401,12 @@ if ~dimFail
     if 1
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,                   ...
-                                                      csense, vbasN, cbasN, LPmeth,  ...
-                                                      FDEBUG, NRowLab, NColLab, fIter);
+            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,            ...
+                                                      csense, vbasN, cbasN,  ...
+                                                      NRowLab, NColLab, fIter);
         else
-            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U, ...
-                                                      csense, vbasN, cbasN, LPmeth);
+            [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,           ...
+                                                      csense, vbasN, cbasN);
         end
     end
 
@@ -433,12 +433,12 @@ if ~dimFail
         end
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
-            [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,         ...
-                                                      csense, vbasN, cbasN, LPmeth, ...
-                                                      FDEBUG, NRowLab, NColLab, fIter);
+            [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,  ...
+                                                      csense, vbasN, cbasN,  ...
+                                                      NRowLab, NColLab, fIter);
         else
             [v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
-                                                      csense, vbasN, cbasN, LPmeth);
+                                                      csense, vbasN, cbasN);
         end
 
         % Do backward = 0:
@@ -451,11 +451,11 @@ if ~dimFail
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
             [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,         ...
-                                                      csense, vbasN, cbasN, LPmeth, ...
-                                                      FDEBUG, NRowLab, NColLab, fIter);
+                                                      csense, vbasN, cbasN,         ...
+                                                      NRowLab, NColLab, fIter);
         else
             [v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
-                                                      csense, vbasN, cbasN, LPmeth);
+                                                      csense, vbasN, cbasN);
         end
         L(firstRevRxn + 1) = BLsave;
         U(firstRevRxn + 1) = BUsave;
@@ -510,10 +510,10 @@ else
     disp(['FALCON: solver did NOT converge in ' num2str(fTime) ...
           ' seconds and ' num2str(fIter) ' iterations.']);
 end
-end % of falcon
+
 
 function [v, fOpt, conv, svbas, scbas] = easyLP(f, a, b, vlb, vub, csense,  ...
-                                                vbas, cbas, LPmeth, FDEBUG, ...
+                                                vbas, cbas, ...
                                                 rowLabels, colLabels, fIter)
 %
 %easyLP
@@ -641,7 +641,7 @@ else
    sol = solution.full   
 end
 end % of easyLP
-
+end % of falcon
 
 function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, fIter, m)
 % Compute LB/UB for irrev AND rev model, as well as 
