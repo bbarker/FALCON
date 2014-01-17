@@ -513,8 +513,7 @@ grexp_to_string(e0): string = case+ e0 of
     val () = if ssize != 1 then $raise InvalidCase;
     val g1: string = ""
     var gene: string 
-    val ans = genes_choose(s, gene)
-    val _ = assertloc (ans)      
+    val () = assertloc (genes_choose(s, gene))      
     prval any = opt_unsome {string} gene
     in gene end
 
