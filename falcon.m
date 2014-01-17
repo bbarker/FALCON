@@ -402,7 +402,7 @@ if ~dimFail
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         end
-        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,            ...
+        [v, fOpt, conv, vbasN, cbasN] = easyLP(f, N, b, L, U,     ...
                                                csense, vbasN, cbasN);
     end
 
@@ -430,7 +430,7 @@ if ~dimFail
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         end
-	[v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U, ...
+	[v_b, fOpt_b, conv_b, vbasN_b, cbasN_b] = easyLP(f, N, b, L, U,     ...
 						         csense, vbasN, cbasN);
 
         % Do backward = 0:
@@ -443,7 +443,7 @@ if ~dimFail
         if FDEBUG
             disp(['Not Reversible: ' num2str(sum(~boundsRev))]);
         end
-	[v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U, ...
+	[v_f, fOpt_f, conv_f, vbasN_f, cbasN_f] = easyLP(f, N, b, L, U,     ...
 						         csense, vbasN, cbasN);
 
         L(firstRevRxn + 1) = BLsave;
@@ -479,7 +479,7 @@ end % of if ~dimFail
         v_all = [v_all columnVector(v(1 : nrxns + 2))];
         nvar = v_orig(nrxns + 1);
         [m.lb m.ub boundsRev] = setRxnDirection(v(1:nrxns), m.lb, m.ub, ...
-                                    boundsRev, nrxns, m);
+                                    boundsRev, nrxns);
         if FDEBUG
             disp('New nvar, zvar is:');
             disp([nvar v(nrxns + 2)]);
@@ -631,7 +631,7 @@ end
 end % of easyLP
 end % of falcon
 
-function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, fIter, m)
+function [iLB iUB isRev] = setRxnDirection(vI, iLB, iUB, isRev, nrxns, fIter)
 % Compute LB/UB for irrev AND rev model, as well as 
 % setting the corresponding rev vectors.
 %
