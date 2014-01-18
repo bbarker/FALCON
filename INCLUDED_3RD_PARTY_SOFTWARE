@@ -1,0 +1,13 @@
+Lee et al. code          - used as the incentive for this algorithm and several analysis
+(by Kieran Smallbone)      scripts were also used as the basis for a
+
+cell2csv                 - used to output various csv files in analysis and
+(by Rob KohR)              debugging scripts.
+
+d2nfu 
+(by Christophe COUVREUR; -
+by The MathWorks, Inc.  )
+
+structvars               - used in conjunction with inputParser to parse bind
+(by Matt J,                optional arguments to variables.
+Xoran Technologies, Inc.)

@@ -1,8 +1,9 @@
 function [v_sol, corrval, nvar, v_all, fTime, fIter, ...
     v_sol_s, corrval_s, nvar_s, fTime_s, fIter_s]  =  ...
-    falconMulti(m, r, r_sd, r_group, nReps, rc, minFit,  ...
-    EXPCON, FDEBUG, LPmeth)
+    falconMulti(m, nReps, varargin)
 
+% Brandon Barker 2014
+%
 % This is like falcon, but returns a mean for v_sol, corrval,
 % nvar, fTime, and fIter.
 % v_all is not intended to be used in this script, 
@@ -30,28 +31,9 @@ v_all = [];
 
 timeInit = num2str(now());
 
-%%%% Have to reproduce optional argument code:
-% ?? Could this be included as a macro - just run a script?
-if ~exist('rc', 'var')
-    rc = 0;
-end
-if ~exist('minFit', 'var')
-    minFit = 0;
-end
-if ~exist('FDEBUG', 'var')
-    FDEBUG = false;
-end
-if ~exist('EXPCON', 'var')
-    EXPCON = true;
-end
-if ~exist('LPmeth', 'var')
-    LPmeth = 1; % dual-simplex for gurobi
-end
-%%%%
-
 parfor i = 1:nReps
     [v_sol, corrval, nvar, ~, fTime, fIter] = ...
-        falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG, LPmeth);
+        falcon(m, varargin{:});
     v_sol_Dist(i, :)  = columnVector(v_sol)';
     corrval_Dist(i)   = corrval;
     fTime_Dist(i)     = fTime;

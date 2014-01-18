@@ -1,32 +1,76 @@
-function [v_sol, corrval, nvar, v_all, fTime, fIter] = ...
-    falcon(m, r, r_sd, r_group, rc, minFit, EXPCON, FDEBUG, LPmeth)
+function [v_sol, corrval, nvar, v_all, fTime, fIter] = falcon(m, varargin)
 
-TESTING = false;
+% Brandon Barker 2013 - 2014 Based on Kieran Smallbone's script from:
+%                            http://www.biomedcentral.com/1752-0509/6/73
 
-% If true, allow S*v >= 0 instead of S*v == 0.
-MASSPROD = false;
+p = inputParser;
+p.FunctionName = 'falcon';
+p.StructExpand = false;
+p.CaseSensitive = true;
+if isfield(p, 'PartialMatching')
+    p.PartialMatching = false;
+end
 
-
-%INPUT
+%%% Required Input %%%
 %
+p.addRequired('m'); % currently no checks, should check fields
 %
-%OPTIONAL INPUTS
+r = []; 
+p.addRequired('r', @IPcheck_r_X);
+%
+r_sd = []; 
+p.addRequired('r_sd', @IPcheck_r_X);
+%
+r_group = []; 
+p.addRequired('r_group', @IPcheck_r_X);
+
+
+%%% Optional Input %%%
+rc = 0; 
+p.addParamValue('rc', rc, @IPcheck_scalarNN);
+%
+minFit = 0; 
+p.addParamValue('minFit', minFit, @IPcheck_scalarNN);
+%
+% dual-simplex for gurobi
+LPmeth = 1; 
+p.addParamValue('LPmeth', LPmeth, @IPcheck_scalarNN);
+%
 % FDEBUG    prints or writes to files additional information
 %           Important variables to always change when modifying
 %           code to make sure FDEBUG is realistic:
 %           NColLab <- update whenever s2 is extended
 %           NRowLab <- update whenever s1 is extended
+FDEBUG = false; 
+p.addParamValue('FDEBUG', FDEBUG, @islogical);
+
+
+%%% Experimental Features %%%
+%
+EXPCON = false; 
+p.addParamValue('EXPCON', EXPCON, @islogical);
+%
+TESTING = false; 
+p.addParamValue('TESTING', TESTING, @islogical);
+%
+% If true, allow S*v >= 0 instead of S*v == 0.
+MASSPROD = false; 
+p.addParamValue('MASSPROD', MASSPROD, @islogical);
+
+%
+% Get the argument results in a struct and
+% bind them to variables (e.g. p.Results.r -> r) 
+%
+p.parse(m, varargin{:});
+results = p.Results;
+eval(structvars(numel(fieldnames(results)), results));
+
 % 
 %OUTPUT
 %
-%
-%kieran: 26 apr 12
-%Brandon
-% 
-% 
-% Brandon Barker 01/15/2013  Based on Kieran Smallbone's script from:
-%                            http://www.biomedcentral.com/1752-0509/6/73
-%
+
+
+
 % Improvements since first pub:
 % 1) LFP to allow for an optimal scaling parameter (use initial scaling and then remove).
 % 2) Parallel FVA
@@ -91,21 +135,6 @@ t_falcon = tic;
 
 boundsRev = getBoundsRev(m);
 
-if ~exist('rc', 'var')
-    rc = 0;
-end
-if ~exist('minFit', 'var')
-    minFit = 0;
-end
-if ~exist('FDEBUG', 'var')
-    FDEBUG = false;
-end
-if ~exist('EXPCON', 'var')
-    EXPCON = true;
-end
-if ~exist('LPmeth', 'var')
-    LPmeth = 1; % dual-simplex for gurobi
-end
 
 nrxns = length(m.rxns);
 nmets = length(m.mets);
@@ -132,7 +161,6 @@ end
 if FDEBUG
     flux_sum
 end
-
 
 % Typically required to be >= 0, we can require strict positivity
 % due to having non-affine in our LFP. Currently this is not the
@@ -739,3 +767,34 @@ while k < nrxns
     end
 end
 end % of countNonZeroEq
+
+
+
+%%%%%%%%%%%%%     Input Parser Functions     %%%%%%%%%%%%%
+
+%regularization check:
+
+function TF = IPcheck_r_X(x)
+TF = true;
+if ~isvector(x)
+    error('r, r_sd, r_group must be vectors.')
+elseif ~isnumeric(x)
+    disp(x)
+    error('r, r_sd, r_group must be numeric.')
+end
+end % end of IPcheck_r_X
+
+function TF = IPcheck_scalarNN(x)
+TF = true;
+if ~isscalar(x)
+    error('rc must be a scalar.')
+elseif ~isnumeric(x)
+    error('rc must be numeric.')
+elseif x < 0
+    error('rc must be >= 0.')
+end
+end % end of IPcheck_scalarNN
+
+
+
+%%%%%%%%%%%%%   End Input Parser Functions   %%%%%%%%%%%%%
