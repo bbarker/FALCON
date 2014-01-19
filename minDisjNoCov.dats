@@ -76,6 +76,8 @@ staload _(*anon*) = "prelude/DATS/reference.dats"
 //
 (* ****** ****** *)
 
+staload  "libc/SATS/math.sats"
+
 (* ********************************* Begin CODE ******************************** *)
 
 
@@ -83,17 +85,18 @@ staload _(*anon*) = "prelude/DATS/reference.dats"
 staload
 UN = "prelude/SATS/unsafe.sats"
 
-staload "prelude/SATS/string.sats"
-staload "prelude/SATS/filebas.sats"
+//? staload "prelude/SATS/string.sats"
+//? staload "prelude/SATS/filebas.sats"
 // Not in ATS2:
 //staload "prelude/SATS/printf.sats"
-staload "libc/SATS/stdio.sats"
-staload "prelude/SATS/integer.sats"
-staload "prelude/SATS/list.sats"
 
-staload  "libc/SATS/math.sats"
+//? staload "libc/SATS/stdio.sats"
+//? staload "prelude/SATS/integer.sats"
+//? staload "prelude/SATS/list.sats"
+
+
 //dynload  "libc/SATS/math.sats"
-staload _ = "libc/SATS/math.sats"
+//? staload _ = "libc/SATS/math.sats"
 
 //staload "libats/SATS/linset_avltree.sats"   
 //staload _ = "libats/DATS/linset_avltree.dats"   
@@ -184,7 +187,7 @@ fun gDMap_free(mp: gDMap):<!wrt> void
 
 extern
 fun gDMap_insert(mp: &gDMap, gene: string, dval: double
-):<!wrt> bool
+): bool
 
 extern
 fun gDMap_make_nil(): gDMap
@@ -253,8 +256,8 @@ fun gIntSetMapp_make_nil(): gIntSetMap
 
 local
 
-staload LS = "libats/SATS/linset_listord.sats"   
-staload _ = "libats/DATS/linset_listord.dats"   
+staload LS = "libats/ATS1/SATS/linset_listord.sats"   
+staload _ = "libats/ATS1/DATS/linset_listord.dats"   
 staload LM = "libats/SATS/linmap_avltree.sats"   
 staload _ = "libats/DATS/linmap_avltree.dats"   
 assume IntSet = $LS.set(int) //constrain to be >=1 ?
@@ -281,13 +284,12 @@ gIntSetMap_find (mp, k): IntSet = let
 end // end of [local]
 
 
-fn stropt_is_GE1 {i:int} (stropt: stropt i):<> bool (i >= 1) 
-  = if stropt_is_some(stropt) then let
-        val slen = string_length(stropt_unsome(stropt))
-      in
-        slen >= 1
-      end
-    else false
+fn stropt_is_GE1 
+  {i:int} (stropt: stropt i):<> bool (i >= 1) = 
+  if stropt_is_some(stropt) 
+  then strintcmp (stropt_unsome(stropt), 1) >= 0 
+  else false //end of [if]
+
 
 datatype GRTOK =
   | TKgene of string
