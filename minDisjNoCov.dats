@@ -877,7 +877,8 @@ implement main0 {n} (argc, argv) = () where  {
   var ExpMap = gDMap_make_nil ()
   var STDMap = gDMap_make_nil () //Actually variances
     
-  val _ = fileref_get_line_string(inFIEXP) // Assume column name line  
+  val tmp = fileref_get_line_string(inFIEXP) // Assume column name line
+  val _ = strptr_free(tmp)  
   fun loopDATA(emap: &gDMap, smap: &gDMap):<cloref1> void = let
     val linein = fileref_get_line_string(inFIEXP)
     in 
@@ -903,7 +904,9 @@ implement main0 {n} (argc, argv) = () where  {
 //
         val gene = $UN.cast{String}(p_gene)
         val nstr = string1_length (gene)
-        val gene = string_make_substring (gene, 0, nstr)
+        val () = assertloc(nstr < 100) // No huge gene names
+        // Do we need this in ATS2?: 
+        //val gene = string_make_substring (gene, i2sz(0), nstr)
         // Do we need this in ATS2?:
         //val gene = string_of_strbuf (gene)
 //        val _ = println! ("gene = ", gene)
@@ -921,12 +924,12 @@ implement main0 {n} (argc, argv) = () where  {
   val _ = loopDATA(ExpMap,STDMap)
     
   fun loopCNF(emap: &gDMap, smap: &gDMap, cnt: int):<cloref1> void = let
-    val linein = fileref_get_line_string(inFIRUL)
+    val linein = strptr2stropt (fileref_get_line_string(inFIRUL))
     val cnt = cnt+1
   in
     if stropt_is_some(linein) then
-      if stropt_is_GE1(linein) then let
-        val rexp = parseGR(GRtokenizer_make(sstream_make(stropt_unsome(linein),16384)))        
+      if stropt_is_GE1(linein) then let //need to change this?
+        val rexp = parseGR(GRtokenizer_make(sstream_make(stropt_unsome(linein), i2sz(16384))))        
         val rexpCNF = minConj(toCNF(rexp, emap),emap)
         val dv = disj_vals(rexpCNF, emap, smap);
       in
@@ -945,5 +948,5 @@ implement main0 {n} (argc, argv) = () where  {
   val () = gDMap_free(ExpMap)
 
   val () = gDMap_free(STDMap)
-  val () = exit(0)
+  val _ = exit(0)
 }
