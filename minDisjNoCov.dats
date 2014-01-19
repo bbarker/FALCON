@@ -118,7 +118,7 @@ absviewtype genes
 
 extern
 fun genes_choose(xs: !genes, gene: &string? >> opt (string, b)
-): #[b:bool] bool (b)
+):<!wrt> #[b:bool] bool (b)
  
 extern
 fun genes_copy (xs: !genes): genes
@@ -183,7 +183,7 @@ fun gDMap_free(mp: gDMap):<!wrt> void
 
 extern
 fun gDMap_insert(mp: &gDMap, gene: string, dval: double
-):<> bool
+):<!wrt> bool
 
 extern
 fun gDMap_make_nil(): gDMap
