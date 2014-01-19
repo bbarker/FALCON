@@ -62,7 +62,8 @@ nIrxns = length(modelIrrev.rxns);
 
 %Now compute initial flux:
 [v, corrval] = falcon(modelIrrev, rxn_exp, rxn_exp_sd, rxn_rule_group, ...
-                      regC, minFit, expCon, false, LPmeth);
+                      'rc', regC, 'minFit', minFit, 'EXPCON', expCon,  ...
+                      'FDEBUG', false, 'LPmeth', LPmeth);
 if norm(v,1) < 1e-7
     disp('Error, initial flux prediction failed.');
     return;

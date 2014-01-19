@@ -35,5 +35,6 @@ end
     computeMinDisj(modelIrrev, expressionFile);
 
 [v_solirrev corral]= falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
-                    rxn_rule_group, rc, 0, EXPCON, FDEBUG);
+                    rxn_rule_group, 'rc', rc, 'minFit', 0,   ...
+                    'EXPCON', EXPCON, 'FDEBUG', FDEBUG);
 v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);
