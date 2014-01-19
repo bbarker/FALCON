@@ -36,6 +36,16 @@ p.addParamValue('minFit', minFit, @IPcheck_scalarNN);
 LPmeth = 1; 
 p.addParamValue('LPmeth', LPmeth, @IPcheck_scalarNN);
 %
+% random seed (inf) by default
+LPseed = inf; 
+p.addParamValue('LPseed', inf, @IPcheck_scalarNNorINF);
+%
+% flux_sum (see docs): -1 for automated default 
+flux_sum = -1; 
+p.addParamValue('flux_sum', -1, @IPcheck_scalarNN);
+
+%
+%
 % FDEBUG    prints or writes to files additional information
 %           Important variables to always change when modifying
 %           code to make sure FDEBUG is realistic:
@@ -153,10 +163,12 @@ notnan_r = ~isnan(r);
 % this seems to be a good approximation:
 
 minUB = min(m.ub(m.ub > 0));
-flux_sum = sum(~boundsRev & notnan_r)*minUB;
-%flux_sum = min(m.ub(m.ub > 0)) / 2
-if flux_sum == 0
-    flux_sum = mean(m.ub(m.ub > 0))/2
+if flux_sum < 0 % use automated default
+    flux_sum = sum(~boundsRev & notnan_r)*minUB;
+    %flux_sum = min(m.ub(m.ub > 0)) / 2
+    if flux_sum == 0
+	flux_sum = mean(m.ub(m.ub > 0))/2
+    end
 end
 if FDEBUG
     flux_sum
@@ -600,7 +612,11 @@ if any(isnan(b))
 end
 
 params.method = LPmeth;
-params.seed = randi(intmax);
+if isinf(LPseed)
+    params.seed = randi(intmax);
+else 
+    params.seed = LPseed;
+end
 %params.OptimalityTol = 1e-9;  %Maybe some of these need to be set
 %params.FeasibilityTol = 1e-9; %according to LFP scaling
 %params.ScaleFlag = 0;

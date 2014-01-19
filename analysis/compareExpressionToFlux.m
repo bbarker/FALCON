@@ -14,8 +14,8 @@ function corrMat = compareExpressionToFlux(model, expFile)
 % Enzyme complex level.
 
 
-EXPCON = 0
-FDEBUG = 0;
+EXPCON = false
+FDEBUG = false;
 [rxn_exp_rev, rxn_exp_sd_rev, rxn_rule_group_rev] = ...
    computeMinDisj(model, expFile);
 
@@ -24,8 +24,9 @@ FDEBUG = 0;
 [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
     computeMinDisj(modelIrrev, expFile);
 
-v_solirrev = falcon(modelIrrev, rxn_exp, rxn_exp_sd, ...
-                    rxn_rule_group, 0.01, 0, EXPCON, FDEBUG);
+v_solirrev = falcon(modelIrrev, rxn_exp, rxn_exp_sd, rxn_rule_group, ...
+     'rc', 0.01, 'EXPCON', EXPCON, 'FDEBUG', FDEBUG);
+
 v_solrev = convertIrrevFluxDistribution(v_solirrev, matchRev);
 
 function sumout = mysum(x)

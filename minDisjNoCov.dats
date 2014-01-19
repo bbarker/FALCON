@@ -10,7 +10,8 @@
  *                                                          *
  *  Thanks to Hongwei Xi and Chris Double for their         *
  *  help in learning and using ATS and debugging            *
- *  this code.                                              *)
+ *  this code, and to Narayanan Sadagopan for helping to    *
+ *  test and debug this code.                               *)
 
 // Compile:
 // atscc -O2 -D_ATS_GCATS -o minDisj minDisj.dats sstream.dats sstream.sats -lm
