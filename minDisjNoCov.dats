@@ -144,8 +144,8 @@ overload + with genes_union
 
 local 
 
-staload LS = "libats/SATS/linset_listord.sats"   
-staload _ = "libats/DATS/linset_listord.dats"   
+staload LS = "libats/ATS1/SATS/linset_listord.sats"   
+staload _ = "libats/ATS1/DATS/linset_listord.dats"   
 assume genes = $LS.set(string)
 
 in  // in of [local]
@@ -164,7 +164,7 @@ implement
 genes_free(xs) = $LS.linset_free(xs)
 
 implement
-genes_listize(xs) = list_of_list_vt($LS.linset_listize (xs))
+genes_listize(xs) = list_of_list_vt($LS.linset_listize1 (xs))
 
 implement
 genes_make_sing(x) = $LS.linset_make_sing(x)
@@ -180,7 +180,7 @@ extern
 fun gDMap_find(mp: &gDMap, k: string): double
 
 extern
-fun gDMap_free(mp: gDMap):<> void
+fun gDMap_free(mp: gDMap):<!wrt> void
 
 extern
 fun gDMap_insert(mp: &gDMap, gene: string, dval: double
@@ -203,8 +203,7 @@ gDMap_make_nil() = $LM.linmap_make_nil {string, double} ()
 implement
 gDMap_find (mp, k): double = let
   var res: double?
-  val b = $LM.linmap_search (mp, k, lam(x,y) 
-    => compare_string_string(x,y), res)
+  val b = $LM.linmap_search (mp, k, res)
   in 
     if b then let
       prval () = opt_unsome {double} (res)
@@ -221,7 +220,7 @@ implement
 gDMap_insert(mp,gene,dval) = let
   var rdval: double? 
   val b = $LM.linmap_insert<string,double>
-    (mp, gene, dval, lam(x,y) => compare_string_string(x,y),rdval)
+    (mp, gene, dval, rdval)
   //How does this work?:
   prval () = opt_clear (rdval)
   in b end
@@ -853,12 +852,15 @@ toCNF (bexp, emap): GREXP = let
   sscanf(line, "%s\t%lf\t%lf", (char*)gene, exp, std)
 %}  
   
-implement main {n} (argc,argv) = () where  {
+implement main0 {n} (argc, argv) = () where  {
   // val () = gc_chunk_count_limit_max_set (~1) // infinite
-  val pargv = &argv
   val () = assertloc(argc = 3)
-  val expInFi = argv.[1]
-  val rulesInFi = argv.[2]
+  val expInFi = argv[1]
+  val rulesInFi = argv[2]
+
+(*
+  val pargv = &argv
+
   
   prval (pf, fpf) = __assert(pargv) where {
     //why extern here? try removing it - maybe for multifile support (but we do have multiple files)
@@ -866,16 +868,16 @@ implement main {n} (argc,argv) = () where  {
   }
   
   prval (pf1, pf2) = ptrarr_uncons(pf)
-  
-  val inFIEXP = open_file_exn (expInFi, file_mode_r)
-  val inFIRUL = open_file_exn(rulesInFi, file_mode_r)
+  *)
+  val inFIEXP = fileref_open_exn (expInFi, file_mode_r)
+  val inFIRUL = fileref_open_exn(rulesInFi, file_mode_r)
 
   var ExpMap = gDMap_make_nil ()
   var STDMap = gDMap_make_nil () //Actually variances
     
-  val _ = input_line(inFIEXP) // Assume column name line  
+  val _ = fileref_get_line_string(inFIEXP) // Assume column name line  
   fun loopDATA(emap: &gDMap, smap: &gDMap):<cloref1> void = let
-    val linein = input_line_vt(inFIEXP)
+    val linein = fileref_get_line_string(inFIEXP)
     in 
       if strptr_isnot_null(linein) then let
         #define BSZ 30
@@ -900,7 +902,8 @@ implement main {n} (argc,argv) = () where  {
         val gene = $UN.cast{String}(p_gene)
         val nstr = string1_length (gene)
         val gene = string_make_substring (gene, 0, nstr)
-        val gene = string_of_strbuf (gene)
+        // Do we need this in ATS2?:
+        //val gene = string_of_strbuf (gene)
 //        val _ = println! ("gene = ", gene)
 //
         val _ = gDMap_insert(emap, gene, exp) 
@@ -916,7 +919,7 @@ implement main {n} (argc,argv) = () where  {
   val _ = loopDATA(ExpMap,STDMap)
     
   fun loopCNF(emap: &gDMap, smap: &gDMap, cnt: int):<cloref1> void = let
-    val linein = input_line(inFIRUL)
+    val linein = fileref_get_line_string(inFIRUL)
     val cnt = cnt+1
   in
     if stropt_is_some(linein) then
@@ -934,8 +937,9 @@ implement main {n} (argc,argv) = () where  {
   end    
   val _ = loopCNF(ExpMap, STDMap, 0)
 
+  (*
   prval pf = ptrarr_cons(pf1, pf2)
-  prval () = fpf(pf)
+  prval () = fpf(pf)  *)
   val () = gDMap_free(ExpMap)
 
   val () = gDMap_free(STDMap)
