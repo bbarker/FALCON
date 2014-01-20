@@ -78,8 +78,22 @@ staload _(*anon*) = "prelude/DATS/reference.dats"
 
 staload  "libc/SATS/math.sats"
 
+
 (* ********************************* Begin CODE ******************************** *)
 
+(* ************************ Convenience Code: Start *********************** *)
+
+fn string_add(x1: string, x2 :string):<!wrt> String = 
+let  
+  val x1x2 = strptr2stropt(string0_append(x2, x2))
+in
+  if stropt_is_some(x1x2) then stropt_unsome(x1x2)
+  else ""
+end
+
+overload + with string_add
+
+(* ************************* Convenience Code: End ************************ *)
 
 
 staload
@@ -423,7 +437,7 @@ fun stringInOpIze (gset: !genes, inop: string): string = let
       | list_cons(x,xs as list_nil()) => loop(astr + x, xs)
       | list_cons(x,xs) => loop(x + inop + astr, xs)
   in       
-    loop("",glist)    
+    loop("", glist)    
   end
 
 
@@ -714,7 +728,7 @@ end // end of [dlist_sum_var]
 
 fun disj_vals(ex: !GREXP, emap: &gDMap, smap: &gDMap): (double, double) = let
   fun cg2d(gr:GREXP): GREXP = case+ gr of
-    | GRdisj(_) => (fold@ gr; gr)
+    | GRdisj(_) => gr
     | ~GRconj(gs) => let 
         val sz = genes_size(gs)
         in if size_of_int(1) = sz then GRdisj(gs)
@@ -761,15 +775,11 @@ in
   dvals
 end // end of [disj_vals]
 
-(*        | (~GRconj(s1), ~GRgenes(s2)) => minConj(GRconj (s1+s2),emap)
-        | (~GRgenes(s1), ~GRconj(s2)) => minConj(GRconj (s1+s2),emap)
-        | (~GRconj(s1), ~GRconj(s2)) => minConj(GRconj (s1+s2),emap)     *)
-
 
 implement
 minConj(gr, emap): GREXP = let
   fun g2c(gr:GREXP): GREXP = case+ gr of
-    | GRconj(_) => (fold@ gr; gr)
+    | GRconj(_) => gr
     | ~GRgenes(gs) => GRconj(gs)
     | X => X
   in (case+ gr of 
