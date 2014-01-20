@@ -4,7 +4,6 @@ function [sigmaVec, PcorrV, ScorrV, KcorrV, PcorrE, ScorrE, KcorrE, ...
           expressionNoise(model, expFile, sigMax, reps, simLabel, LPmeth)
 
 regC   = 0;
-minFit = 0;
 expCon = 0;
 
 if ~exist('simLabel', 'var')
@@ -13,6 +12,9 @@ end
 if ~exist('LPmeth', 'var')
     LPmeth = 1;
 end
+
+LPseed = 0; % Use default seed; don't need stochasticity in solver since we
+            % are testing stochasticity due to expression noise.
 
 % Things to track:
 %1: Correlation between e and e_perturbed
@@ -60,10 +62,11 @@ nIrxns = length(modelIrrev.rxns);
 %end
 
 
+
 %Now compute initial flux:
 [v, corrval] = falcon(modelIrrev, rxn_exp, rxn_exp_sd, rxn_rule_group, ...
-                      'rc', regC, 'minFit', minFit, 'EXPCON', expCon,  ...
-                      'FDEBUG', false, 'LPmeth', LPmeth);
+                      'rc', regC, 'EXPCON', expCon,  ...
+                      'LPmeth', LPmeth, 'LPseed', LPseed); 
 if norm(v,1) < 1e-7
     disp('Error, initial flux prediction failed.');
     return;
@@ -91,7 +94,8 @@ parfor i = 1:reps
                    rxn_exp_p(~isnan(rxn_exp_p + rxn_exp)), 1);
 
     [v_p, corrval_p, n, VA, fTime, fIter] = falcon(modelIrrev, rxn_exp_p, ... 
-        rxn_exp_sd, rxn_rule_group, regC, minFit, expCon, false, LPmeth);
+        rxn_exp_sd, rxn_rule_group, 'rc', regC, 'EXPCON', expCon, ...
+        'LPmeth', LPmeth, 'LPseed', LPseed);
     TimeRec(i) = fTime;
     IterRec(i) = fIter;
     vrev_p = convertIrrevFluxDistribution(v_p, matchRev);
