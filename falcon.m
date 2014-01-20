@@ -811,6 +811,8 @@ elseif x < 0
 end
 end % end of IPcheck_scalarNN
 
-
+function TF = IPcheck_scalarNNorINF(x)
+TF = (isinf(x) && x > 0) || IPcheck_scalarNN(x);
+end % end of IPcheck_scalarNNorINF
 
 %%%%%%%%%%%%%   End Input Parser Functions   %%%%%%%%%%%%%

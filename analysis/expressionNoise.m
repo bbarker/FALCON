@@ -4,7 +4,7 @@ function [sigmaVec, PcorrV, ScorrV, KcorrV, PcorrE, ScorrE, KcorrE, ...
           expressionNoise(model, expFile, sigMax, reps, simLabel, LPmeth)
 
 regC   = 0;
-expCon = 0;
+expCon = false;
 
 if ~exist('simLabel', 'var')
     simLabel = '';
