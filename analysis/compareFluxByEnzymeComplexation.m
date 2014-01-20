@@ -1,5 +1,6 @@
-function [v_lee, v_md, nnanDiffEnz, nnanDiffFlux, r_lee, r_lee] = ...
-          compareFluxByEnzymeComplexation(model, expFile, nReps, fLabel)
+function [v_md, v_lee, v_md_s, v_lee_s, nnanDiffEnz, nnanDiffFlux, ...
+         r_md, r_lee] = compareFluxByEnzymeComplexation(model,    ...
+         expFile, nReps, fLabel)
 
 %Simple script to compare fluxes output from the FALCON algorithm
 %using the directly evaluation method found in Lee and the 
@@ -23,25 +24,31 @@ function [v_lee, v_md, nnanDiffEnz, nnanDiffFlux, r_lee, r_lee] = ...
 %
 %These are all saved to a .mat file (see save() below).
 
-nRxns = length(model.rxns);
-
-[r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
-%How do we need design a fake r_group for geneToRxns?
-%Just make a separate group for each reaction:
-r_fake_group = [1:nRxns]'; 
-[r_md, rs_md, r_group] = computeMinDisj(model, expFile);
-
-
 [modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
+nRxns = length(model.rxns);
+nRxnsIrr = length(modelIrrev.rxns);
+
+
+[r_md, rs_md, r_group] = computeMinDisj(model, expFile);
+[r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
+
+[r_mdIrr, rs_mdIrr, r_groupIrr] = computeMinDisj(modelIrrev, expFile);
+[r_leeIrr, rs_leeIrr, r_missIrr] = geneToRxn(modelIrrev, expFile);
+%How do we need design a fake r_group for geneToRxns?
+%Just make a separate group for each reaction:
+r_fake_groupIrr = [1:nRxnsIrr]'; 
+
 [v_mdIrr, ~, ~, ~, ~, ~, v_mdIrr_s] =  ...
-    falconMulti(modelIrrev, nReps, rs_md, rs_md, r_group);
+    falconMulti(modelIrrev, nReps, r_mdIrr, rs_mdIrr, r_groupIrr);
 
 [v_leeIrr, ~, ~, ~, ~, ~, v_leeIrr_s] =  ...
-    falconMulti(modelIrrev, nReps, r_lee, rs_lee, r_fake_group);
+    falconMulti(modelIrrev, nReps, r_leeIrr, rs_leeIrr, r_fake_groupIrr);
 
 v_md = convertIrrevFluxDistribution(v_mdIrr, matchRev);
 v_lee = convertIrrevFluxDistribution(v_leeIrr, matchRev);
+v_md_s = abs(convertIrrevFluxDistribution(v_mdIrr_s, matchRev));
+v_lee_s = abs(convertIrrevFluxDistribution(v_leeIrr_s, matchRev));
 
 %For testing:
 %[r_md, rs_md] = deal(r_lee, rs_lee);
@@ -55,11 +62,9 @@ r_lee(isnan(r_lee)) = -1;
 nnanDiffEnz = sum(isDiffExp(r_md, r_lee, r_miss));
 nnanDiffFlux = sum(isDiffExp(v_md, v_lee, false(nRxns, 1))); 
 
-
-save(['FluxByECcomp_' model.description expFile fLabel '.mat'], ...
-    'v_lee', 'v_md', 'nnanDiffEnz', 'nnanDiffFlux', ...
-    'r_lee', 'r_lee');
-
+save(['FluxByECcomp_' model.description expFile fLabel '_' num2str(nReps) ...
+      '.mat'], 'v_lee', 'v_md', 'v_md_s', 'v_lee_s', 'nnanDiffEnz',       ...
+      'nnanDiffFlux', 'r_lee', 'r_lee');
 
 % uncomment for debugging purposes:
 % printDiffs(model, r_md, r_lee, r_miss);
