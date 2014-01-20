@@ -496,18 +496,13 @@ implement
 dCe(ex1, ex2): string = 
   "(" + grexp_to_string(ex1) + ") and " + grexp_to_string(ex2)
 
-macdef p_disj(e0,e1,e2) = x where { 
-      prval () = fold@ ,(e1) and () = fold@ ,(e2)
-      val x =  dCd(,(e1), ,(e2))
-      prval () = fold@ ,(e0) }      
-
 implement
 grexp_to_string(e0): string = case+ e0 of
   | GRconj (e1, e2) => (case+ (e1, e2) of
-    (GRdisj (x), GRdisj (z)) => p_disj(e0, e1, e2)
-    | (GRdisj (x, y), GRdisj (z)) => p_disj(e0, e1, e2)   
-    | ( GRdisj (z), GRdisj (x, y)) => p_disj(e0, e1, e2)    
-    | ( GRdisj (z, w), GRdisj (x, y)) => p_disj(e0, e1, e2)    
+    | (GRdisj (x), GRdisj (z)) => dCd(e1, e2)
+    | (GRdisj (x, y), GRdisj (z)) => dCd(e1, e2)
+    | ( GRdisj (z), GRdisj (x, y)) => dCd(e1, e2)  
+    | ( GRdisj (z, w), GRdisj (x, y)) => dCd(e1, e2)
     | (_, GRdisj (x)) => eCd(e1, e2)
     | (_, GRdisj (x, y)) => eCd(e1, e2)
     | (GRdisj (x), _) => dCe(e1, e2)
