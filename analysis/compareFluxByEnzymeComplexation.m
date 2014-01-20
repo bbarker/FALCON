@@ -1,5 +1,4 @@
-function [Fdirect, Ffalcon, nnanDiffEnz, nnanDiffFlux,  ...
-          ECdirect, ECfalcon] = ...
+function [v_lee, v_md, nnanDiffEnz, nnanDiffFlux, r_lee, r_lee] = ...
           compareFluxByEnzymeComplexation(model, expFile, nReps, fLabel)
 
 %Simple script to compare fluxes output from the FALCON algorithm
@@ -14,13 +13,13 @@ function [Fdirect, Ffalcon, nnanDiffEnz, nnanDiffFlux,  ...
 %nnanDiffFlux        Number of differences in FALCON flux for
 %                    the unpermuted expression data.
 %
-%ECdirect            Enzyme abundance esitmated by direct evaluation
+%r_lee            Enzyme abundance esitmated by direct evaluation
 %
-%ECfalcon            Enzyme abundance estimated by FALCON.
+%r_lee            Enzyme abundance estimated by FALCON.
 %
-%Fdirect             Flux esitmated by direct evaluation.
+%v_lee             Flux esitmated by direct evaluation.
 %
-%Ffalcon             Flux estimated by FALCON.
+%v_md             Flux estimated by FALCON.
 %
 %These are all saved to a .mat file (see save() below).
 
@@ -29,7 +28,7 @@ nRxns = length(model.rxns);
 [r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
 %How do we need design a fake r_group for geneToRxns?
 %Just make a separate group for each reaction:
-r_fake_group = 1:nRxns; 
+r_fake_group = [1:nRxns]'; 
 [r_md, rs_md, r_group] = computeMinDisj(model, expFile);
 
 
@@ -54,10 +53,12 @@ nnanTotal = sum(rNotNan);
 r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;
 nnanDiffEnz = sum(isDiffExp(r_md, r_lee, r_miss));
+nnanDiffFlux = sum(isDiffExp(v_md, v_lee, false(nRxns, 1))); 
+
 
 save(['FluxByECcomp_' model.description expFile fLabel '.mat'], ...
-    'Fdirect', 'Ffalcon', 'nnanDiffEnz', 'nnanDiffFlux', ...
-    'ECdirect', 'ECfalcon');
+    'v_lee', 'v_md', 'nnanDiffEnz', 'nnanDiffFlux', ...
+    'r_lee', 'r_lee');
 
 
 % uncomment for debugging purposes:
