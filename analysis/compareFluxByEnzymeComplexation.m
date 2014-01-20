@@ -1,6 +1,6 @@
 function [Fdirect, Ffalcon, nnanDiffEnz, nnanDiffFlux,  ...
           ECdirect, ECfalcon] = ...
-          compareFluxByEnzymeComplexation(model, expFile, fLabel)
+          compareFluxByEnzymeComplexation(model, expFile, nReps, fLabel)
 
 %Simple script to compare fluxes output from the FALCON algorithm
 %using the directly evaluation method found in Lee and the 
@@ -27,31 +27,22 @@ function [Fdirect, Ffalcon, nnanDiffEnz, nnanDiffFlux,  ...
 nRxns = length(model.rxns);
 
 [r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
-[r_md, rs_md, ~] = computeMinDisj(model, expFile);
+%How do we need design a fake r_group for geneToRxns?
+%Just make a separate group for each reaction:
+r_fake_group = 1:nRxns; 
+[r_md, rs_md, r_group] = computeMinDisj(model, expFile);
 
 
-if useMinDisj % need to modify to use old expression values
-[v_falconIrr, ~, ~, ~, ~, ~, v_falconIrr_s] =         ...
-    falconMulti(modelIrrev, nReps, rxn_exp_md,        ...
-    rxn_exp_sd_md, rxn_rule_group, 'rc', regC,        ...
-    'minFit', minFit, 'EXPCON', expCon);
+[modelIrrev, matchRev, rev2irrev, irrev2rev] = convertToIrreversible(model);
 
-[v_falconIrr, ~, ~, ~, ~, ~, v_falconIrr_s] =          ...
-    falconMulti(modelIrrev, nReps,  rxn_exp_irr,       ...
-    rxn_exp_sd_irr, rxn_rule_group, 'rc', regC,        ...
-    'minFit', minFit, 'EXPCON', expCon);
+[v_mdIrr, ~, ~, ~, ~, ~, v_mdIrr_s] =  ...
+    falconMulti(modelIrrev, nReps, rs_md, rs_md, r_group);
 
-v_falcon = convertIrrevFluxDistribution(v_falconIrr, matchRev);
+[v_leeIrr, ~, ~, ~, ~, ~, v_leeIrr_s] =  ...
+    falconMulti(modelIrrev, nReps, r_lee, rs_lee, r_fake_group);
 
-else
-[v_falconIrr, ~, ~, ~, ~, ~, v_falconIrr_s] =          ...
-    falconMulti(modelIrrev, nReps,  rxn_exp_irr,       ...
-    rxn_exp_sd_irr, rxn_rule_group, 'rc', regC,        ...
-    'minFit', minFit, 'EXPCON', expCon);
-
-end
-
-
+v_md = convertIrrevFluxDistribution(v_mdIrr, matchRev);
+v_lee = convertIrrevFluxDistribution(v_leeIrr, matchRev);
 
 %For testing:
 %[r_md, rs_md] = deal(r_lee, rs_lee);
@@ -59,10 +50,6 @@ end
 %Should be the same for both methods
 rNotNan = ~isnan(r_md);
 nnanTotal = sum(rNotNan);
-
-
-
-
 
 r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;

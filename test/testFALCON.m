@@ -38,7 +38,7 @@ function testFALCON(FDBG)
 % Brandon Barker    Oct 10, 2013
 
 
-EXPCON = 0;
+EXPCON = false;
 REG = 0;
 erTol = 1e-9;
 
