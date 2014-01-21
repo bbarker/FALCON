@@ -1,3 +1,7 @@
+%Need to annotate (at least partly) which figure numbers
+%correspond to which figName(s) below.
+
+
 % permuted experimental correlation distribution
 % see randomExpressionSim.m to generate data
 if strcmp(figName, 'pExp')
@@ -97,6 +101,12 @@ if strcmp(figName, 'expCompare')
     plot(1:iMax, 100*hDat.nnanDiffTotal(1:iMax)/ hDat.nnanTotal, 'LineWidth', 4);
     legend('Yeast 7', 'Human Recon 2');    
 end
+
+if strcmp(figName, 'fluxCmpScatter')
+
+
+end
+
 if strcmp(figName, 'modelTime')
     1;
 end
