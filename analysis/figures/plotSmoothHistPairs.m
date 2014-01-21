@@ -33,21 +33,21 @@ ylabel('Density');
 title(figTitle);
 
 if exist('Est1', 'var')
-	xA = [Est1 Est1];
-	yA = [0.3 0.0];
-	[xF, yF] = ds2nfu(xA, yA);
+    xA = [Est1 Est1];
+    yA = [0.3 0.0];
+    [xF, yF] = ds2nfu(xA, yA);
     a1 = annotation('textarrow', xF, yF, ...
         'String', [Label1 char(10) 'Predicted'], 'color', color1, ...
-		'LineWidth', lWidth - 1, 'LineStyle', '--', ...
-		'fontSize', 32, 'fontWeight', 'bold');
+        'LineWidth', lWidth - 1, 'LineStyle', '--', ...
+        'fontSize', 32, 'fontWeight', 'bold');
 end
 
 if exist('Est2', 'var')
-	xA = [Est2 Est2];
-	yA = [0.75 0.0];
-	[xF, yF] = ds2nfu(xA, yA);
+    xA = [Est2 Est2];
+    yA = [0.75 0.0];
+    [xF, yF] = ds2nfu(xA, yA);
     a1 = annotation('textarrow', xF, yF, ...
         'String', [Label2 char(10) 'Predicted'], 'color', color2, ...
-		'LineWidth', lWidth - 1, 'LineStyle', '--', ...
-		'fontSize', 32, 'fontWeight', 'bold');
+        'LineWidth', lWidth - 1, 'LineStyle', '--', ...
+        'fontSize', 32, 'fontWeight', 'bold');
 end
