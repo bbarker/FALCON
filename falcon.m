@@ -434,6 +434,8 @@ if ~all(sz_N == size(N)) || sz_N(1) ~= numel(b) || sz_N(2) ~= numel(L)
     sz_N_new = size(N)
     blen = numel(b)
     Llen = numel(L)
+    %It is strange that on the rare occassion where this happens,
+    %feeding these values back in to falcon seems to work fine.
     save('size_debug.mat', 'r_group', 'r_sd', 'r');
 end
 
