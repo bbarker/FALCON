@@ -19,11 +19,10 @@ set(gca, 'FontSize', 23);
 hold all;
 
 for i = 1:nD
-    plot([(x(i) - xe(i)) (x(i) + xe(i))], [y(i) y(i)], 'Color', xeColor, ...
-        varargin{:});
-    plot([x(i) x(i)], [(y(i) - ye(i)) (y(i) + ye(i))], 'Color', yeColor, ...
-        varargin{:});
+    plot([(x(i) - xe(i)) (x(i) + xe(i))], [y(i) y(i)], 'Color', xeColor);
+    plot([x(i) x(i)], [(y(i) - ye(i)) (y(i) + ye(i))], 'Color', yeColor);
 end
 
 scatter(x, y, dotSize, repmat(dotColor, nD, 1));
+set(gca, varargin{:});
 axis square;

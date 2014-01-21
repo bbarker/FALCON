@@ -1,3 +1,5 @@
+function makeMethodFigures(figName)
+
 %Need to annotate (at least partly) which figure numbers
 %correspond to which figName(s) below.
 
@@ -102,11 +104,30 @@ if strcmp(figName, 'expCompare')
     legend('Yeast 7', 'Human Recon 2');    
 end
 
+
 if strcmp(figName, 'fluxCmpScatter')
+    y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_test_8.mat');
+    y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txttest_8.mat');
+    rec2FCMP = load('');
 
-
+    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained') ;
+    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained')
+    fluxCmpScatter(rec2FCMP, 'Human Recon 2'); 
 end
 
 if strcmp(figName, 'modelTime')
     1;
 end
+end % end of makeMethodFigures
+
+
+
+%%%   Convenience functions   %%%
+
+function fluxCmpScatter(ss, T) 
+    sRat = 0.5; % Fraction of stdev on one side of error bar.
+    scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s);
+    title(T);
+    xlabel('direct evaluation');
+    ylabel('minimum-disjunction');
+end % end of fluxCmpScatter
