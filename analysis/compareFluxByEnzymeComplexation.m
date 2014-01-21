@@ -35,15 +35,14 @@ nRxnsIrr = length(modelIrrev.rxns);
 
 [r_mdIrr, rs_mdIrr, r_groupIrr] = computeMinDisj(modelIrrev, expFile);
 [r_leeIrr, rs_leeIrr, r_missIrr] = geneToRxn(modelIrrev, expFile);
-%How do we need design a fake r_group for geneToRxns?
-%Just make a separate group for each reaction:
-r_fake_groupIrr = [1:nRxnsIrr]'; 
+%We should use the same r_group in both cases, as this is technically
+%part of FALCON rather than mindisj.
 
 [v_mdIrr, ~, ~, ~, ~, ~, v_mdIrr_s] =  ...
     falconMulti(modelIrrev, nReps, r_mdIrr, rs_mdIrr, r_groupIrr);
 
 [v_leeIrr, ~, ~, ~, ~, ~, v_leeIrr_s] =  ...
-    falconMulti(modelIrrev, nReps, r_leeIrr, rs_leeIrr, r_fake_groupIrr);
+    falconMulti(modelIrrev, nReps, r_leeIrr, rs_leeIrr, r_groupIrr);
 
 v_md = convertIrrevFluxDistribution(v_mdIrr, matchRev);
 v_lee = convertIrrevFluxDistribution(v_leeIrr, matchRev);
