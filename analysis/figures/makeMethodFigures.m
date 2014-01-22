@@ -64,8 +64,9 @@ end
 
 if strcmp(figName, 'CorrSigma')
     %rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
-    %CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
-    %    'Human Recon 2 flux sensitivity to gene noise', 'Pearson''s r');
+    rec2CS = load('pertData_humanrecon2_K562_4_1000_20141220363133847_1000_1.mat')
+    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
+        'Human Recon 2 flux sensitivity to gene noise', 'Pearson''s r');
 
     y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat')
     CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ...
@@ -77,8 +78,8 @@ if strcmp(figName, 'CorrSigma')
     %Enzyme Complexities:
     CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
         'Yeast 7 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
-    %CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
-    %   'Human Recon 2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
+        'Human Recon 2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
 
 end
 
@@ -128,13 +129,13 @@ end
 
 
 if strcmp(figName, 'fluxCmpScatter')
-    %y7ndFCMP = load('');
+    y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_1000.mat');
     y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtdir_1000.mat');
-    %ec2FCMP = load('');
+    rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
 
-    %fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained') ;
-    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained')
-    %fluxCmpScatter(rec2FCMP, 'Human Recon 2'); 
+    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
+    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
+    fluxCmpScatter(rec2FCMP, 'Human Recon 2', 1/30); 
 end
 
 if strcmp(figName, 'modelTime')
@@ -146,8 +147,8 @@ end % end of makeMethodFigures
 
 %%%   Convenience functions   %%%
 
-function fluxCmpScatter(ss, T) 
-    sRat = 0.5; % Fraction of stdev on one side of error bar.
+function fluxCmpScatter(ss, T, sRat) 
+    % sRat is fraction of stdev on one side of error bar.
     scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s);
     title(T);
     xlabel('direct evaluation');
