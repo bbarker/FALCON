@@ -63,23 +63,22 @@ end
 
 
 if strcmp(figName, 'CorrSigma')
-    rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
-    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
-        'Human Recon 2 flux sensitivity to gene noise', 'Pearson''s r');
-    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
-       'Human Recon 2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+    %rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
+    %CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
+    %    'Human Recon 2 flux sensitivity to gene noise', 'Pearson''s r');
 
-    %y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat')
-    %CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ...
-    %    'Yeast 7 (min. constrained) flux sensitivity to gene noise', 'Pearson''s r');
-    %CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
-    %    'Yeast 7 (min. constrained) Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+    y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat')
+    CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ...
+        'Yeast 7 (minimally constrained) flux sensitivity to gene noise', 'Pearson''s r');
+    y7ndCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412121527771331_100y7noDir_1.mat')
+    CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrV, ...
+        'Yeast 7 (highly constrained) flux sensitivity to gene noise', 'Pearson''s r');
 
-    %y7ndCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412121527771331_100y7noDir_1.mat')
-    %CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrV, ...
-    %    'Yeast 7 (highly constrained) flux sensitivity to gene noise', 'Pearson''s r');
-    %CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrE, ...
-    %    'Yeast 7 (highly constrained) Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+    %Enzyme Complexities:
+    CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
+        'Yeast 7 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+    %CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
+    %   'Human Recon 2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
 
 end
 
@@ -129,13 +128,13 @@ end
 
 
 if strcmp(figName, 'fluxCmpScatter')
-    y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_test_8.mat');
-    y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txttest_8.mat');
-    rec2FCMP = load('');
+    %y7ndFCMP = load('');
+    y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtdir_1000.mat');
+    %ec2FCMP = load('');
 
-    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained') ;
+    %fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained') ;
     fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained')
-    fluxCmpScatter(rec2FCMP, 'Human Recon 2'); 
+    %fluxCmpScatter(rec2FCMP, 'Human Recon 2'); 
 end
 
 if strcmp(figName, 'modelTime')
@@ -156,12 +155,15 @@ function fluxCmpScatter(ss, T)
 end % end of fluxCmpScatter
 
 function CorrSigma(cX, cY, T, ctype)
+    [xI, yI] = intervalAggregate(cX, cY, @median, (max(cX)-min(cX))/10, 0.3); 
+
     figure();
     set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
     set(gca, 'FontSize', 23);
-    hold all;
-
+    hold all;     
     scatter(cX, cY);
+    plot(xI, yI, 'color', 'g', 'LineWidth', 3);
+
     title(T);
     xlabel('error \sigma (log-normal standard deviation)');
     ylabel(ctype);
