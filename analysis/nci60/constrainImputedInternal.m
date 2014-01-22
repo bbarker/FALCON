@@ -1,4 +1,4 @@
-function modelConstrained = constrainImputedInternal(model, allRxns, expFile)
+function modelConstrained = constrainImputedInternal(model, allRxns, LMoMA_file, expFile)
 % These constraints are used to constrain the direction of internal,
 % reactions based on some form of imputation (for now, just linear MoMA).
 
@@ -16,8 +16,8 @@ if ~exist('allRxns', 'var')
 end
 
 %Load LMoMA flux (see generateLMoMAfluxes.m)
-load('LMoMA_CoRe_Flux.mat', 'lmomaFlux');
-
+%load('LMoMA_CoRe_Flux.mat', 'lmomaFlux');
+load(LMoMA_file, 'lmomaFlux');
 
 nrxns = length(model.rxns);
 [selExc, selUpt] = findExcRxns(model);
