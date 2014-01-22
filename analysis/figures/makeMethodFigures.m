@@ -61,6 +61,29 @@ if strcmp(figName, 'EvVY')
     axis square;    
 end
 
+
+if strcmp(figName, 'CorrSigma')
+    rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
+    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
+        'Human Recon 2 flux sensitivity to gene noise', 'Pearson''s r');
+    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
+       'Human Recon 2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+
+    %y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat')
+    %CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ...
+    %    'Yeast 7 (min. constrained) flux sensitivity to gene noise', 'Pearson''s r');
+    %CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
+    %    'Yeast 7 (min. constrained) Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+
+    %y7ndCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412121527771331_100y7noDir_1.mat')
+    %CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrV, ...
+    %    'Yeast 7 (highly constrained) flux sensitivity to gene noise', 'Pearson''s r');
+    %CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrE, ...
+    %    'Yeast 7 (highly constrained) Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+
+end
+
+%This needs to be rewritten to work in function form.
 if strcmp(figName, 'PertAn')
     %e.g.:
     %corrE = PcorrE; corrV=PcorrV; cType = 'Pearson'; figName = 'PertAn'; makeMethodFigures
@@ -131,3 +154,15 @@ function fluxCmpScatter(ss, T)
     xlabel('direct evaluation');
     ylabel('minimum-disjunction');
 end % end of fluxCmpScatter
+
+function CorrSigma(cX, cY, T, ctype)
+    figure();
+    set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
+    set(gca, 'FontSize', 23);
+    hold all;
+
+    scatter(cX, cY);
+    title(T);
+    xlabel('error \sigma (log-normal standard deviation)');
+    ylabel(ctype);
+end % end of CorrSigma
