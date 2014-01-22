@@ -5,7 +5,7 @@ cell2csv                 - used to output various csv files in analysis and
 (by Rob KohR)              debugging scripts.
 
 d2nfu 
-(by Christophe COUVREUR; -
+(by Christophe COUVREUR; - units conversion in some figures.
 by The MathWorks, Inc.  )
 
 structvars               - used in conjunction with inputParser to parse bind
