@@ -1,4 +1,4 @@
-function generateLMoMAfluxes(model)
+function generateLMoMAfluxes(model, fLabel)
 % Saves a matrix of reversible-model fluxes 
 % Can be used later in determining reaction direction.
 
@@ -25,4 +25,4 @@ parfor i = 1:60
     lmomaFlux(:, i) = v_solrev;
 end
 
-save('LMoMA_CoRe_Flux.mat', 'lmomaFlux')
+save(['LMoMA_CoRe_Flux_' fLabel '.mat'], 'lmomaFlux')
