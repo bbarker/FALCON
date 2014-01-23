@@ -13,7 +13,7 @@ minUptake = -0.005;
 
 mediumExcIdxs = loadMediumExcIdxs(model);
 modelConstrained = model;
-
+modelConstrained.description = [modelConstrained.description '_med'];
 
 
 for i = 1:length(modelConstrained.rxns)

@@ -23,14 +23,19 @@ nrxns = length(model.rxns);
 [selExc, selUpt] = findExcRxns(model);
 geneRxns = boolean(sum(model.rxnGeneMat')');
 consSign = sign(lmomaFlux(:, 1)) .* (all(lmomaFlux' < 0) | all(lmomaFlux' > 0))';
+alllb = '';
 if ~allRxns
     consSign = consSign .* ~selExc .* geneRxns;
+    alllb = '_not_all';
+else
+    alllb = '_all';
 end
 
 nNegDir = full(sum(consSign < 0))
 nPosDir = full(sum(consSign > 0))
 
 modelConstrained = model;
+modelConstrained.description = [modelConstrained.description '_lmoma' alllb];
 for i = 1:nrxns
     if consSign(i) < 0
         modelConstrained.ub(i) = 0;

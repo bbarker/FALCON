@@ -12,6 +12,7 @@ jainMetsToExcIdxs = loadJainMetsToExcIdxs(jainMetsArray, model);
 % mediumExcIdxs = loadMediumExcIdxs(model);
 
 modelConstrained = model;
+modelConstrained.description = [modelConstrained.description '_CoreSign'];
 for k = 1:length(jainMetsArray)
     kthExcIdxs = jainMetsToExcIdxs(jainMetsArray{k});
     for j = 1:length(kthExcIdxs)

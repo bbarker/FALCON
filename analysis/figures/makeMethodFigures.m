@@ -129,6 +129,7 @@ end
 
 
 if strcmp(figName, 'fluxCmpScatter')
+    % data comes from compareFluxByEnzymeComplexation.m
     y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_1000.mat');
     y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtdir_1000.mat');
     rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
