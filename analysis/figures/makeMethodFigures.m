@@ -158,9 +158,9 @@ if strcmp(figName, 'fluxCmpScatter')
         
         
 
-    %fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
-    %fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
-    fluxCmpScatter(rec2FCMP, 'Human Recon2', 1/2, 1);
+    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
+    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
+    fluxCmpScatter(rec2FCMP, 'Human Recon2', 1/4, 1);
 end
 
 if strcmp(figName, 'modelTime')
@@ -178,6 +178,7 @@ function fluxCmpScatter(ss, T, sRat, nOut)
     if ~exist('nOut', 'var')
         nOut = 0;
     end
+    stdOutliers = [];
     if nOut > 0
         tmpSD = sort([ss.v_lee_s(:); ss.v_md_s(:)]');
         SDbound = tmpSD(end-nOut);
@@ -195,9 +196,10 @@ function fluxCmpScatter(ss, T, sRat, nOut)
         ss.v_lee = ss.v_lee(okSD);
         ss.v_md_s = ss.v_md_s(okSD);
         ss.v_md = ss.v_md(okSD);
-        
+        stdOutliers = union(notOKLee, notOKMD);
     end
-    scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s);
+    scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s, ...
+        [], stdOutliers);
     title(T);
     xlabel('Flux from direct evaluation');
     ylabel('Flux from minimum-disjunction');
