@@ -63,30 +63,35 @@ end
 
 
 if strcmp(figName, 'CorrSigma')
+    rec2Title = ['Human Recon2 flux sensitivity to gene noise' char(10)];
     %rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
-    rec2CS = load('pertData_humanrecon2_K562_4_1000_20141220363133847_1000_1.mat')
+    rec2CS = load('pertData_humanrecon2_K562_4_1000_20141220363133847_1000_1.mat');
     CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
-        'Human Recon 2 (minimally constrained) flux sensitivity to gene noise', 'Pearson''s r');
+        [rec2Title 'default constraints'], 'Pearson''s r');
 
-    rec2CS_1C = load('pertData_humanrecon2_K562_4_1000_201412314444710728_med_1000_1.mat')
+    rec2CS_1C = load('pertData_humanrecon2_K562_4_1000_201412314444710728_med_1000_1.mat');
     CorrSigma(rec2CS_1C.sigmaVec, rec2CS_1C.PcorrV, ...
-        'Human Recon 2 (lowly constrained) flux sensitivity to gene noise', 'Pearson''s r');
+        [rec2Title 'RPMI-Medium constrained'], 'Pearson''s r');
 
-    rec2CS_2C = load('pertData_humanrecon2_K562_4_1000_20141232331358614_med_coreSign_1000_1.mat')
+    rec2CS_2C = load('pertData_humanrecon2_K562_4_1000_20141232331358614_med_coreSign_1000_1.mat');
     CorrSigma(rec2CS_2C.sigmaVec, rec2CS_2C.PcorrV, ...
-        'Human Recon 2 (moderately constrained) flux sensitivity to gene noise', 'Pearson''s r');
+        [rec2Title 'RPMI-Medium and CORE-Sign constrained'], 'Pearson''s r');
 
     rec2CS_3C = load(['pertData_humanrecon2_K562_4_1000_201412324558226941_' ...
-                      'rec203_med_coreSign_imputed_NotAll_1000_1.mat'])
+                      'rec203_med_coreSign_imputed_NotAll_1000_1.mat']);
     CorrSigma(rec2CS_3C.sigmaVec, rec2CS_3C.PcorrV, ...
-        'Human Recon 2 (highly constrained) flux sensitivity to gene noise', 'Pearson''s r');
+        [rec2Title 'RPMI-Medium and CORE-Imputed Enzymatic-Reaction directionality constrained'], 'Pearson''s r');
+
+    rec2CS_4C = load(['pertData_humanrecon2lmomaall_K562_4_1000_2014124234511045576' ...
+                      '_rec203_med_coreSign_imputed_All_1000_1.mat']);
+    CorrSigma(rec2CS_4C.sigmaVec, rec2CS_4C.PcorrV, ...
+        [rec2Title 'RPMI-Medium and CORE-Imputed All-Reaction directionality constrained'] , 'Pearson''s r');
 
 
-
-    y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat')
+    y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat');
     CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ...
         'Yeast 7 (minimally constrained) flux sensitivity to gene noise', 'Pearson''s r');
-    y7ndCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412121527771331_100y7noDir_1.mat')
+    y7ndCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412121527771331_100y7noDir_1.mat');
     CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrV, ...
         'Yeast 7 (highly constrained) flux sensitivity to gene noise', 'Pearson''s r');
 
@@ -94,7 +99,7 @@ if strcmp(figName, 'CorrSigma')
     CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
         'Yeast 7 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
     CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
-        'Human Recon 2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+        'Human Recon2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
 
 
 end
@@ -140,7 +145,7 @@ if strcmp(figName, 'expCompare')
     ylabel('Percentage of ezymatic reactions');
     hold all;
     plot(1:iMax, 100*hDat.nnanDiffTotal(1:iMax)/ hDat.nnanTotal, 'LineWidth', 4);
-    legend('Yeast 7', 'Human Recon 2');    
+    legend('Yeast 7', 'Human Recon2');    
 end
 
 
@@ -148,11 +153,14 @@ if strcmp(figName, 'fluxCmpScatter')
     % data comes from compareFluxByEnzymeComplexation.m
     y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_1000.mat');
     y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtdir_1000.mat');
-    rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
+    %rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
+    rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvmed_coreSign_imputed_NotAll_1000.mat');
+        
+        
 
-    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
-    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
-    fluxCmpScatter(rec2FCMP, 'Human Recon 2', 1/30); 
+    %fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
+    %fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
+    fluxCmpScatter(rec2FCMP, 'Human Recon2', 1/2, 1);
 end
 
 if strcmp(figName, 'modelTime')
@@ -164,12 +172,35 @@ end % end of makeMethodFigures
 
 %%%   Convenience functions   %%%
 
-function fluxCmpScatter(ss, T, sRat) 
+function fluxCmpScatter(ss, T, sRat, nOut)
+    % nOut is the number of outliers to remove
     % sRat is fraction of stdev on one side of error bar.
+    if ~exist('nOut', 'var')
+        nOut = 0;
+    end
+    if nOut > 0
+        tmpSD = sort([ss.v_lee_s(:); ss.v_md_s(:)]');
+        SDbound = tmpSD(end-nOut);
+        okLee = find(ss.v_lee_s < SDbound);
+        okMD  = find(ss.v_md_s  < SDbound);
+        okSD  = intersect(okMD, okLee);
+        notOKLee = find(ss.v_lee_s >= SDbound);
+        notOKMD = find(ss.v_md_s >= SDbound);
+        % print out all rxn indices of outliers:
+        disp(['Reaction indices with outlier SD: '           ...
+               num2str([notOKLee(:); notOKMD(:)]') char(10)  ...
+               num2str([ss.v_lee_s(notOKLee); ...
+               ss.v_md_s(notOKMD)]')]);
+        ss.v_lee_s = ss.v_lee_s(okSD);
+        ss.v_lee = ss.v_lee(okSD);
+        ss.v_md_s = ss.v_md_s(okSD);
+        ss.v_md = ss.v_md(okSD);
+        
+    end
     scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s);
     title(T);
-    xlabel('direct evaluation');
-    ylabel('minimum-disjunction');
+    xlabel('Flux from direct evaluation');
+    ylabel('Flux from minimum-disjunction');
 end % end of fluxCmpScatter
 
 function CorrSigma(cX, cY, T, ctype)
@@ -183,6 +214,6 @@ function CorrSigma(cX, cY, T, ctype)
     plot(xI, yI, 'color', 'g', 'LineWidth', 3);
 
     title(T);
-    xlabel('error \sigma (log-normal standard deviation)');
+    xlabel('\sigma (error distribution parameter)');
     ylabel(ctype);
 end % end of CorrSigma
