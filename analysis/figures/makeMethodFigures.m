@@ -153,14 +153,14 @@ if strcmp(figName, 'fluxCmpScatter')
     % data comes from compareFluxByEnzymeComplexation.m
     y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_1000.mat');
     y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtdir_1000.mat');
-    %rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
-    rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvmed_coreSign_imputed_NotAll_1000.mat');
-        
-        
 
-    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
-    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
-    fluxCmpScatter(rec2FCMP, 'Human Recon2', 1/2, 0, 1);
+    rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
+    rec2FCMP_3C = load('FluxByECcomp_human_recon_2K562.csvmed_coreSign_imputed_NotAll_1000.mat');
+
+    %fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
+    %fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
+    fluxCmpScatter(rec2FCMP, 'Human Recon2 (default constraints)', 1/2, 0, 1);
+    fluxCmpScatter(rec2FCMP_3C, 'Human Recon2 (highly constrained)', 1/2, 0, 1);
 end
 
 if strcmp(figName, 'modelTime')
