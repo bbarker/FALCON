@@ -160,7 +160,7 @@ if strcmp(figName, 'fluxCmpScatter')
 
     fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
     fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
-    fluxCmpScatter(rec2FCMP, 'Human Recon2', 1/4, 1);
+    fluxCmpScatter(rec2FCMP, 'Human Recon2', 1/2, 0, 1);
 end
 
 if strcmp(figName, 'modelTime')
@@ -172,37 +172,55 @@ end % end of makeMethodFigures
 
 %%%   Convenience functions   %%%
 
-function fluxCmpScatter(ss, T, sRat, nOut)
-    % nOut is the number of outliers to remove
-    % sRat is fraction of stdev on one side of error bar.
-    if ~exist('nOut', 'var')
-        nOut = 0;
-    end
-    stdOutliers = [];
-    if nOut > 0
-        tmpSD = sort([ss.v_lee_s(:); ss.v_md_s(:)]');
-        SDbound = tmpSD(end-nOut);
-        okLee = find(ss.v_lee_s < SDbound);
-        okMD  = find(ss.v_md_s  < SDbound);
-        okSD  = intersect(okMD, okLee);
-        notOKLee = find(ss.v_lee_s >= SDbound);
-        notOKMD = find(ss.v_md_s >= SDbound);
-        % print out all rxn indices of outliers:
-        disp(['Reaction indices with outlier SD: '           ...
-               num2str([notOKLee(:); notOKMD(:)]') char(10)  ...
-               num2str([ss.v_lee_s(notOKLee); ...
-               ss.v_md_s(notOKMD)]')]);
-        ss.v_lee_s = ss.v_lee_s(okSD);
-        ss.v_lee = ss.v_lee(okSD);
-        ss.v_md_s = ss.v_md_s(okSD);
-        ss.v_md = ss.v_md(okSD);
-        stdOutliers = union(notOKLee, notOKMD);
-    end
-    scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s, ...
-        [], stdOutliers);
-    title(T);
-    xlabel('Flux from direct evaluation');
-    ylabel('Flux from minimum-disjunction');
+function outliers = getOutliers(vec, nOut, message, otherVecs)
+% otherVecs is a list of data to print associated to the outlier
+sortedVec = sort(vec(:)');
+Obound = sortedVec(end-nOut);
+ok = find(vec < Obound);
+outliers = find(vec >= Obound);
+primaryData = [num2str(outliers(:)') char(10)];
+allData = '';
+for i = 1:length(otherVecs)
+    V = otherVecs{i};
+    allData = [allData num2str(V(outliers)') char(10)];
+end 
+allData = [primaryData allData];
+% print outlier information:
+disp([message char(10) allData]);
+end % end of [getOutliers]
+
+function fluxCmpScatter(ss, T, sRat, nXout, nYout, nXEout, nYEout)
+% nOut is the number of outliers to remove
+% sRat is fraction of stdev on one side of error bar.
+if ~exist('nXout', 'var') nXout = 0; end
+if ~exist('nYout', 'var') nYout = 0; end
+if ~exist('nXEout', 'var') nXEout = 0; end
+if ~exist('nYEout', 'var') nYEout = 0; end
+stdOutliers = [];
+mXoutliers  = []; mYoutliers  = [];
+mXEoutliers = []; mYEoutliers = [];
+if nXout > 0
+    msg = 'Reaction indices with outlier x-values: ';
+    mXoutliers = getOutliers(ss.v_lee, nXout, msg, {ss.v_lee_s});
+end
+if nYout > 0
+    msg = 'Reaction indices with outlier y-values: ';
+    mYoutliers = getOutliers(ss.v_md, nYout, msg, {ss.v_md_s});
+end
+if nXEout > 0
+    msg = 'Reaction indices with STD outlier x-values: ';
+    mXEoutliers = getOutliers(ss.v_lee_s, nXEout, msg, {ss.v_lee});
+end
+if nYEout > 0
+    msg = 'Reaction indices with STD outlier y-values: ';
+    mYEoutliers = getOutliers(ss.v_md_s, nYEout, msg, {ss.v_md});
+end
+
+scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s, ...
+    union(mXoutliers, mYoutliers), mXEoutliers, mYEoutliers);
+title(T);
+xlabel('Flux from direct evaluation');
+ylabel('Flux from minimum-disjunction');
 end % end of fluxCmpScatter
 
 function CorrSigma(cX, cY, T, ctype)
