@@ -1,4 +1,6 @@
-function makeMethodFigures(figName)
+function output = makeMethodFigures(figName)
+
+output = [];
 
 %Need to annotate (at least partly) which figure numbers
 %correspond to which figName(s) below.
@@ -175,7 +177,7 @@ end
 
 % data generated from yeastResults.m
 % Be sure to set dC = to dataCells75 or dataCells85
-if strcmp(figName, 'fluxBars')
+if strcmp(figName, 'fluxBarsTables')
     y5d_75  = importdata('genedata_75.txt_results_all_Rep100_y5dir_735619.813.csv');
     y5nd_75 = importdata('genedata_75.txt_results_all_Rep100_y5orig_735604.7928.csv');
     y7d_75  = importdata('genedata_75.txt_results_all_Rep100_y7dir_735604.8936.csv');
@@ -186,11 +188,19 @@ if strcmp(figName, 'fluxBars')
     y7d_85  = importdata('genedata_85.txt_results_all_Rep100_y7dir_735604.8949.csv');
     y7nd_85 = importdata('genedata_85.txt_results_all_Rep100_y7orig_735604.8169.csv ');
 
-    dataCells75 = {y5d_75, 'Yeast5 min. constrained'; ...
-                   y7d_75, 'Yeast7 min. constrained'; ...
-                   y5nd_75, 'Yeast5 highly constrained'; ...
-                   y7nd_75, 'Yeast7 highly constrained'
+    dataCells75 = {y5d_75, 'Yeast5 MC'; ...
+                   y7d_75, 'Yeast7 MC'; ...
+                   y5nd_75, 'Yeast5 HC'; ...
+                   y7nd_75, 'Yeast7 HC'
     };
+
+    %Need a fancy work around to support multiline xticklabels:
+    % http://www.mathworks.com/matlabcentral/answers/101922
+    %dtaCells75 = {y5d_75, ['Yeast5'  char(10)  'min. constrained']; ...
+    %              y7d_75, ['Yeast7'  char(10) 'min. constrained']; ...
+    %              y5nd_75, ['Yeast5' char(10)  'highly constrained']; ...
+    %              y7nd_75, ['Yeast7' char(10)  'highly constrained']
+    %;
 
  
     nFlux = 7;
@@ -210,6 +220,7 @@ if strcmp(figName, 'fluxBars')
     dC = dataCells75;
     ndC = length(dC);
     for i = 1:nFlux
+    %for i = 1:1
        metTitle = y5d_75.textdata{i+1, 1};
        dMean = zeros(ndC, nMeth);
        dSTD  = zeros(ndC, nMeth);
@@ -224,6 +235,17 @@ if strcmp(figName, 'fluxBars')
                end
            end % end for k
        end % end for j
+       figure();
+       set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
+       set(gca, 'FontSize', 23);
+       barwitherr(dSTD, [1:ndC], dMean);
+       xlabels = dC(:, 2);
+       output = xlabels;
+       set(gca,'XTickLabel', xlabels);
+       ylabel('Flux (mmol/gDW/h');
+       title(dC{1}.textdata{i+1});
+       legend(methNames);
+       colormap gray;
     end % end for i
 end
 
