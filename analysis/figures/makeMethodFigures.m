@@ -173,6 +173,60 @@ if strcmp(figName, 'fluxGrpCmpScatter')
     fluxGrpCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
 end
 
+% data generated from yeastResults.m
+% Be sure to set dC = to dataCells75 or dataCells85
+if strcmp(figName, 'fluxBars')
+    y5d_75  = importdata('genedata_75.txt_results_all_Rep100_y5dir_735619.813.csv');
+    y5nd_75 = importdata('genedata_75.txt_results_all_Rep100_y5orig_735604.7928.csv');
+    y7d_75  = importdata('genedata_75.txt_results_all_Rep100_y7dir_735604.8936.csv');
+    y7nd_75 = importdata('genedata_75.txt_results_all_Rep100_y7orig_735604.8164.csv');
+
+    % y5d_85  = importdata('');
+    y5nd_85 = importdata('genedata_85.txt_results_all_Rep100_y5orig_735604.7929.csv');
+    y7d_85  = importdata('genedata_85.txt_results_all_Rep100_y7dir_735604.8949.csv');
+    y7nd_85 = importdata('genedata_85.txt_results_all_Rep100_y7orig_735604.8169.csv ');
+
+    dataCells75 = {y5d_75, 'Yeast5 min. constrained'; ...
+                   y7d_75, 'Yeast7 min. constrained'; ...
+                   y5nd_75, 'Yeast5 highly constrained'; ...
+                   y7nd_75, 'Yeast7 highly constrained'
+    };
+
+ 
+    nFlux = 7;
+    methCols = [1 3 4 5 6 7 9];
+    methNames = {'Experimental', 'Standard FBA', 'Fitted FBA', 'GIMME', 'iMAT', ...
+        'Lee et al.', 'FALCON'};
+    nMeth = length(methCols);
+    %Define data cols: 
+    
+    hasSTD = [7, 9];
+    %create data matrix:
+
+    % What do we want: 
+    % Groups = Model + Growth Media (2 * 2)
+    % BarColorInGroup = Method + Experimental
+
+    dC = dataCells75;
+    ndC = length(dC);
+    for i = 1:nFlux
+       metTitle = y5d_75.textdata{i+1, 1};
+       dMean = zeros(ndC, nMeth);
+       dSTD  = zeros(ndC, nMeth);
+       for j = 1:nMeth
+           for k = 1:ndC
+               methIdx = methCols(j);
+               dMean(k, j) = dC{k}.data(i, methIdx);
+               if any(methIdx == hasSTD)
+                   dSTD(k, j) = dC{k}.data(i, methIdx + 1);
+               else
+                   dSTD(k, j) = 0;
+               end
+           end % end for k
+       end % end for j
+    end % end for i
+end
+
 if strcmp(figName, 'modelTime')
     1;
 end
