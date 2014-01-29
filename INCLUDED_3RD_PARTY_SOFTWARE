@@ -11,3 +11,6 @@ by The MathWorks, Inc.  )
 structvars               - used in conjunction with inputParser to parse bind
 (by Matt J,                optional arguments to variables.
 Xoran Technologies, Inc.)
+
+barwitherr               - Bar Chart with Error Bars, used for plotting fluxes. 
+(by Martina Callaghan)
