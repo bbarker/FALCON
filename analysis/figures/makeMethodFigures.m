@@ -149,7 +149,7 @@ if strcmp(figName, 'expCompare')
 end
 
 
-if strcmp(figName, 'fluxCmpScatter')
+if strcmp(figName, 'fluxEvalCmpScatter')
     % data comes from compareFluxByEnzymeComplexation.m
     y7ndFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtnoDir_1000.mat');
     y7dFCMP = load('FluxByECcomp_yeast_7.00_cobra.xmlgenedata_75.txtdir_1000.mat');
@@ -157,10 +157,20 @@ if strcmp(figName, 'fluxCmpScatter')
     rec2FCMP = load('FluxByECcomp_human_recon_2K562.csvrec203_1000.mat');
     rec2FCMP_3C = load('FluxByECcomp_human_recon_2K562.csvmed_coreSign_imputed_NotAll_1000.mat');
 
-    %fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
-    %fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
+    fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
+    fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
     fluxCmpScatter(rec2FCMP, 'Human Recon2 (default constraints)', 1/2, 0, 1);
     fluxCmpScatter(rec2FCMP_3C, 'Human Recon2 (highly constrained)', 1/2, 0, 1);
+end
+
+if strcmp(figName, 'fluxGrpCmpScatter')
+    % data comes from compareFluxByEnzymeComplexation.m
+    
+    y7ndFCMP = load('FluxByGroupComp_yeast_7.00_cobra.xmlgenedata_75.txtrgroupTest_y7nd1k_1000.mat');
+    y7dFCMP = load('FluxByGroupComp_yeast_7.00_cobra.xmlgenedata_75.txtrgroupTest_y7d1k_1000.mat');
+
+    fluxGrpCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
+    fluxGrpCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
 end
 
 if strcmp(figName, 'modelTime')
@@ -222,6 +232,44 @@ title(T);
 xlabel('Flux from direct evaluation');
 ylabel('Flux from minimum-disjunction');
 end % end of fluxCmpScatter
+
+
+%Forgive me for code duplication...
+
+function fluxGrpCmpScatter(ss, T, sRat, nXout, nYout, nXEout, nYEout)
+% nOut is the number of outliers to remove
+% sRat is fraction of stdev on one side of error bar.
+if ~exist('nXout', 'var') nXout = 0; end
+if ~exist('nYout', 'var') nYout = 0; end
+if ~exist('nXEout', 'var') nXEout = 0; end
+if ~exist('nYEout', 'var') nYEout = 0; end
+stdOutliers = [];
+mXoutliers  = []; mYoutliers  = [];
+mXEoutliers = []; mYEoutliers = [];
+if nXout > 0
+    msg = 'Reaction indices with outlier x-values: ';
+    mXoutliers = getOutliers(ss.v_md_nogrp, nXout, msg, {ss.v_md_nogrp_s});
+end
+if nYout > 0
+    msg = 'Reaction indices with outlier y-values: ';
+    mYoutliers = getOutliers(ss.v_md, nYout, msg, {ss.v_md_s});
+end
+if nXEout > 0
+    msg = 'Reaction indices with STD outlier x-values: ';
+    mXEoutliers = getOutliers(ss.v_md_nogrp_s, nXEout, msg, {ss.v_md_nogrp});
+end
+if nYEout > 0
+    msg = 'Reaction indices with STD outlier y-values: ';
+    mYEoutliers = getOutliers(ss.v_md_s, nYEout, msg, {ss.v_md});
+end
+
+scatterError(ss.v_md_nogrp, ss.v_md, sRat*ss.v_md_nogrp_s, sRat*ss.v_md_s, ...
+    union(mXoutliers, mYoutliers), mXEoutliers, mYEoutliers);
+title(T);
+xlabel('Flux from FALCON: no reaction groups');
+ylabel('Flux from FALCON');
+end % end of fluxGrpCmpScatter
+
 
 function CorrSigma(cX, cY, T, ctype)
     [xI, yI] = intervalAggregate(cX, cY, @median, (max(cX)-min(cX))/10, 0.3); 
