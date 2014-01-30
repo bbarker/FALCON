@@ -189,11 +189,18 @@ if strcmp(figName, 'fluxBarsTables')
     y7d_85  = importdata('genedata_85.txt_results_all_Rep100_y7dir_735604.8949.csv');
     y7nd_85 = importdata('genedata_85.txt_results_all_Rep100_y7orig_735604.8169.csv ');
 
-    dataCells75 = {y5d_75, 'Yeast5 MC'; ...
-                   y7d_75, 'Yeast7 MC'; ...
-                   y5nd_75, 'Yeast5 HC'; ...
-                   y7nd_75, 'Yeast7 HC'
+    dataCells75 = {y5d_75 'Yeast5 MC'; ...
+                   y7d_75 'Yeast7 MC'; ...
+                   y5nd_75 'Yeast5 HC'; ...
+                   y7nd_75 'Yeast7 HC'
     };
+
+    dataCells85 = {... %y5d_85 'Yeast5 MC'; ...
+                   y7d_85 'Yeast7 MC'; ...
+                   y5nd_85 'Yeast5 HC'; ...
+                   y7nd_85 'Yeast7 HC'
+    };
+
 
     %Need a fancy work around to support multiline xticklabels:
     % http://www.mathworks.com/matlabcentral/answers/101922
@@ -241,7 +248,6 @@ if strcmp(figName, 'fluxBarsTables')
        set(gca, 'FontSize', 23);
        barwitherr(dSTD, [1:ndC], dMean);
        xlabels = dC(:, 2);
-       output = xlabels;
        set(gca,'XTickLabel', xlabels);
        ylabel('Flux (mmol/gDW/h)');
        title(dC{1}.textdata{i+1});
@@ -254,6 +260,36 @@ if strcmp(figName, 'fluxBarsTables')
     barwitherr(dSTD, [1:ndC], dMean);
     legend(methNames);
     colormap(gray)
+
+    % Now we make a table for the average timing and correlation
+    % cols: number of methods + 2, rows: 1 + length(dC)
+    dC = [[dataCells75 repmat({'75% max growth'}, length(dataCells75), 1)]; ...
+          [dataCells85 repmat({'85% max growth'}, length(dataCells85), 1)]];
+    ndC = length(dC);
+    pearsonTab = cell(ndC + 1, nMeth + 2); 
+    timingTab  = cell(ndC + 1, nMeth + 2); 
+    pearsonTab{1, 1} = 'Pearson''s r';
+    timingTab{1, 1}  = 'Time (s)';
+    pearsonTab{1, 2} = 'Model';
+    timingTab{1, 2}  = 'Model';
+    sz_pTab = size(pearsonTab)
+    sz_dC = size(dC)
+    pearsonTab(2:end, 1) = dC(:, 3);
+    timingTab(2:end, 1)  = dC(:, 3);
+    pearsonTab(2:end, 2) = dC(:, 2);
+    timingTab(2:end, 2)  = dC(:, 2);
+    pearsonTab(1, 3:end) = methNames;
+    timingTab(1, 3:end) = methNames;
+
+    for j = 1:nMeth
+        methIdx = methCols(j);
+        for k = 1:ndC
+            pearsonTab{1 + k, 2 + j} = num2str(dC{k}.data(8, methIdx)); 
+            timingTab{1 + k, 2 + j}  = num2str(dC{k}.data(9, methIdx)); 
+        end
+    end % for j
+    output.pearsonTab = pearsonTab;
+    output.timingTab = timingTab;
 end
 
 if strcmp(figName, 'modelTime')
