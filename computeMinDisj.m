@@ -16,7 +16,7 @@ mdesc = strrep(model.description, ' ', '_');
 rfid = num2str(randint(1, 1, 10e40));
 rfname = [genedata_filename, '_', mdesc, rfid];
 rfname = strrep(rfname,' ', '');
-cell2csv(rfname, model.grRules,',',2000);
+cell2csv(rfname, model.grRules,',');
 rfout = [rfname, '_out'];
 nrxns = length(model.rxns);
 if FDEBUG
@@ -39,13 +39,13 @@ if sigma > 0
             num2cell(pert_vec), 'UniformOutput', false);
         genedata.textdata(2:end,3) = cellfun(@num2str, ...
             num2cell(genedata.data(:,2)), 'UniformOutput', false);
-        cell2csv(genedata_filename_pert, genedata.textdata, '\t', 2000);
+        cell2csv(genedata_filename_pert, genedata.textdata, '\t');
     elseif ndcols == 3
         %mede = median(genedata.data(~isnan(genedata.data(:,2)),2))
         %randVec = simpleTruncatedNorm(sigma, 0, inf, ndrows, mede);
         %randVec = randVec(:);
         genedata.data(:,2) = genedata.data(:,2) .* randVec; 
-        cell2csv(genedata_filename_pert, genedata.textdata(1,:), '\t', 2000);
+        cell2csv(genedata_filename_pert, genedata.textdata(1,:), '\t');
         dlmwrite(genedata_filename_pert, genedata.data, '-append', 'delimiter', ...
             '\t', 'precision', 15);
     else

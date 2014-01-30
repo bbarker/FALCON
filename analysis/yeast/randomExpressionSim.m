@@ -101,12 +101,12 @@ parfor i = 1:nSims
             num2cell(gene_exp_perm), 'UniformOutput', false);
         gdout.textdata(2:end, 3) = cellfun(@num2str, ...
             num2cell(gene_exp_sd_perm), 'UniformOutput', false);
-        cell2csv(tmpFileName, gdout.textdata, '\t', 2000);
+        cell2csv(tmpFileName, gdout.textdata, '\t');
     elseif ndcols == 3
         %gdout.data(:,1) = genenames_perm;
         gdout.data(:,2) = gene_exp_perm;
         gdout.data(:,3) = gene_exp_sd_perm; 
-        cell2csv(tmpFileName, gdout.textdata(1,:), '\t', 2000);
+        cell2csv(tmpFileName, gdout.textdata(1,:), '\t');
         dlmwrite(tmpFileName, gdout.data, '-append', 'delimiter', ...
             '\t', 'precision', 15);
     else

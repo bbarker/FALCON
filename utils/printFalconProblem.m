@@ -86,7 +86,7 @@ end
 
 % cell2csv seems extremely slow for doing this for large files.
 % consider using fprintf directly.
-cell2csv(['FalconProblem' num2str(cnt) '.csv'], outCell, ',', 2000);
+cell2csv(['FalconProblem' num2str(cnt) '.csv'], outCell, ',');
 end % of printFalconProblem
 
 function reln = csensePrint(achar)

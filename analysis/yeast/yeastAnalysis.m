@@ -58,7 +58,7 @@ if find(strcmp(methodList, 'FALCON'))
         rxnRuleCell{i + 1, 2} = num2str(rxn_exp_irr(i));
         rxnRuleCell{i + 1, 3} = num2str(rxn_exp_md(i));
     end
-    cell2csv(['ComplexExpressionCompare.csv'], rxnRuleCell, ',', 2000);
+    cell2csv(['ComplexExpressionCompare.csv'], rxnRuleCell, ',');
 
     tic;
     %Need to separate transcript data loading

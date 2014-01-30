@@ -48,7 +48,7 @@ end
 fileID=fopen(fileName,'r');
 c1 = textscan(fileID, '%s\t%s\t%s\n',1);
 C = textscan(fileID, '%s\t%s\t%s\n');
-cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t', 2000); 
+cell2csv('tempFileForAnalyzeFalcon.csv', [c1{:}; C{:}], '\t'); 
 fclose(fileID);
 
 %find gene of interest
@@ -70,7 +70,7 @@ if (normRxn ~=0)
         CC{1,2}{ind} = num2str(intenst(x));
         rfid = [num2str(x) '_' num2str(randint(1, 1, 10e40))];
         tempFileName = [rfid 'tempFileForAnalyzeFalcon.csv'];
-        cell2csv(tempFileName, [c1{:}; CC{:}], '\t', 2000); 
+        cell2csv(tempFileName, [c1{:}; CC{:}], '\t'); 
         [vIrrev vRev] = runFalcon(recMod, tempFileName, rc, EXPCON, 0); 
         dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1) vRev(normRxn)];
         disp(dist(x, :));
@@ -82,7 +82,7 @@ else
         CC{1,2}{ind} = num2str(intenst(x)); 
         rfid = [num2str(x) '_' num2str(randint(1, 1, 10e40))];
         tempFileName = [rfid 'tempFileForAnalyzeFalcon.csv']; 
-        cell2csv(tempFileName, [c1{:}; CC{:}], '\t', 2000); 
+        cell2csv(tempFileName, [c1{:}; CC{:}], '\t'); 
         [vIrrev vRev] = runFalcon(recMod, tempFileName, rc, EXPCON, 0); 
         dist(x, :) = [intenst(x) vRev(rxnOfInt)' norm(vRev, 1) 1];
         disp(dist(x, :));

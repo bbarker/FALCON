@@ -76,7 +76,7 @@ save(['FluxByECcomp_' model.description expFile fLabel '_' num2str(nReps) ...
 %    dbgCell{i, 3} = num2str(r_md(diffRxns(i)));
 %    dbgCell{i, 4} = num2str(r_lee(diffRxns(i)));
 %end
-%cell2csv(['compareEnzymeExpression_' strrep(model.description, ' ', '_') '.csv'], dbgCell, ',', 2000);
+%cell2csv(['compareEnzymeExpression_' strrep(model.description, ' ', '_') '.csv'], dbgCell, ',');
 
 %get expression file name
 
