@@ -268,8 +268,8 @@ if strcmp(figName, 'fluxBarsTables')
     ndC = length(dC);
     pearsonTab = cell(ndC + 1, nMeth + 2); 
     timingTab  = cell(ndC + 1, nMeth + 2); 
-    pearsonTab{1, 1} = 'Pearson''s r';
-    timingTab{1, 1}  = 'Time (s)';
+    pearsonTab{1, 1} = 'Max Growth Rate Percent';
+    timingTab{1, 1}  = 'Max Growth Rate Percent';
     pearsonTab{1, 2} = 'Model';
     timingTab{1, 2}  = 'Model';
     sz_pTab = size(pearsonTab)
