@@ -178,6 +178,7 @@ end
 % data generated from yeastResults.m
 % Be sure to set dC = to dataCells75 or dataCells85
 if strcmp(figName, 'fluxBarsTables')
+
     y5d_75  = importdata('genedata_75.txt_results_all_Rep100_y5dir_735619.813.csv');
     y5nd_75 = importdata('genedata_75.txt_results_all_Rep100_y5orig_735604.7928.csv');
     y7d_75  = importdata('genedata_75.txt_results_all_Rep100_y7dir_735604.8936.csv');
@@ -204,7 +205,7 @@ if strcmp(figName, 'fluxBarsTables')
 
  
     nFlux = 7;
-    methCols = [1 3 4 5 6 7 9];
+    methCols = [1 3 4 5 6 7 9];  
     methNames = {'Experimental', 'Standard FBA', 'Fitted FBA', 'GIMME', 'iMAT', ...
         'Lee et al.', 'FALCON'};
     nMeth = length(methCols);
@@ -242,11 +243,17 @@ if strcmp(figName, 'fluxBarsTables')
        xlabels = dC(:, 2);
        output = xlabels;
        set(gca,'XTickLabel', xlabels);
-       ylabel('Flux (mmol/gDW/h');
+       ylabel('Flux (mmol/gDW/h)');
        title(dC{1}.textdata{i+1});
-       legend(methNames);
-       colormap gray;
+       colormap(gray);
     end % end for i
+    % One for a legend:
+    figure();
+    set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
+    set(gca, 'FontSize', 23);
+    barwitherr(dSTD, [1:ndC], dMean);
+    legend(methNames);
+    colormap(gray)
 end
 
 if strcmp(figName, 'modelTime')
