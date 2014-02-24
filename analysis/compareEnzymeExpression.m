@@ -1,6 +1,6 @@
-function [nnanDiffTotal, nnanDiffAvg, nnanDiffOrig, nnanTotal] = ...
+function [nnanDiffTotal nnanDiffTotalNoMiss] = ...
     compareEnzymeExpression(model, expFile, nReps)
-testx = 1;
+
 %Simple script to compare expression similarity from
 %the Lee method and the minDisj method.
 %
@@ -22,6 +22,7 @@ testx = 1;
 nRxns = length(model.rxns);
 
 diffMat = zeros(nReps + 1, nRxns);
+diffMatNoMiss = zeros(nReps + 1, nRxns);
 
 [r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
 [r_md, rs_md, ~] = computeMinDisj(model, expFile);
@@ -36,20 +37,23 @@ r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;
 
 diffMat(1, :) = isDiffExp(r_md, r_lee, r_miss);
+diffMatNoMiss(1, :) = isDiffExpNoMiss(r_md, r_lee);
+
 nnanDiffOrig = sum(diffMat(1, :));
+nnanDiffOrigNoMiss = sum(diffMatNoMiss(1, :));
 
 % uncomment for debugging purposes:
-printDiffs(model, r_md, r_lee, r_miss);
+% printDiffs(model, r_md, r_lee, r_miss);
 
-diffRxns = find(isDiffExp(r_md, r_lee, r_miss));
-dbgCell = cell(nnanDiffOrig, 4);
-for i = 1 : nnanDiffOrig
-    dbgCell{i, 1} = model.rxnNames{diffRxns(i)};
-    dbgCell{i, 2} = model.grRules{diffRxns(i)};
-    dbgCell{i, 3} = num2str(r_md(diffRxns(i)));
-    dbgCell{i, 4} = num2str(r_lee(diffRxns(i)));
-end
-cell2csv(['compareEnzymeExpression_' strrep(model.description, ' ', '_') '.csv'], dbgCell, ',');
+% diffRxns = find(isDiffExp(r_md, r_lee, r_miss));
+% dbgCell = cell(nnanDiffOrig, 4);
+% for i = 1 : nnanDiffOrig
+%     dbgCell{i, 1} = model.rxnNames{diffRxns(i)};
+%     dbgCell{i, 2} = model.grRules{diffRxns(i)};
+%     dbgCell{i, 3} = num2str(r_md(diffRxns(i)));
+%     dbgCell{i, 4} = num2str(r_lee(diffRxns(i)));
+% end
+% cell2csv(['compareEnzymeExpression_' strrep(model.description, ' ', '_') '.csv'], dbgCell, ',');
 
 %get expression file name
 [pathstr, expName, ext] = fileparts(expFile);
@@ -72,6 +76,7 @@ end
 
 ngenes = length(gene_exp);
 nnanDiffTotal = nan*ones(1, nReps + 1);
+nnanDiffTotalNoMiss = nan*ones(1, nReps + 1);
 
 parfor i = 2 : (nReps + 1)
     permVec = randperm(ngenes);
@@ -120,19 +125,42 @@ parfor i = 2 : (nReps + 1)
     % printDiffs(model, r_md, r_lee, r_miss, priorDiffs);
 
     diffMat(i, :) = isDiffExp(r_md, r_lee, r_miss);
+    diffMatNoMiss(i, :) = isDiffExpNoMiss(r_md, r_lee);
 end
 
 nnanDiffTotal(1) = nnanDiffOrig;
+nnanDiffTotalNoMiss(1) = nnanDiffOrigNoMiss;
 parfor i = 2 : nReps + 1
     nnanDiffTotal(i) = sum(boolean(sum(diffMat(1 : i, :))));
+    nnanDiffTotalNoMiss(i) = sum(boolean(sum(diffMatNoMiss(1 : i, :))));
 end
 
 nnanDiffAvg = mean(sum(diffMat'));
+nnanDiffAvgNoMiss = mean(sum(diffMatNoMiss'));
+
+modName = strrep(strrep(strrep(strrep(num2str(model.description), ' ', ''), ...
+          '.', ''), 'xml', ''), '_', '');
+[pathstr, expName, ext] = fileparts(expFile);
+fileNameOut = ['compareEnzymeExpression_' modName '_' ...
+                num2str(nReps) '_' expName];
+
+disp('Saving to:');
+disp(fileNameOut);
+save( fileNameOut, ...
+['nnanDiffTotal', 'nnanDiffAvg', 'nnanDiffOrig', 'nnanTotal', ...
+'nnanDiffTotalNoMiss', 'nnanDiffAvgNoMiss', 'nnanDiffOrigNoMiss'] );
+
+% end of [compareEnzymeExpression]
+
 
 %apply rNotNan to diffMat
 
 function d = isDiffExp(r1, r2, rmg)
 d = columnVector(boolean(abs(r1 - r2) > 1e-4) & (~rmg))';
+% end of isDiffExp
+
+function d = isDiffExpNoMiss(r1, r2)
+d = columnVector(boolean(abs(r1 - r2) > 1e-4))';
 % end of isDiffExp
 
 function printDiffs(m, r1, r2, rmg, priorDiffs)

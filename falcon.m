@@ -615,7 +615,7 @@ end
 
 params.method = LPmeth;
 if isinf(LPseed)
-    params.seed = randi(intmax);
+    params.seed = randi(floor(intmax/10));
 else 
     params.seed = LPseed;
 end

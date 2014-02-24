@@ -11,7 +11,9 @@ lIter_Dist   = zeros(nReps, nRxns);
 
 timeInit = num2str(now());
 
-parfor i = 1:nReps
+%normally parfor, disabled for testing
+for i = 1:nReps
+    disp(['Starting dataToFlux rep: ' num2str(i)]);
     [v_sol, lIter]    = dataToFluxFix(m, r, r_sd);
     v_sol_Dist(i, :)  = columnVector(v_sol)';
     lIter_Dist(i)     = lIter;
