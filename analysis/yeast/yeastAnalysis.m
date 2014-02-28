@@ -32,8 +32,16 @@ gene_exp	= genedata.data(:,1);
 gene_exp_sd	= genedata.data(:,2);
 
 % map gene weighting to reaction weighting
+
+expTime = tic;
 [rxn_exp_md, rxn_exp_sd_md, rxn_rule_group] = ... 
     computeMinDisj(modelIrrev, genedata_filename);
+minDisjTime = toc(expTime);
+minDisjTime = 0; % See comment:
+%
+% For Yeast, this really doesn't take much time for either 
+% method, so ignore expression time. For human rules, this can
+% matter.
 
 % FALCON
 if find(strcmp(methodList, 'FALCON'))
@@ -74,13 +82,13 @@ if find(strcmp(methodList, 'FALCON'))
             'minFit', minFit, 'EXPCON', expCon);
     end
     v_falcon = convertIrrevFluxDistribution(v_falconIrr, matchRev);
-    timing.falcon = toc/nReps;
+    timing.falcon = toc/nReps + minDisjTime;
     v_falcon_s = convertIrrevFluxDistribution(v_falconIrr_s, matchRev);
     save([genedata_filename '_falcon_flux.mat'], 'v_falcon');
 else
     v_falcon = zeros(length(model.lb), 1);
     v_falcon_s = v_falcon;
-    timing.falcon = 0;
+    timing.falcon = 0 + minDisjTime;
 end
 
 

@@ -6,8 +6,12 @@ n_sd = nan;
 
 %ApmB = '[0-9\.]+±[0-9\.]+';
 ApmB = '[0-9\.]+e?-?[0-9]*±[0-9\.]+e?-?[0-9]*';
+loopcnt = 0;
+geneNameLen = 5; %approximate lower bound on gene name length
 if ~isempty(g)
-    while isnan(n)
+    gLen = length(g);
+    while (isnan(n) && loopcnt < floor(gLen/geneNameLen)) %arbitrary cutoff
+        loopcnt = loopcnt + 1;
         %Checking for bad stuff, e.g. iMM1415
         gtmp = regexprep(g,'\s+or\s+or\s+', ' or ', 'ignorecase');
         gtmp = regexprep(gtmp,'\s+and\s+and\s+', ' and ', 'ignorecase');

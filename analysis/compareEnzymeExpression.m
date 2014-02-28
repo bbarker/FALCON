@@ -32,6 +32,7 @@ diffMatNoMiss = zeros(nReps + 1, nRxns);
 %Should be the same for both methods
 rNotNan = ~isnan(r_md);
 nnanTotal = sum(rNotNan);
+enzTotal = sum(sum(model.rxnGeneMat') > 0);
 
 r_md(isnan(r_md)) = -1;
 r_lee(isnan(r_lee)) = -1;
@@ -148,7 +149,7 @@ disp('Saving to:');
 disp(fileNameOut);
 save( fileNameOut, 'nnanDiffTotal', 'nnanDiffAvg', 'nnanDiffOrig', ...
 'nnanDiffTotalNoMiss', 'nnanDiffAvgNoMiss', 'nnanDiffOrigNoMiss',  ...
-'nnanTotal' );
+'nnanTotal', 'enzTotal');
 
 % end of [compareEnzymeExpression]
 

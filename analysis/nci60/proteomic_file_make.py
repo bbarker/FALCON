@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Copyright Brandon Barker
-# August 2013
+# August 2013 - February 2014
 
 # We generate correlations between recon2 genes' 
 # mRNA expression profiles and proteomic profiles, 
