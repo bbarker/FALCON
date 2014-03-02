@@ -249,10 +249,10 @@ if strcmp(figName, 'fluxBarsTables')
        figure();
        set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
        set(gca, 'FontSize', 23);
-       barwitherr(dSTD, [1:ndC], dMean);
+       barwitherr(sgnLog10p1(dSTD), [1:ndC], sgnLog10p1(dMean));
        xlabels = dC(:, 2);
        set(gca,'XTickLabel', xlabels);
-       ylabel('Flux (mmol/gDW/h)');
+       ylabel('Log10(1 + Flux (mmol/gDW/h))');
        title(dC{1}.textdata{i+1});
        colormap(gray);
     end % end for i
@@ -303,6 +303,11 @@ end % end of makeMethodFigures
 
 
 %%%   Convenience functions   %%%
+
+function xt = sgnLog10p1(x)
+    lgtrans = @(y) sign(y) * log10(1+abs(y));
+    xt = arrayfun(lgtrans, x);
+end % of sgnLog10p1
 
 function outliers = getOutliers(vec, nOut, message, otherVecs)
 % otherVecs is a list of data to print associated to the outlier
