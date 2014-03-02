@@ -252,7 +252,8 @@ if strcmp(figName, 'fluxBarsTables')
        barwitherr(sgnLog10p1(dSTD), [1:ndC], sgnLog10p1(dMean));
        xlabels = dC(:, 2);
        set(gca,'XTickLabel', xlabels);
-       ylabel('Log10(1 + Flux (mmol/gDW/h))');
+       %ylabel('Log10(1 + Flux (mmol/gDW/h))');
+       ylabel('Flux');
        title(dC{1}.textdata{i+1});
        colormap(gray);
     end % end for i
