@@ -8,9 +8,9 @@ nRxns = length(m.rxns);
 
 
 v_sol_Dist   = zeros(nReps, nRxns);
-lIter_Dist   = zeros(nReps, nRxns);
-
+lIter_Dist   = zeros(nReps, 1);
 lTimeVec     = zeros(nReps, 1);
+
 timeInit = num2str(now());
 
 %normally parfor, disabled for testing

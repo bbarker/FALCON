@@ -4,6 +4,10 @@ function [nnanDiffTotal nnanDiffTotalNoMiss] = ...
 %Simple script to compare expression similarity from
 %the Lee method and the minDisj method.
 %
+%INPUT
+%
+% expFile        If equal to '', generates a random expression file.
+%
 %OUTPUT
 %nnanDiffTotal    Total number of differences in expression
 %                 found across all permutations of enzyme
@@ -19,13 +23,31 @@ function [nnanDiffTotal nnanDiffTotalNoMiss] = ...
 %nnanTotal        For reference, the total number of reactions
 %                 in the unpermuted condition with expression data.
 
+deleteExpFile = false;
+
 nRxns = length(model.rxns);
+nModGenes = length(model.genes);
 
 diffMat = zeros(nReps + 1, nRxns);
 diffMatNoMiss = zeros(nReps + 1, nRxns);
 
+if strcmp(expFile, '')
+    deleteExpFile = true;
+    pd = ProbDistUnivParam('gamma', [1 2]);
+    gene_exp = pd.random(nModGenes, 1);
+    gene_exp_sd = gene_exp .* rand(nModGenes, 1) / 10; %don't need; quick hack
+    expFile = ['compareEnzymeExpressionRandData_' num2str(nReps) '.csv'];
+    cellOut = cell(nModGenes + 1, 3);
+    cellOut(1, :) = {'gene', 'mean', 'std'};
+    cellOut(2:end, 1) = model.genes;
+    cellOut(2:end, 2) = arrayfun(@num2str, gene_exp, 'UniformOutput', false);
+    cellOut(2:end, 3) = arrayfun(@num2str, gene_exp_sd, 'UniformOutput', false);
+    cell2csv(expFile, cellOut, '\t');
+end
+
 [r_lee, rs_lee, r_miss] = geneToRxn(model, expFile);
 [r_md, rs_md, ~] = computeMinDisj(model, expFile);
+
 %For testing:
 %[r_md, rs_md] = deal(r_lee, rs_lee);
 
@@ -150,6 +172,10 @@ disp(fileNameOut);
 save( fileNameOut, 'nnanDiffTotal', 'nnanDiffAvg', 'nnanDiffOrig', ...
 'nnanDiffTotalNoMiss', 'nnanDiffAvgNoMiss', 'nnanDiffOrigNoMiss',  ...
 'nnanTotal', 'enzTotal');
+
+if deleteExpFile %used for random files
+    1; %delete(expFile); % !!!!!!!!!!!!!!!!!!!!!!!!! %
+end
 
 % end of [compareEnzymeExpression]
 
