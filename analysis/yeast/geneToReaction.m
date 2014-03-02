@@ -19,7 +19,7 @@ for k = 1:length(m.rxns)
     w = setdiff(w,{'and','or','AND','OR'});
     for kk = 1:length(w)
 	j = find(strcmp(w{kk},g));
-	if length(j) == 0 %for names enclosed in parentheses:
+	if length(j) == 0 %for names encloses in parentheses:
 	  j = find(strcmp(['(',w{kk},')'],g));
 	end
 	if numel(j) > 1
@@ -28,9 +28,9 @@ for k = 1:length(m.rxns)
         n = t(j);
         n_sd = t_sd(j);
 	if ~isempty(n)
-          ga = regexprep(ga,['\<',w{kk},'\>'],[num2str(n),'Â±',num2str(n_sd)]); % Â±
+          ga = regexprep(ga,['\<',w{kk},'\>'],[num2str(n),'±',num2str(n_sd)]); % ±
 	  %Now try with parentheses ...
-          ga = regexprep(ga,['\<','\(',w{kk},'\)','\>'],[num2str(n),'Â±',num2str(n_sd)]); % Â±
+          ga = regexprep(ga,['\<','\(',w{kk},'\)','\>'],[num2str(n),'±',num2str(n_sd)]); % ±
 	else
 	  true_missing = true_missing+1;
 	  %try right first
