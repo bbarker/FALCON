@@ -14,7 +14,7 @@ lTimeVec     = zeros(nReps, 1);
 timeInit = num2str(now());
 
 %normally parfor, disabled for testing
-parfor i = 1:nReps
+for i = 1:nReps
     disp(['Starting dataToFlux rep: ' num2str(i)]);
     dFstart = tic;
     [v_sol, lIter]    = dataToFluxFix(m, r, r_sd);

@@ -1,4 +1,4 @@
-function modelOut = removeEnzymeIrrevs(model)
+function [modelOut, LBorUBdiff] = removeEnzymeIrrevs(model)
 % We use the convention that only specified rev rxns
 % are actually reversible, meaning that we must relax
 % constraints on lb/ub to match this.
