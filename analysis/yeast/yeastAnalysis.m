@@ -230,6 +230,7 @@ if find(strcmp(methodList, 'fitFBA'))
     tic;
     model.lb(model.c == 1) = fOpt;
     data = nan(size(model.rxns));
+    uptake              = find(strcmp(gene_to_scale,model.rxnNames));
     data(uptake) = 1;
     for k = 1:size(experimental_fluxes.textdata,1)
         j = find(strcmp(experimental_fluxes.textdata{k,1},model.rxnNames));

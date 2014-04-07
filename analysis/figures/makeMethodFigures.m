@@ -183,9 +183,16 @@ end
 if strcmp(figName, 'fluxBarsTables')
 
     y5d_75  = importdata('genedata_75.txt_results_all_Rep100_y5dir_735619.813.csv');
+    y5d_75_f = importdata('genedata_75.txt_results_mindisj2_Y5_dir100_735654.4775.csv');
+
     y5nd_75 = importdata('genedata_75.txt_results_all_Rep100_y5orig_735604.7928.csv');
+    y5nd_75_f = importdata('genedata_75.txt_results_mindisj2_Y5_NoDir100_735654.4724.csv');
+
     y7d_75  = importdata('genedata_75.txt_results_all_Rep100_y7dir_735604.8936.csv');
+    y7d_75_f = importdata('genedata_75.txt_results_mindisj2_Y7_dir100_735653.8628.csv');
+
     y7nd_75 = importdata('genedata_75.txt_results_all_Rep100_y7orig_735604.8164.csv');
+    y7nd_75_f = importdata('genedata_75.txt_results_mindisj2_Y7_NoDir100_735653.8996.csv');
 
     % y5d_85  = importdata('');
     y5nd_85 = importdata('genedata_85.txt_results_all_Rep100_y5orig_735604.7929.csv');
@@ -220,8 +227,14 @@ if strcmp(figName, 'fluxBarsTables')
         'Lee et al.', 'FALCON'};
     nMeth = length(methCols);
     %Define data cols: 
-    
     hasSTD = [7, 9];
+   
+    %use updated mindisj data:
+    y5d_75.data(:, 9:10)  = y5d_75_f.data(:, 9:10);
+    y5nd_75.data(:, 9:10) = y5nd_75_f.data(:, 9:10);
+    y7d_75.data(:, 9:10)  = y7d_75_f.data(:, 9:10); 
+    y7nd_75.data(:, 9:10) = y7nd_75_f.data(:, 9:10);
+
     %create data matrix:
 
     % What do we want: 
@@ -248,7 +261,7 @@ if strcmp(figName, 'fluxBarsTables')
        end % end for j
        figure();
        set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
-       set(gca, 'FontSize', 23);
+       set(gca, 'FontSize', 28);
        barwitherr(sgnLog10p1(dSTD), [1:ndC], sgnLog10p1(dMean));
        xlabels = dC(:, 2);
        set(gca,'XTickLabel', xlabels);
@@ -260,7 +273,7 @@ if strcmp(figName, 'fluxBarsTables')
     % One for a legend:
     figure();
     set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
-    set(gca, 'FontSize', 23);
+    set(gca, 'FontSize', 28);
     barwitherr(dSTD, [1:ndC], dMean);
     legend(methNames);
     colormap(gray)
