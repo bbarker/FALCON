@@ -417,7 +417,7 @@ function CorrSigma(cX, cY, T, ctype)
 
     figure();
     set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
-    set(gca, 'FontSize', 23);
+    set(gca, 'FontSize', 34);
     hold all;     
     scatter(cX, cY);
     plot(xI, yI, 'color', 'g', 'LineWidth', 3);
