@@ -65,7 +65,7 @@ end
 
 
 if strcmp(figName, 'CorrSigma')
-    rec2Title = ['Human Recon2 flux sensitivity to gene noise' char(10)];
+    rec2Title = ['Human Recon 2 flux sensitivity to gene noise' char(10)];
     %rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
     rec2CS = load('pertData_humanrecon2_K562_4_1000_20141220363133847_1000_1.mat');
     CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
@@ -73,21 +73,21 @@ if strcmp(figName, 'CorrSigma')
 
     rec2CS_1C = load('pertData_humanrecon2_K562_4_1000_201412314444710728_med_1000_1.mat');
     CorrSigma(rec2CS_1C.sigmaVec, rec2CS_1C.PcorrV, ...
-        [rec2Title 'RPMI-Medium constrained'], 'Pearson''s r');
+        [rec2Title 'RPMI-medium constrained'], 'Pearson''s r');
 
     rec2CS_2C = load('pertData_humanrecon2_K562_4_1000_20141232331358614_med_coreSign_1000_1.mat');
     CorrSigma(rec2CS_2C.sigmaVec, rec2CS_2C.PcorrV, ...
-        [rec2Title 'RPMI-Medium and CORE-Sign constrained'], 'Pearson''s r');
+        [rec2Title 'RPMI-medium and CORE-sign constrained'], 'Pearson''s r');
 
     rec2CS_3C = load(['pertData_humanrecon2_K562_4_1000_201412324558226941_' ...
                       'rec203_med_coreSign_imputed_NotAll_1000_1.mat']);
     CorrSigma(rec2CS_3C.sigmaVec, rec2CS_3C.PcorrV, ...
-        [rec2Title 'RPMI-Medium and CORE-Imputed Enzymatic-Reaction directionality constrained'], 'Pearson''s r');
+        [rec2Title 'RPMI-medium and CORE-imputed enzymatic-reaction directionality constrained'], 'Pearson''s r');
 
     rec2CS_4C = load(['pertData_humanrecon2lmomaall_K562_4_1000_2014124234511045576' ...
                       '_rec203_med_coreSign_imputed_All_1000_1.mat']);
     CorrSigma(rec2CS_4C.sigmaVec, rec2CS_4C.PcorrV, ...
-        [rec2Title 'RPMI-Medium and CORE-Imputed All-Reaction directionality constrained'] , 'Pearson''s r');
+        [rec2Title 'RPMI-medium and CORE-imputed all-reaction directionality constrained'] , 'Pearson''s r');
 
 
     y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat');
@@ -99,9 +99,9 @@ if strcmp(figName, 'CorrSigma')
 
     %Enzyme Complexities:
     CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
-        'Yeast 7 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+        'Yeast 7 enzyme complex sensitivity to gene noise', 'Pearson''s r');
     CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
-        'Human Recon2 Enzyme Complex sensitivity to gene noise', 'Pearson''s r');
+        'Human Recon 2 enzyme complex sensitivity to gene noise', 'Pearson''s r');
 
 
 end
