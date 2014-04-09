@@ -82,7 +82,7 @@ if strcmp(figName, 'CorrSigma')
     rec2CS_3C = load(['pertData_humanrecon2_K562_4_1000_201412324558226941_' ...
                       'rec203_med_coreSign_imputed_NotAll_1000_1.mat']);
     CorrSigma(rec2CS_3C.sigmaVec, rec2CS_3C.PcorrV, ...
-        [rec2Title 'RPMI-medium and CORE-imputed enzymatic-reaction directionality constrained'], 'Pearson''s r');
+        [rec2Title 'RPMI-medium and CORE-imputed enzyme-reaction directionality constrained'], 'Pearson''s r');
 
     rec2CS_4C = load(['pertData_humanrecon2lmomaall_K562_4_1000_2014124234511045576' ...
                       '_rec203_med_coreSign_imputed_All_1000_1.mat']);
@@ -417,7 +417,7 @@ function CorrSigma(cX, cY, T, ctype)
 
     figure();
     set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
-    set(gca, 'FontSize', 34);
+    set(gca, 'FontSize', 32);
     hold all;     
     scatter(cX, cY);
     plot(xI, yI, 'color', 'g', 'LineWidth', 3);
