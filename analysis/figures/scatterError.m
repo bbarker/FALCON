@@ -20,7 +20,7 @@ dotSize = 23;
 
 figure();
 set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
-set(gca, 'FontSize', 23);
+set(gca, 'FontSize', 26);
 hold all;
 
 for i = 1:nD

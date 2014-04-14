@@ -2,6 +2,9 @@ function output = makeMethodFigures(figName)
 
 output = [];
 
+% Whether to draw titles in figures.
+drawTitles = false;
+
 %Need to annotate (at least partly) which figure numbers
 %correspond to which figName(s) below.
 
@@ -12,19 +15,20 @@ if strcmp(figName, 'pExp') % (figure YpermCorr)
     %Be sure to declare these as globals in the main workspace first.
     s75 = load('run1randCorr_5000_genedata_75.mat', '-mat', 'PearsonExpVec');
     s85 = load('run1randCorr_5000_genedata_85.mat', '-mat', 'PearsonExpVec');
-    plotSmoothHistPairs(s75.PearsonExpVec, s85.PearsonExpVec,                   ...
-        ['Predictions for actual versus permuted expression:' char(10)          ...
-        'experimental flux correlation'] ,  ...                                 ...
-                'Pearson''s r', 0.99, '75% Max Growth', 0.98, '85% Max Growth', ...
-                 -1, 1.3);
+    pExpTitle = '';
+    if drawTitles
+        pExpTitle = ['Predictions for actual versus permuted expression:' ...
+                     char(10) 'experimental flux correlation'];
+    end
+    plotSmoothHistPairs(s75.PearsonExpVec, s85.PearsonExpVec, pExpTitle,  ...
+                'Pearson''s r', 0.99, '75% Max Growth', 0.98,             ...
+                '85% Max Growth', -1, 1.3);
 
     s75 = load('dirr1y7randCorr_5000_genedata_75.mat', '-mat', 'PearsonExpVec');
     s85 = load('dirr1y7randCorr_5000_genedata_85.mat', '-mat', 'PearsonExpVec');
-    plotSmoothHistPairs(s75.PearsonExpVec, s85.PearsonExpVec,                   ...
-        ['Predictions for actual versus permuted expression:' char(10)          ...
-        'experimental flux correlation'] ,  ...                                 ...
-                'Pearson''s r', 0.98, '75% Max Growth', 0.97, '85% Max Growth', ...
-                 -1, 1.3, 0.008);
+    plotSmoothHistPairs(s75.PearsonExpVec, s85.PearsonExpVec, pExpTitle,  ...
+                'Pearson''s r', 0.98, '75% Max Growth', 0.97,             ...
+                '85% Max Growth', -1, 1.3, 0.008);
 
 end
 % permuted flux correlation distribution
@@ -78,39 +82,39 @@ if strcmp(figName, 'CorrSigma')
     rec2Title = ['Human Recon 2 flux sensitivity to gene noise' char(10)];
     %rec2CS = load('pertData_humanrecon2_K562_0.5_1000_2014121142510012932_1000rec203_1.mat')
     rec2CS = load('pertData_humanrecon2_K562_4_1000_20141220363133847_1000_1.mat');
-    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...
+    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrV, ...  % 1
         [rec2Title 'default constraints'], 'Pearson''s r');
 
     rec2CS_1C = load('pertData_humanrecon2_K562_4_1000_201412314444710728_med_1000_1.mat');
-    CorrSigma(rec2CS_1C.sigmaVec, rec2CS_1C.PcorrV, ...
+    CorrSigma(rec2CS_1C.sigmaVec, rec2CS_1C.PcorrV, ... % 2
         [rec2Title 'RPMI-medium constrained'], 'Pearson''s r');
 
     rec2CS_2C = load('pertData_humanrecon2_K562_4_1000_20141232331358614_med_coreSign_1000_1.mat');
-    CorrSigma(rec2CS_2C.sigmaVec, rec2CS_2C.PcorrV, ...
+    CorrSigma(rec2CS_2C.sigmaVec, rec2CS_2C.PcorrV, ... % 3
         [rec2Title 'RPMI-medium and CORE-sign constrained'], 'Pearson''s r');
 
     rec2CS_3C = load(['pertData_humanrecon2_K562_4_1000_201412324558226941_' ...
                       'rec203_med_coreSign_imputed_NotAll_1000_1.mat']);
-    CorrSigma(rec2CS_3C.sigmaVec, rec2CS_3C.PcorrV, ...
+    CorrSigma(rec2CS_3C.sigmaVec, rec2CS_3C.PcorrV, ... % 4
         [rec2Title 'RPMI-medium and CORE-imputed enzyme-reaction directionality constrained'], 'Pearson''s r');
 
     rec2CS_4C = load(['pertData_humanrecon2lmomaall_K562_4_1000_2014124234511045576' ...
                       '_rec203_med_coreSign_imputed_All_1000_1.mat']);
-    CorrSigma(rec2CS_4C.sigmaVec, rec2CS_4C.PcorrV, ...
+    CorrSigma(rec2CS_4C.sigmaVec, rec2CS_4C.PcorrV, ... % 5
         [rec2Title 'RPMI-medium and CORE-imputed all-reaction directionality constrained'] , 'Pearson''s r');
 
 
     y7dCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412112022547807_1000y7dir_1.mat');
-    CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ...
+    CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrV, ... % 6
         'Yeast 7 (minimally constrained) flux sensitivity to gene noise', 'Pearson''s r');
     y7ndCS = load('pertData_yeast700cobra_genedata_75_4_1000_201412121527771331_100y7noDir_1.mat');
-    CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrV, ...
+    CorrSigma(y7ndCS.sigmaVec, y7ndCS.PcorrV, ... % 7
         'Yeast 7 (highly constrained) flux sensitivity to gene noise', 'Pearson''s r');
 
     %Enzyme Complexities:
-    CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ...
+    CorrSigma(y7dCS.sigmaVec, y7dCS.PcorrE, ... % 8
         'Yeast 7 enzyme complex sensitivity to gene noise', 'Pearson''s r');
-    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ...
+    CorrSigma(rec2CS.sigmaVec, rec2CS.PcorrE, ... % 9
         'Human Recon 2 enzyme complex sensitivity to gene noise', 'Pearson''s r');
 
 
@@ -128,7 +132,9 @@ if strcmp(figName, 'PertAn')
     xlim([-0.1 1.001]);
     hls = lsline;
     set(hls, 'LineWidth', 3);
-    title([cType ' correlations for perturbed expression data']);
+    if drawTitles
+        title([cType ' correlations for perturbed expression data']);
+    end
     xlabel([cType '''s correlation between expression'] );
     ylabel([cType '''s correlation between fluxes'] );
     mb = polyfit(corrE, corrV, 1);
@@ -154,8 +160,10 @@ if strcmp(figName, 'expCompare')
     set(gca, 'FontSize', 26);
     xlim([1 iMax]);
     set(gca,'XTick',[1:2:iMax]);
-    title(['Differences in complex abundance ' char(10) ...
-           'between minimum-disjunction and direct evaluation']);
+    if drawTitles
+        title(['Differences in complex abundance ' char(10) ...
+               'between minimum-disjunction and direct evaluation']);
+    end
     xlabel('Number of permuted expression vectors');
     ylabel('Percentage of ezymatic reactions');
     hold all;
@@ -174,8 +182,8 @@ if strcmp(figName, 'fluxEvalCmpScatter')
 
     fluxCmpScatter(y7ndFCMP, 'Yeast7 Highly Constrained', 1/2) ;
     fluxCmpScatter(y7dFCMP, 'Yeast7 Minimally Constrained', 1/2)
-    fluxCmpScatter(rec2FCMP, 'Human Recon2 (default constraints)', 1/2, 0, 1);
-    fluxCmpScatter(rec2FCMP_3C, 'Human Recon2 (highly constrained)', 1/2, 0, 1);
+    fluxCmpScatter(rec2FCMP, 'Recon2 (default constraints)', 1/2, 0, 1);
+    fluxCmpScatter(rec2FCMP_3C, 'Recon2 (highly constrained)', 1/2, 0, 1);
 end
 
 if strcmp(figName, 'fluxGrpCmpScatter')
@@ -277,7 +285,9 @@ if strcmp(figName, 'fluxBarsTables')
        set(gca,'XTickLabel', xlabels);
        %ylabel('Log10(1 + Flux (mmol/gDW/h))');
        ylabel('Flux');
-       title(dC{1}.textdata{i+1});
+       if drawTitles
+           title(dC{1}.textdata{i+1});
+       end
        colormap(gray);
     end % end for i
     % One for a legend:
@@ -322,7 +332,6 @@ end
 if strcmp(figName, 'modelTime')
     1;
 end
-end % end of makeMethodFigures
 
 
 
@@ -379,7 +388,9 @@ end
 
 scatterError(ss.v_lee, ss.v_md, sRat*ss.v_lee_s, sRat*ss.v_md_s, ...
     union(mXoutliers, mYoutliers), mXEoutliers, mYEoutliers);
-title(T);
+if drawTitles
+    title(T);
+end
 xlabel('Flux from direct evaluation');
 ylabel('Flux from minimum-disjunction');
 end % end of fluxCmpScatter
@@ -416,7 +427,9 @@ end
 
 scatterError(ss.v_md_nogrp, ss.v_md, sRat*ss.v_md_nogrp_s, sRat*ss.v_md_s, ...
     union(mXoutliers, mYoutliers), mXEoutliers, mYEoutliers);
-title(T);
+if drawTitles
+    title(T);
+end
 xlabel('Flux from FALCON: no reaction groups');
 ylabel('Flux from FALCON');
 end % end of fluxGrpCmpScatter
@@ -431,8 +444,11 @@ function CorrSigma(cX, cY, T, ctype)
     hold all;     
     scatter(cX, cY);
     plot(xI, yI, 'color', 'g', 'LineWidth', 3);
-
-    title(T);
+    if drawTitles
+        title(T);
+    end
     xlabel('\sigma (error distribution parameter)');
     ylabel(ctype);
 end % end of CorrSigma
+
+end % end of makeMethodFigures

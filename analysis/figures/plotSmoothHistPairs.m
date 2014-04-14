@@ -45,7 +45,9 @@ xlim([xmin, xmax]);
 
 xlabel(xLabel);
 ylabel('Density');
-title(figTitle);
+if length(figTitle) > 0
+   title(figTitle);
+end
 
 if exist('Est1', 'var')
     xA = [Est1 Est1];
