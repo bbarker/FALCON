@@ -1,10 +1,13 @@
 function plotSmoothHistPairs(Data1, Data2, figTitle, xLabel, ...
-    Est1, Label1, Est2, Label2, xmin, xmax, ksweight)
+    xmin, xmax, ksweight, Est1, Label1, Est2, Label2)
 
 % Requires ds2nfu: 
 % http://www.mathworks.com/matlabcentral/fileexchange/10656-data-space-to-figure-units-conversion
 
 useDefaultKSweight = false;
+if  ksweight < 0
+    useDefaultKSweight = true;
+end
 if ~exist('ksweight', 'var')
     useDefaultKSweight = true;
 end
