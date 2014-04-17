@@ -77,7 +77,7 @@ This will be especially useful if you plan on running analyses
 similar to those found in the publication; otherwise, the top-level
 directory should suffice.
 
-## Compiling the minimum-disjunction program: C-source method ##
+#### Compiling the minimum-disjunction program: C-source method ####
 Use this method if the provided binaries do not work for you
 or there are none matching your operating system, and if you
 aren't interested in experimenting with GPR-related aspects
