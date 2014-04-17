@@ -21,17 +21,27 @@ should be straightforward.
 
 #### Required Prerequisites ####
 
-There are several primary prerequisites:
+There are several essential prerequisites:
 
 * **MATLAB**: currently required for running the flux-fitting algorithm and 
- running most of the analyses. This is the only non-free requirement.
+ running most of the analyses. This is the only non-free requirement. 
 
 * **COBRA Toolbox**: A MATLAB package developed for analysis of genome-scale
  metabolic models. We assume the COBRA standards and use many of its functions
- in our code.
+ in our code.  See the [official page](http://opencobra.sourceforge.net/) 
+ for documenation and the protocol. We have used a fork of the project available 
+ at [Ronan Fleming's repository](https://github.com/rmtfleming/cobratoolbox).
 
-* **Boehm GC:** *Is it required or only for compiling?*
 
+* **Boehm GC:** *Is it required or only for compiling?* This should be available
+ on most systems, though in Cygwin it will have to be explicitly installed
+ using the setup program. The headers may need to be installed separately, which
+ is necessary if one wishes to compile the minimum disjunction program.
+
+* **libgcc** This is the GCC runtime library, and should be installed on most
+ systems by default. Sometimes the appropriate version may need to be installed
+ if you are using an executable of minDisj compiled by someone else 
+ (if this is the case it is best you compile your own copy of minDisj).
 
 #### Optional Packages ####
 * **C compiler**: We have only tested recent versions of GCC. This is
@@ -69,9 +79,9 @@ make sure it is in your PATH.
 
 Once minDisj is built, consider adding the following to your startup.m
 file (in UNIX, this should be in ~/Documents/MATLAB/), or run it
-before each use of FALCON:
+before each use of FALCON within MATLAB:
 
-addpath(genpath('MY_FALCON_DIRECTORY'));
+    addpath(genpath('MY_FALCON_DIRECTORY'));
 
 This will be especially useful if you plan on running analyses 
 similar to those found in the publication; otherwise, the top-level
@@ -83,11 +93,22 @@ or there are none matching your operating system, and if you
 aren't interested in experimenting with GPR-related aspects
 of the algorithm.
 
+Go in to the GPR subdirectory and run
+
+    make falcon_cmdline
+    
+And as stated above, copy or link to this file in your path as the file 'minDisj'.
 
 
 #### Compiling the minimum-disjunction program: ATS source method ####
 After installing ATS2 (see above), download the latest source
 from this repository.
+
+Go in to the GPR subdirectory and run
+
+    make falcon_cmdline
+    
+And as stated above, copy or link to this file in your path as the file 'minDisj'.
 
 
 
@@ -97,3 +118,5 @@ For other data and information related to FALCON and and associated
 pubications, please see:
 
 http://openwetware.org/wiki/Barker:Notebook/FALCON
+
+In particular, data for testing the minimum-disjunction program [can be found there](http://openwetware.org/wiki/Barker:Notebook/FALCON#Yeast_RNA-Seq_analysis).
