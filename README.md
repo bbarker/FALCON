@@ -35,7 +35,7 @@ There are several essential prerequisites:
  at [Ronan Fleming's repository](https://github.com/rmtfleming/cobratoolbox).
 
 
-* **Boehm GC:** *Is it required or only for compiling?* This should be available
+* **Boehm GC:** This should be available
  on most systems, though in Cygwin it will have to be explicitly installed
  using the setup program. The headers may need to be installed separately, which
  is necessary if one wishes to compile the minimum disjunction program.
@@ -95,8 +95,9 @@ or there are none matching your operating system, and if you
 aren't interested in experimenting with GPR-related aspects
 of the algorithm.
 
-Go in to the GPR subdirectory and run
+Go in to the GPR subdirectory and run make:
 
+    cd <MY_FALCON_DIRECTORY>/GPR
     make falcon_cmdline
     
 And as stated above, copy or link to this file in your path as the file 'minDisj'.
