@@ -11,7 +11,7 @@ second algorithm are estimated fluxes for the environment that the
 expression and model were taken from.
 
 
-###Installation###
+### Installation ###
 ====
 
 FALCON should work on all major platforms (Windows, Linux, OS X). It
@@ -19,7 +19,7 @@ is possible that it could work on other platforms as well, but some of
 the MATLAB code would need to be ported to GNU Octave. In principle
 should be straightforward.
 
-## Required Prerequisites ##
+#### Required Prerequisites ####
 
 There are several primary prerequisites:
 
@@ -33,7 +33,7 @@ There are several primary prerequisites:
 * **Boehm GC:** *Is it required or only for compiling?*
 
 
-## Optional Packages ##
+#### Optional Packages ####
 * **C compiler**: We have only tested recent versions of GCC. This is
  needed for building the implementation of the first algorithm in the
  pipeline (minimum-disjunction). For Windows, we suggest using GCC in
@@ -53,7 +53,7 @@ There are several primary prerequisites:
  to StandardML.
 
 
-## Generic installation instructions ##
+#### Generic installation instructions ####
 After having acquired MATLAB and having installed the COBRA Toolbox,
 all that is needed is to install the minimum-disjunction program. It
 may be worth trying out a [provided
@@ -85,7 +85,7 @@ of the algorithm.
 
 
 
-## Compiling the minimum-disjunction program: ATS source method ##
+#### Compiling the minimum-disjunction program: ATS source method ####
 After installing ATS2 (see above), download the latest source
 from this repository.
 
