@@ -14,7 +14,9 @@ expression and model were taken from.
 ### Installation ###
 ====
 
-FALCON should work on all major platforms (Windows, Linux, OS X). It
+FALCON should work on all major platforms (Windows, Linux, OS X). 
+At this time it is required that the user is familiar with the UNIX
+command-line and has some experience installing UNIX software. It
 is possible that it could work on other platforms as well, but some of
 the MATLAB code would need to be ported to GNU Octave. In principle
 should be straightforward.
