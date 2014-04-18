@@ -1,11 +1,9 @@
 #
 # A simple Makefile
 #
-ifndef PATSHOME
-  include ../atsmake-pre.mk
-else
-  include $(PATSHOME)/share/atsmake-pre.mk
-endif
+# based on $(PATSHOME)/share/atsmake-pre.mk
+#
+include atsmake-pre.mk
 #
 MYPORTDIR=MYPORTDIR
 #
@@ -34,11 +32,13 @@ SOURCES_DATS_main += falcon_main.dats
 SOURCES_DATS_cmdline += $(SOURCES_DATS)
 SOURCES_DATS_cmdline += falcon_cmdline.dats
 #
-ifndef PATSHOME
-  include ../atsmake-post.mk
-else
-  include $(PATSHOME)/share/atsmake-post.mk
-endif
+SOURCES_DATS_all += $(SOURCES_DATS) 
+SOURCES_DATS_all += falcon_main.dats 
+SOURCES_DATS_all += falcon_cmdline.dats
+#
+#  based on $(PATSHOME)/share/atsmake-post.mk
+#
+  include atsmake-post.mk
 #
 SOURCES_SATS_O := \
   $(patsubst %.sats, %_sats.o, $(SOURCES_SATS))

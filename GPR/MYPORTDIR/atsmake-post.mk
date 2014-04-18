@@ -1,0 +1,1 @@
+../atsmake-post.mk

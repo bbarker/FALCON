@@ -19,7 +19,7 @@ ifdef MYTARGET
 $(MYTARGET)_SATS_O := \
   $(patsubst %.sats, %_sats.o, $(SOURCES_SATS))
 $(MYTARGET)_DATS_O := \
-  $(patsubst %.dats, %_dats.o, $(SOURCES_DATS))
+  $(patsubst %.dats, %_dats.o, $(SOURCES_DATS_all))
 endif
 
 ######
@@ -81,7 +81,7 @@ $(MYPORTDIR)/Makefile: Makefile ; cp -f $< $@
 $(MYPORTDIR)_SATS_C := \
   $(patsubst %.sats, $(MYPORTDIR)/%_sats.c, $(SOURCES_SATS))
 $(MYPORTDIR)_DATS_C := \
-  $(patsubst %.dats, $(MYPORTDIR)/%_dats.c, $(SOURCES_DATS))
+  $(patsubst %.dats, $(MYPORTDIR)/%_dats.c, $(SOURCES_DATS_all))
 #
 $(MYPORTDIR):: $(MYPORTDIR)/Makefile
 $(MYPORTDIR):: $($(MYPORTDIR)_SATS_C)
