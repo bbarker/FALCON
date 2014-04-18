@@ -79,7 +79,7 @@ submit a report to the GitHub issue tracker.
 Copy or create a link to the file with the name minDisj, and
 make sure it is in your PATH.
 
-Once minDisj is built, consider adding the following to your startup.m
+Once minDisj is installed, consider adding the following to your startup.m
 file (in UNIX, this should be in ~/Documents/MATLAB/), or run it
 before each use of FALCON within MATLAB:
 
