@@ -8,6 +8,8 @@ else
 endif
 #
 MYPORTDIR=MYPORTDIR
+#LIBATSHWXI=$(PATSHOME)/contrib/libats-hwxi
+#INCLUDE_ATS += -IATS $(LIBATSHWXI)/cstream/SATS/ -IATS $(LIBATSHWXI)/cstream/DATS/
 #
 CFLAGS += -O2
 #
