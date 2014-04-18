@@ -1,11 +1,11 @@
 #
 # A simple Makefile
 #
+MYPORTDIR=MYPORTDIR
+#
 # based on $(PATSHOME)/share/atsmake-pre.mk
 #
 include atsmake-pre.mk
-#
-MYPORTDIR=MYPORTDIR
 #
 CFLAGS += -O2
 #

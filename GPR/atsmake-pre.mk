@@ -60,8 +60,9 @@ CFLAGS += -D_GNU_SOURCE
 
 LDFLAGS += -L$(PATSLIB)
 LDFLAGS += -L$(PATSLIB64)
-LDFLAGS += -latslib
-
+ifndef MYPORTDIR
+  LDFLAGS += -latslib
+endif
 ######
 
 EXTRAFLAGS =

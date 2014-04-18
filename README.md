@@ -95,10 +95,23 @@ or there are none matching your operating system, and if you
 aren't interested in experimenting with GPR-related aspects
 of the algorithm.
 
-Go in to the GPR subdirectory and run make:
+[Download](http://sourceforge.net/projects/ats2-lang/files/ats2-lang/)
+the latest ATS includes (click on the latest version,
+e.g. ats2-postiats-x.y.z, then download the file
+(ATS2-Postiats-include-x.y.z.tgz). Extract the archive, e.g.
+
+    tar zxvf ATS2-Postiats-include-x.y.z.tgz
+
+Set the environmental variable PATSHOME to the new directory:
+
+    cd ATS2-Postiats-include-x.y.z
+    export PATSHOME=`pwd`
+
+Go in to the GPR subdirectory and build falcon_cmdline
 
     cd <MY_FALCON_DIRECTORY>/GPR
-    make falcon_cmdline
+    make -C .. MYPORTDIR
+    make PATSCC=gcc MYCCRULE=PORTABLE -f ../Makefile
     
 And as stated above, copy or link to this file in your path as the file 'minDisj'.
 
