@@ -10,6 +10,7 @@ also takes a genome-scale metabolic model as input. The output of the
 second algorithm are estimated fluxes for the environment that the
 expression and model were taken from.
 
+### Latest release:  [![Latest release](https://zenodo.org/badge/4025/bbarker/FALCON.png)](http://dx.doi.org/10.5281/zenodo.9980) ###
 
 ### Installation ###
 ====
