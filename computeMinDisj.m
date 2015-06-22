@@ -15,7 +15,7 @@ ztol = 1e-4;
 mdesc = strrep(model.description, ' ', '_');
 rfid = num2str(randint(1, 1, 10e40));
 rfname = [genedata_filename, '_', mdesc, rfid];
-rfname = strrep(rfname,' ', '');
+fname = strrep(rfname,' ', '');
 cell2csv(rfname, model.grRules,',',2000);
 rfout = [rfname, '_out'];
 nrxns = length(model.rxns);
