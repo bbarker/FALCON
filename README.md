@@ -110,7 +110,7 @@ Set the environmental variable PATSHOME to the new directory:
 
 Go in to the GPR subdirectory and build falcon_cmdline
 
-    cd <MY_FALCON_DIRECTORY>/GPR
+    cd <MY_FALCON_DIRECTORY>/GPR/MYPORTDIR
     make -C .. MYPORTDIR
     make PATSCC=gcc MYCCRULE=PORTABLE -f ../Makefile
     
