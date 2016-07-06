@@ -2,6 +2,26 @@ function [rxn_exp, rxn_exp_sd, rxn_rule_group] = ...
     computeMinDisj(model, genedata_filename, sigma, FDEBUG)
 % Requires the cell2csv package (for now; need to change to FIFOs)
 % minDisj needs to be in $PATH (system path)
+%
+%
+% model is a COBRA model
+%
+% genedata_filename is a text file with tab-separated
+%      rows and a header row at the top:
+%
+%      gene mean var
+%      55349 nan 1
+%      5534 30.637130546 1
+%      84912 nan 1
+%      23443 nan 1
+%
+%      'gene' values should be gene identifiers that
+%      appear in GPR rules.
+%
+%      'mean' and 'var' are mean and variance of expression
+%      values; if there is no variance in the expression dataset,
+%      you can leave 'var' values as '1'.
+  
 
 if ~exist('FDEBUG', 'var')
     FDEBUG = false;

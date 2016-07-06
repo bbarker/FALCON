@@ -114,7 +114,7 @@ Go in to the GPR subdirectory and build falcon_cmdline
     make -C .. MYPORTDIR
     make PATSCC=gcc MYCCRULE=PORTABLE -f ../Makefile
     
-And as stated above, copy or link to this file in your path as the file 'minDisj'.
+And as stated above, copy or link to this file in your path as the file `minDisj`.
 
 
 #### Compiling the minimum-disjunction program: ATS source method ####
@@ -127,6 +127,9 @@ Go in to the GPR subdirectory and run
     
 And as stated above, copy or link to this file in your path as the file 'minDisj'.
 
+### Using FALCON ###
+
+For GPR related analyses, you can use minDisj on the command-line or, if you wish to use `minDisj` from MATLAB, the wrapper `computeMinDisj.m` will be of help. Also, see `computeMinDisj.m` for a description of the required expression file format.
 
 
 ### Additional information and related analyses ###

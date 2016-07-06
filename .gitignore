@@ -6,6 +6,8 @@ gurobi.log
 *.stackdump
 minDisj
 *.exe
+.idea
+FALCON.iml
 
 #ATS dependencies
 ATSDEPCOPIES
